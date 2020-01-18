@@ -1,0 +1,2 @@
+class LoggingHook:
+    pass
