@@ -8,7 +8,7 @@ from eisen.utils import merge_two_dicts, check_arg_type
 class OptimizationContext:
     def __init__(self, losses, optimizer, metrics=None):
         """
-        :param losses: Dictionary of losses that need to be optimized
+        :param losses: List of losses that need to be optimized
         :type losses: list
         :param optimizer:
         :type optimizer: torch.nn.Optimizer
@@ -42,11 +42,7 @@ class OptimizationContext:
         results = []
 
         for loss in self.losses:
-            loss_argument_list = inspect.getfullargspec(loss.forward)[0]
-
-            loss_argument_list.remove('self')
-
-            loss_argument_dict = {key: arguments[key] for key in loss_argument_list}
+            loss_argument_dict = {key: arguments[key] for key in loss.input_names}
 
             results.append(loss(**loss_argument_dict))
 
@@ -58,14 +54,12 @@ class OptimizationContext:
         :type arguments: dict
         :return: dictionary of results
         """
-        results = {}
+        results = []
 
-        for key in self.metrics.keys():
-            metric_argument_list = inspect.getfullargspec(self.metrics[key].__call__)[0]
+        for metric in self.metrics:
+            metric_argument_dict = {key: arguments[key] for key in metric.input_names}
 
-            metric_argument_dict = {key: arguments[key] for key in metric_argument_list}
-
-            results[key] = self.metrics[key](**metric_argument_dict)
+            results.append(metric(**metric_argument_dict))
 
         return results
 
@@ -77,11 +71,7 @@ class OptimizationContext:
         :type batch: dict
         :return: dictionary of results
         """
-        model_argument_list = inspect.getfullargspec(model.forward)[0]
-
-        model_argument_list.remove('self')
-
-        model_argument_dict = {key: batch[key] for key in model_argument_list}
+        model_argument_dict = {key: batch[key] for key in model.input_names}
 
         self.optimizer.zero_grad()
 

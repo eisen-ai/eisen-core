@@ -5,3 +5,4 @@ torch
 torchvision
 pillow==6.2.1
 jupyter
+pydispatcher
