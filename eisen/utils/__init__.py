@@ -63,6 +63,8 @@ class EisenModuleWrapper(Module):
 
         outputs = self.module(**input_dict)
 
+        outputs = (outputs,)
+
         ret_dict = {}
 
         for output, output_name in zip(outputs, self.output_names):

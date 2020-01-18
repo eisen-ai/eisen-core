@@ -80,11 +80,12 @@ class OptimizationContext:
         losses = self.compute_losses(merge_two_dicts(batch, outputs))
 
         for loss in losses:
-            loss.backward(retain_graph=True)
-
-        metrics = self.compute_metrics(merge_two_dicts(batch, outputs))
+            for key in loss.keys():
+                loss[key].backward(retain_graph=True)
 
         self.optimizer.step()
+
+        metrics = self.compute_metrics(merge_two_dicts(batch, outputs))
 
         output_dictionary = {
             'inputs': batch,

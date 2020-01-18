@@ -15,7 +15,7 @@ from pydispatch import dispatcher
 
 
 class Training:
-    def __init__(self, model, context, data_loader):
+    def __init__(self, model, context, data_loader, gpu=False, data_parallel=False):
         """
         :param model:
         :type model: torch.nn.Module
@@ -23,6 +23,10 @@ class Training:
         :type context: object
         :param data_loader:
         :type data_loader: torch.utils.data.DataLoader
+        :param gpu:
+        :type gpu: bool
+        :param data_parallel:
+        :type data_parallel: bool
         """
         check_arg_type(model, Module, 'model')
         check_arg_type(context, OptimizationContext, 'context')
