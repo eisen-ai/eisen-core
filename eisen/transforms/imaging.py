@@ -28,10 +28,10 @@ def pad_to_minimal_size(image, size, pad_mode='constant'):
 class CreateConstantFlags:
     def __init__(self, fields, values):
         """
-        :param field: names of the fields of data dictionary to work on
-        :type field: list
-        :param value: list of float value to add to data
-        :type field: list
+        :param fields: names of the fields of data dictionary to work on
+        :type fields: list
+        :param values: list of float value to add to data
+        :type values: list
         """
         self.fields = fields
         self.values = values
@@ -48,10 +48,10 @@ class CreateConstantFlags:
 class RenameFields:
     def __init__(self, fields, new_fields):
         """
-        :param field: list of names of the fields of data dictionary to rename
-        :type field: list
-        :param new_field: new field names for the data dictionary
-        :type new_field: list
+        :param fields: list of names of the fields of data dictionary to rename
+        :type fields: list
+        :param new_fields: new field names for the data dictionary
+        :type new_fields: list
         """
         self.fields = fields
         self.new_fields = new_fields
@@ -85,8 +85,8 @@ class FilterFields:
 class ResampleNiftiVolumes:
     def __init__(self, fields, resolution, interpolation='continuous'):
         """
-        :param field: list of names of the fields of data dictionary to work on
-        :type field: list
+        :param fields: list of names of the fields of data dictionary to work on
+        :type fields: list
         :param resolution: vector of float values expressing desired resolution in mm
         :type resolution: list
         :param interpolation: interpolation strategy to use
@@ -118,8 +118,8 @@ class ResampleNiftiVolumes:
 class NiftiToNumpy:
     def __init__(self, fields):
         """
-        :param field: list of names of the fields of data dictionary to convert from Nifti to Numpy
-        :type field: list
+        :param fields: list of names of the fields of data dictionary to convert from Nifti to Numpy
+        :type fields: list
         """
         self.fields = fields
 

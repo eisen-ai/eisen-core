@@ -1,11 +1,12 @@
-class PrintFieldShape:
-    def __init__(self, field):
-        self.field = field
+class GetShape:
+    def __init__(self, fields):
+        self.fields = fields
 
     def __call__(self, data):
-        print('Data stored in data dictionary at field {} has shape {}'.format(
-            self.field,
-            data[self.field].shape
-        ))
+        for field in self.fields:
+            print('Data stored in data dictionary at field {} has shape {}'.format(
+                field,
+                data[field].shape
+            ))
 
         return data
