@@ -52,7 +52,7 @@ class Training:
 
         for i, batch in enumerate(self.data_loader):
             if self.gpu:
-                for key in batch.keys():
+                for key in self.model.input_names:
                     if isinstance(batch[key], Tensor):
                         batch[key] = batch[key].cuda()
 
