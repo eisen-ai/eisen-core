@@ -52,9 +52,9 @@ class Training:
 
         for i, batch in enumerate(self.data_loader):
             if self.gpu:
-                for key in self.model.input_names:
+                for key in batch.keys():
                     if isinstance(batch[key], Tensor):
-                        batch[key] = tensor(batch[key]).cuda()
+                        batch[key] = batch[key].cuda()
 
             logging.debug('DEBUG: Training epoch {}, batch {}'.format(self.epoch, i))
 
