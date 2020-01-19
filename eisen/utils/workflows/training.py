@@ -36,7 +36,13 @@ class Training:
         self.context = context
         self.data_loader = data_loader
 
+        self.gpu = gpu
+        self.data_parallel = data_parallel
+
         self.epoch = 0
+
+        if self.gpu:
+            self.model.cuda()
 
     def run(self):
         logging.info('INFO: Training epoch {}'.format(self.epoch))
@@ -44,6 +50,10 @@ class Training:
         self.model.train()
 
         for i, batch in enumerate(self.data_loader):
+            if self.gpu:
+                for key in batch.keys():
+                    batch[key] = batch[key].cuda()
+
             logging.debug('DEBUG: Training epoch {}, batch {}'.format(self.epoch, i))
 
             output_dictionary = self.context(self.model, batch)
