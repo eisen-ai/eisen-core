@@ -10,7 +10,7 @@ from eisen import (
 
 from torch.utils.data import DataLoader
 from torch.nn import Module
-from torch import Tensor
+from torch import Tensor, tensor
 
 from pydispatch import dispatcher
 
@@ -54,7 +54,7 @@ class Training:
             if self.gpu:
                 for key in self.model.input_names:
                     if isinstance(batch[key], Tensor):
-                        batch[key] = batch[key].cuda()
+                        batch[key] = tensor(batch[key]).cuda()
 
             logging.debug('DEBUG: Training epoch {}, batch {}'.format(self.epoch, i))
 
