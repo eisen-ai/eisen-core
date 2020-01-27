@@ -123,6 +123,33 @@ class VNet(nn.Module):
             outputs_activation='sigmoid',
             normalization='groupnorm'
     ):
+        """
+        :param input_channels: number of input channels
+        :type input_channels: int
+        :param output_channels: number of output channels
+        :type output_channels: int
+        :param n_filters: number of filters
+        :type n_filters: int
+        :param filter_size: size of filter in voxels
+        :type filter_size: int
+        :param outputs_activation: output activation type either sigmoid, softmax or none
+        :type outputs_activation: str
+        :param normalization: normalization either groupnorm, batchnorm or none
+        :type normalization: str
+
+        <json>
+        [
+            {"name": "input_names", "type": "list:string", "value": "['images']"},
+            {"name": "output_names", "type": "list:string", "value": "['output']"},
+            {"name": "input_channels", "type": "int", "value": ""},
+            {"name": "output_channels", "type": "int", "value": ""},
+            {"name": "n_filters", "type": "int", "value": "16"},
+            {"name": "filter_size", "type": "int", "value": "3"},
+            {"name": "outputs_activation", "type": "string", "value": ["sigmoid", "softmax", "none"]},
+            {"name": "normalization", "type": "string", "value": ["groupnorm", "batchnorm", "none"]}
+        ]
+        </json>
+        """
         # Define operations
         super(VNet, self).__init__()
 
@@ -163,7 +190,7 @@ class VNet(nn.Module):
         elif outputs_activation == 'softmax':
             self.outputs_activation = nn.Softmax()
 
-    def forward(self, images, **kwargs):
+    def forward(self, images):
         x1 = self.block_one(images)
         x1_dw = self.block_one_dw(x1)
 

@@ -29,9 +29,16 @@ class CreateConstantFlags:
     def __init__(self, fields, values):
         """
         :param fields: names of the fields of data dictionary to work on
-        :type fields: list
+        :type fields: list of str
         :param values: list of float value to add to data
-        :type values: list
+        :type values: list of float
+
+        <json>
+        [
+            {"name": "fields", "type": "list:string", "value": ""},
+            {"name": "values", "type": "list:float", "value": ""}
+        ]
+        </json>
         """
         self.fields = fields
         self.values = values
@@ -49,9 +56,16 @@ class RenameFields:
     def __init__(self, fields, new_fields):
         """
         :param fields: list of names of the fields of data dictionary to rename
-        :type fields: list
+        :type fields: list of str
         :param new_fields: new field names for the data dictionary
-        :type new_fields: list
+        :type new_fields: list of str
+
+        <json>
+        [
+            {"name": "fields", "type": "list:string", "value": ""},
+            {"name": "new_fields", "type": "list:string", "value": ""}
+        ]
+        </json>
         """
         self.fields = fields
         self.new_fields = new_fields
@@ -69,7 +83,13 @@ class FilterFields:
     def __init__(self, fields):
         """
         :param fields: list of fields to KEEP after the transform
-        :type fields: list
+        :type fields: list of str
+
+        <json>
+        [
+            {"name": "fields", "type": "list:string", "value": ""}
+        ]
+        </json>
         """
         self.fields = fields
 
@@ -83,14 +103,27 @@ class FilterFields:
 
 
 class ResampleNiftiVolumes:
-    def __init__(self, fields, resolution, interpolation='continuous'):
+    def __init__(self, fields, resolution, interpolation='linear'):
         """
         :param fields: list of names of the fields of data dictionary to work on
-        :type fields: list
+        :type fields: list of str
         :param resolution: vector of float values expressing desired resolution in mm
-        :type resolution: list
+        :type resolution: list of float
         :param interpolation: interpolation strategy to use
         :type interpolation: string
+
+        <json>
+        [
+            {"name": "fields", "type": "list:string", "value": ""},
+            {"name": "resolution", "type": "list:float", "value": ""},
+            {"name": "interpolation", "type": "string", "value":
+                [
+                    "linear",
+                    "nearest"
+                ]
+            }
+        ]
+        </json>
         """
         assert len(resolution) == 3
         self.interpolation = interpolation
@@ -119,7 +152,13 @@ class NiftiToNumpy:
     def __init__(self, fields):
         """
         :param fields: list of names of the fields of data dictionary to convert from Nifti to Numpy
-        :type fields: list
+        :type fields: list of str
+
+        <json>
+        [
+            {"name": "fields", "type": "list:string", "value": ""}
+        ]
+        </json>
         """
         self.fields = fields
 
@@ -137,6 +176,19 @@ class NiftiToNumpy:
 
 class CropCenteredSubVolumes:
     def __init__(self, fields, size):
+        """
+        :param fields:
+        :type fields: list of str
+        :param size:
+        :type size: list of int
+
+        <json>
+        [
+            {"name": "fields", "type": "list:string", "value": ""},
+            {"name": "size", "type": "list:int", "value": ""}
+        ]
+        </json>
+        """
         self.size = size
         self.fields = fields
 
@@ -172,6 +224,25 @@ class CropCenteredSubVolumes:
 
 class MapValues:
     def __init__(self, fields, min_value=0, max_value=1, channelwise=True):
+        """
+        :param fields:
+        :type fields: list of str
+        :param min_value:
+        :type min_value: float
+        :param max_value:
+        :type max_value: float
+        :param channelwise:
+        :type channelwise: bool
+
+        <json>
+        [
+            {"name": "fields", "type": "list:string", "value": ""},
+            {"name": "min_value", "type": "float", "value": "0"},
+            {"name": "max_value", "type": "float", "value": "1"},
+            {"name": "channelwise", "type": "bool", "value": "true"}
+        ]
+        </json>
+        """
         self.fields = fields
         self.min_value = min_value
         self.max_value = max_value
@@ -197,6 +268,29 @@ class MapValues:
 
 class ThresholdValues:
     def __init__(self, fields, threshold, direction='greater'):
+        """
+        :param fields:
+        :type fields: list of str
+        :param threshold:
+        :type threshold: float
+        :param direction:
+        :type direction: string
+
+        <json>
+        [
+            {"name": "fields", "type": "list:string", "value": ""},
+            {"name": "threshold", "type": "float", "value": "0"},
+            {"name": "direction", "type": "string", "value":
+                [
+                    "greater",
+                    "smaller",
+                    "greater/equal",
+                    "smaller/equal"
+                ]
+            }
+        ]
+        </json>
+        """
         self.fields = fields
         self.threshold = threshold
         self.direction = direction
@@ -219,6 +313,16 @@ class ThresholdValues:
 
 class AddChannelDimension:
     def __init__(self, fields):
+        """
+        :param fields:
+        :type fields: list of str
+
+        <json>
+        [
+            {"name": "fields", "type": "list:string", "value": ""}
+        ]
+        </json>
+        """
         self.fields = fields
 
     def __call__(self, data):
@@ -230,6 +334,19 @@ class AddChannelDimension:
 
 class LabelMapToOneHot:
     def __init__(self, fields, classes):
+        """
+        :param fields:
+        :type fields: list of str
+        :param classes:
+        :type classes: list of int
+
+        <json>
+        [
+            {"name": "fields", "type": "list:string", "value": ""},
+            {"name": "classes", "type": "list:int", "value": ""}
+        ]
+        </json>
+        """
         self.fields = fields
         self.classes = classes
         self.num_channels = len(self.classes)
@@ -252,6 +369,19 @@ class LabelMapToOneHot:
 
 class StackImagesChannelwise:
     def __init__(self, fields, dst_field):
+        """
+        :param fields:
+        :type fields: list of str
+        :param dst_field:
+        :type dst_field: str
+
+        <json>
+        [
+            {"name": "fields", "type": "list:string", "value": ""},
+            {"name": "dst_field", "type": "string", "value": ""}
+        ]
+        </json>
+        """
         self.fields = fields
         self.dst_field = dst_field
 
@@ -269,6 +399,22 @@ class StackImagesChannelwise:
 
 class FixedMeanStdNormalization:
     def __init__(self, fields, mean, std):
+        """
+        :param fields:
+        :type fields: list of str
+        :param mean:
+        :type mean: float
+        :param std:
+        :type std: float
+
+        <json>
+        [
+            {"name": "fields", "type": "list:string", "value": ""},
+            {"name": "mean", "type": "float", "value": ""},
+            {"name": "std", "type": "float", "value": ""}
+        ]
+        </json>
+        """
         assert std != 0
 
         self.fields = fields

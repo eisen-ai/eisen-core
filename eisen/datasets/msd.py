@@ -16,6 +16,14 @@ class MSDDataset(Dataset):
         :type phase: string
         :param transform: a transform object (can be the result of a composition of transforms)
         :type transform: object
+
+        <json>
+        [
+            {"name": "data_dir", "type": "string", "value": ""},
+            {"name": "json_file", "type": "string", "value": ""},
+            {"name": "phase", "type": "string", "value": ["training", "test"]}
+        ]
+        </json>
         """
         json_file = os.path.join(data_dir, json_file)
 

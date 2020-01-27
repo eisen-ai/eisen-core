@@ -28,6 +28,13 @@ class Training:
         :type gpu: bool
         :param data_parallel:
         :type data_parallel: bool
+
+        <json>
+        [
+            {"name": "gpu", "type": "bool", "value": "false"},
+            {"name": "data_parallel", "type": "bool", "value": "false"}
+        ]
+        </json>
         """
         check_arg_type(model, Module, 'model')
         check_arg_type(context, OptimizationContext, 'context')

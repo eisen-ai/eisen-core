@@ -41,13 +41,13 @@ class EisenModuleWrapper(Module):
     as dictionaries. In this way we can wrap torch.nn.Modules in a way allowing them to get fed and return dictionaries.
     This implementation is unfortunately not particularly elegant or clear from the code. Unfortunately it is needed
     """
-    def __init__(self, module, input_names, output_names):
+    def __init__(self, module, input_names, output_names, **kwargs):
         super(EisenModuleWrapper, self).__init__()
 
         self.input_names = input_names
         self.output_names = output_names
 
-        self.module = module
+        self.module = module(**kwargs)
 
         module_argument_list = inspect.getfullargspec(self.module.forward)[0]
 
