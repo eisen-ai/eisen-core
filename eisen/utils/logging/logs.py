@@ -32,9 +32,9 @@ class LoggingHook:
             if type not in self.epoch_data.keys():
                 self.epoch_data[typ] = {}
 
-            for loss in message[typ]:
-                for key in loss.keys():
-                    scalar_loss = np.mean(loss[key].data.numpy())
+            for dta in message[typ]:
+                for key in dta.keys():
+                    scalar_loss = np.mean(dta[key].cpu().data.numpy())
 
                     if key not in self.epoch_data[typ].keys():
                         self.epoch_data[typ][key] = []
