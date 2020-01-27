@@ -189,6 +189,9 @@ class VNet(nn.Module):
             self.outputs_activation = nn.Sigmoid()
         elif outputs_activation == 'softmax':
             self.outputs_activation = nn.Softmax()
+        elif outputs_activation == 'none':
+            self.outputs_activation = lambda x: x
+
 
     def forward(self, images):
         x1 = self.block_one(images)

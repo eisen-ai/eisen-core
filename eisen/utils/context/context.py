@@ -44,7 +44,9 @@ class OptimizationContext:
         for loss in self.losses:
             loss_argument_dict = {key: arguments[key] for key in loss.input_names}
 
-            results.append(loss(**loss_argument_dict))
+            loss_result = loss(**loss_argument_dict)
+
+            results.append(loss_result)
 
         return results
 

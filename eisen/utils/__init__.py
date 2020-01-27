@@ -4,6 +4,7 @@ import json
 import inspect
 
 from torch.nn import Module
+from collections import Iterable
 
 
 def merge_two_dicts(x, y):
@@ -63,7 +64,8 @@ class EisenModuleWrapper(Module):
 
         outputs = self.module(**input_dict)
 
-        outputs = (outputs,)
+        if not isinstance(outputs, Iterable):
+            outputs = (outputs,)
 
         ret_dict = {}
 
