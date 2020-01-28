@@ -10,6 +10,7 @@ from eisen.ops import losses
 from eisen.ops import metrics
 from eisen.utils import workflows
 from eisen import datasets
+from eisen.utils import logging
 
 
 json_modules = {}
@@ -217,11 +218,73 @@ for class_spec in class_list:
 
 json_modules['datasets'] = json_datasets
 
-json_modules['hooks'] = []
+# hooks
 
-json_modules['optimizers'] = []
+class_list = [o for o in getmembers(logging) if isclass(o[1])]
 
-json_modules['hyperparameters'] = []
+json_hooks = []
+
+for class_spec in class_list:
+    _, obj = class_spec
+
+    if obj.__init__.__doc__ is None:
+        continue
+
+    if '<json>' not in obj.__init__.__doc__:
+        continue
+
+    string = obj.__init__.__doc__.split('<json>')[1].split('</json>')[0].replace('\n', ' ').replace('\r', '')
+    params = json.loads(string)
+    type = obj.__module__ + '.' + obj.__name__
+
+    json_obj = {
+        "type": type,
+        "params": params
+    }
+
+    json_hooks.append(json_obj)
+
+json_modules['hooks'] = json_hooks
+
+# fixed information for external modules (Eg. torch modules) or hyper-parameters
+
+json_modules['optimizer'] = [
+    {'type': 'torch.optim.Adam', 'params': [
+        {"name": "lr", "type": "float", "value": "0.001"},
+        {"name": "betas", "type": "list:float", "value": "[0.9, 0.999]"},
+        {"name": "eps", "type": "float", "value": "0.00000001"},
+        {"name": "weight_decay", "type": "float", "value": "0"},
+        {"name": "amsgrad", "type": "bool", "value": "false"}
+    ]},
+    {'type': 'torch.optim.SDG', 'params': [
+        {"name": "lr", "type": "float", "value": "0.001"},
+        {"name": "momentum", "type": "float", "value": "0.0"},
+        {"name": "dampening", "type": "float", "value": "0.0"},
+        {"name": "weight_decay", "type": "float", "value": "0"},
+        {"name": "nesterov", "type": "bool", "value": "false"}
+    ]},
+    {'type': 'torch.optim.Adagrad', 'params': [
+        {"name": "lr", "type": "float", "value": "0.001"},
+        {"name": "lr_decay", "type": "float", "value": "0.0"},
+        {"name": "weight_decay", "type": "float", "value": "0.0"},
+        {"name": "initial_accumulator_value", "type": "float", "value": "0"},
+        {"name": "eps", "type": "float", "value": "0.0000000001"}
+    ]},
+    {'type': 'torch.optim.Adadelta', 'params': [
+        {"name": "lr", "type": "float", "value": "0.001"},
+        {"name": "rho", "type": "float", "value": "0.9"},
+        {"name": "eps", "type": "float", "value": "0.000001"},
+        {"name": "weight_decay", "type": "float", "value": "0"}
+    ]},
+]
+
+json_modules['hyperparameters'] = [
+    {'type': '.LearningRate', 'params': [{"name": "value", "type": "float", "value": "0.0001"}]},
+    {'type': '.BatchSize', 'params': [{"name": "value", "type": "int", "value": "4"}]},
+    {'type': '.DataParallel', 'params': [{"name": "value", "type": "bool", "value": "true"}]},
+]
+
+# creating final JSON for current Eisen version
 
 with open('./eisen_modules_v{}.json'.format(eisen.__version__), 'w', encoding='utf-8') as file:
     json.dump(json_modules, file, ensure_ascii=False, indent=4)

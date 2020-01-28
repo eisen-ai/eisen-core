@@ -10,9 +10,13 @@ from eisen import (
 from pydispatch import dispatcher
 from prettytable import PrettyTable
 
-
 class LoggingHook:
     def __init__(self):
+        """
+        <json>
+        []
+        </json>
+        """
         # training signals
         dispatcher.connect(self.end_training_batch, signal=EISEN_END_BATCH_EVENT, sender=EISEN_TRAINING_SENDER)
         dispatcher.connect(self.end_training_epoch, signal=EISEN_END_EPOCH_EVENT, sender=EISEN_TRAINING_SENDER)
@@ -22,7 +26,6 @@ class LoggingHook:
         dispatcher.connect(self.end_validation_epoch, signal=EISEN_END_EPOCH_EVENT, sender=EISEN_VALIDATION_SENDER)
 
         self.epoch_data = {}
-        self.epoch_metrics = {}
 
         self.table_training = PrettyTable()
         self.table_validation = PrettyTable()
@@ -54,7 +57,6 @@ class LoggingHook:
         )
 
         self.epoch_data = {}
-        self.epoch_metrics = {}
 
         print(self.table_training)
 

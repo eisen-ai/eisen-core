@@ -12,7 +12,7 @@ class DiceMetric(nn.Module):
             {"name": "input_names", "type": "list:string", "value": "['predictions', 'labels']"},
             {"name": "output_names", "type": "list:string", "value": "['dice_metric']"},
             {"name": "weight", "type": "float", "value": "1.0"},
-            {"name": "dim", "type": "list:int", "value": [1, 2, 3, 4]}
+            {"name": "dim", "type": "list:int", "value": "[1, 2, 3, 4]"}
         ]
         </json>
         """

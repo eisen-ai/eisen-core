@@ -15,7 +15,6 @@ class AutoSummaryManager:
     def __init__(self, log_dir):
         self.writer = SummaryWriter(log_dir=log_dir)
 
-
     def _write_volumetric_image(self, name, value, global_step):
         pass
 
@@ -42,7 +41,7 @@ class AutoSummaryManager:
     def _write_scalar(self, name, value, global_step):
         self.writer.add_scalar(name, value, global_step=global_step)
 
-    def write(self, data):
+    def write(self, data, name, global_step):
         if data.ndims == 5:
             # Volumetric image (N, C, W, H, D)
             pass
@@ -78,11 +77,54 @@ class SummaryHook:
         dispatcher.connect(self.end_validation_batch, signal=EISEN_END_BATCH_EVENT, sender=EISEN_VALIDATION_SENDER)
         dispatcher.connect(self.end_validation_epoch, signal=EISEN_END_EPOCH_EVENT, sender=EISEN_VALIDATION_SENDER)
 
+        self.last_batch = None
+
+        self.epoch_data = {}
+        self.epoch_metrics = {}
+
+        self.summary_manager = AutoSummaryManager(logs_base_dir)
+
     def end_training_batch(self, message):
-        pass
+        self.last_batch = message
+
+        for typ in ['losses', 'metrics']:
+            if type not in self.epoch_data.keys():
+                self.epoch_data[typ] = {}
+
+            for dta in message[typ]:
+                for key in dta.keys():
+                    scalar_loss = np.mean(dta[key].cpu().data.numpy())
+
+                    if key not in self.epoch_data[typ].keys():
+                        self.epoch_data[typ][key] = []
+
+                    self.epoch_data[typ][key].append(scalar_loss)
 
     def end_training_epoch(self, message):
-        pass
+
+        for key in self.epoch_data['losses'].keys():
+            self.summary_manager.write(
+                data=np.mean(np.asarray(self.epoch_data['losses'][key])),
+                name='losses/{}'.format(key),
+                global_step=message
+            )
+
+        for key in self.epoch_data['metrics'].keys():
+            self.summary_manager.write(
+                data=np.mean(np.asarray(self.epoch_data['metrics'][key])),
+                name='metrics/{}'.format(key),
+                global_step=message
+            )
+
+        for input in self.last_batch['inputs']:
+            pass
+
+        for output in self.last_batch['outputs']:
+            pass
+
+        self.last_batch = None
+        self.epoch_data = {}
+        self.epoch_metrics = {}
 
     def end_validation_batch(self, message):
         pass
