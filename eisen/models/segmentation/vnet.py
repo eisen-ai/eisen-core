@@ -186,11 +186,11 @@ class VNet(nn.Module):
         self.out_conv = nn.Conv3d(n_filters, output_channels, 1, padding=0)
 
         if outputs_activation == 'sigmoid':
-            self.outputs_activation = nn.Sigmoid()
+            self.outputs_activation_fn = nn.Sigmoid()
         elif outputs_activation == 'softmax':
-            self.outputs_activation = nn.Softmax()
+            self.outputs_activation_fn = nn.Softmax()
         elif outputs_activation == 'none':
-            self.outputs_activation = lambda x: x
+            self.outputs_activation_fn = nn.Identity()
 
 
     def forward(self, images):
@@ -227,6 +227,6 @@ class VNet(nn.Module):
 
         out = self.out_conv(x9)
 
-        output = self.outputs_activation(out)
+        output = self.outputs_activation_fn(out)
 
         return output
