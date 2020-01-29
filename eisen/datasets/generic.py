@@ -17,7 +17,6 @@ class JsonDataset(Dataset):
 
         <json>
         [
-            {"name": "data_dir", "type": "string", "value": ""},
             {"name": "json_file", "type": "string", "value": ""}
         ]
         </json>

@@ -1,29 +1,31 @@
 import logging
+import torch
 
-from eisen.utils.context import OptimizationContext
-from eisen.utils import check_arg_type
 from eisen import (
     EISEN_TRAINING_SENDER,
     EISEN_END_EPOCH_EVENT,
     EISEN_END_BATCH_EVENT,
 )
+from eisen.utils import merge_two_dicts
 
-from torch.utils.data import DataLoader
-from torch.nn import Module
-from torch import Tensor, tensor
+from torch import Tensor
 
 from pydispatch import dispatcher
 
 
 class Training:
-    def __init__(self, model, context, data_loader, gpu=False, data_parallel=False):
+    def __init__(self, model, data_loader, losses, optimizer, metrics=None, gpu=False, data_parallel=False):
         """
         :param model:
         :type model: torch.nn.Module
-        :param context:
-        :type context: object
         :param data_loader:
         :type data_loader: torch.utils.data.DataLoader
+        :param losses:
+        :type losses: list
+        :param optimizer:
+        :type optimizer: object
+        :param metrics:
+        :type metrics: list
         :param gpu:
         :type gpu: bool
         :param data_parallel:
@@ -36,13 +38,12 @@ class Training:
         ]
         </json>
         """
-        check_arg_type(model, Module, 'model')
-        check_arg_type(context, OptimizationContext, 'context')
-        check_arg_type(data_loader, DataLoader, 'data_loader')
 
         self.model = model
-        self.context = context
         self.data_loader = data_loader
+        self.losses = losses
+        self.optimizer = optimizer
+        self.metrics = metrics
 
         self.gpu = gpu
         self.data_parallel = data_parallel
@@ -51,6 +52,57 @@ class Training:
 
         if self.gpu:
             self.model.cuda()
+
+        if self.data_parallel:
+            self.model = torch.nn.DataParallel(self.model)
+
+    def compute_losses(self, arguments):
+        results = []
+
+        for loss in self.losses:
+            loss_argument_dict = {key: arguments[key] for key in loss.input_names}
+
+            loss_result = loss(**loss_argument_dict)
+
+            results.append(loss_result)
+
+        return results
+
+    def compute_metrics(self, arguments):
+        results = []
+
+        for metric in self.metrics:
+            metric_argument_dict = {key: arguments[key] for key in metric.input_names}
+
+            results.append(metric(**metric_argument_dict))
+
+        return results
+
+    def process_batch(self, batch):
+        model_argument_dict = {key: batch[key] for key in self.model.input_names}
+
+        self.optimizer.zero_grad()
+
+        outputs = self.model(**model_argument_dict)
+
+        losses = self.compute_losses(merge_two_dicts(batch, outputs))
+
+        for loss in losses:
+            for key in loss.keys():
+                loss[key].backward(retain_graph=True)
+
+        self.optimizer.step()
+
+        metrics = self.compute_metrics(merge_two_dicts(batch, outputs))
+
+        output_dictionary = {
+            'inputs': batch,
+            'outputs': outputs,
+            'losses': losses,
+            'metrics': metrics,
+        }
+
+        return output_dictionary
 
     def run(self):
         logging.info('INFO: Training epoch {}'.format(self.epoch))
@@ -65,18 +117,10 @@ class Training:
 
             logging.debug('DEBUG: Training epoch {}, batch {}'.format(self.epoch, i))
 
-            output_dictionary = self.context(self.model, batch)
+            output_dictionary = self.process_batch(batch)
 
             dispatcher.send(message=output_dictionary, signal=EISEN_END_BATCH_EVENT, sender=EISEN_TRAINING_SENDER)
 
         dispatcher.send(message=self.epoch, signal=EISEN_END_EPOCH_EVENT, sender=EISEN_TRAINING_SENDER)
 
         self.epoch += 1
-
-
-class DataParallelTraining:
-    pass
-
-
-class DistributedDataParallelTraining:
-    pass

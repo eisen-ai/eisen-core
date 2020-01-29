@@ -18,7 +18,6 @@ class LoadNiftyFromFilename:
         <json>
         [
             {"name": "fields", "type": "list:string", "value": ""},
-            {"name": "data_dir", "type": "string", "value": ""},
             {"name": "canonical", "type": "bool", "value": "false"}
         ]
         </json>

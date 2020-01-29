@@ -1,6 +1,6 @@
 # README
 
-The Eisen package consists of popular datasets, 
+Eisen is a package that consists of popular datasets, 
 model architectures, data loading functions, common image 
 transformations, training, testing and validation work-flows
 which are useful when working on medical image analysis tasks

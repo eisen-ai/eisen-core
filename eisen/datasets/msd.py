@@ -19,7 +19,6 @@ class MSDDataset(Dataset):
 
         <json>
         [
-            {"name": "data_dir", "type": "string", "value": ""},
             {"name": "json_file", "type": "string", "value": ""},
             {"name": "phase", "type": "string", "value": ["training", "test"]}
         ]
