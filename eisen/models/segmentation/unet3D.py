@@ -16,8 +16,16 @@ class GroupNorm3D(nn.Module):
 
     def forward(self, x):
         N, C, H, W, D = x.size()
+
         G = self.num_groups
-        assert C % G == 0
+
+        if C % G != 0:
+            while C % G != 0 and G > 0:
+                G -= 1
+            print('Warning: a GroupNorm3D operation was requested num_groups {} but had to use {} instead'.format(
+                self.num_groups,
+                G
+            ))
 
         x = x.view(N, G, -1)
         mean = x.mean(-1, keepdim=True)
@@ -51,9 +59,9 @@ class EncoderBlock(nn.Module):
         for depth in range(model_depth):
             feat_map_channels = 2 ** (depth + 1) * self.root_feat_maps
             for i in range(self.num_conv_blocks):
-                # print("depth {}, conv {}".format(depth, i))
+
                 if depth == 0:
-                    # print(in_channels, feat_map_channels)
+
                     self.conv_block = ConvBlock(
                         in_channels=in_channels,
                         out_channels=feat_map_channels,
@@ -62,7 +70,7 @@ class EncoderBlock(nn.Module):
                     self.module_dict["conv_{}_{}".format(depth, i)] = self.conv_block
                     in_channels, feat_map_channels = feat_map_channels, feat_map_channels * 2
                 else:
-                    # print(in_channels, feat_map_channels)
+
                     self.conv_block = ConvBlock(
                         in_channels=in_channels,
                         out_channels=feat_map_channels,
@@ -81,12 +89,11 @@ class EncoderBlock(nn.Module):
         for k, op in self.module_dict.items():
             if k.startswith("conv"):
                 x = op(x)
-                print(k, x.shape)
+
                 if k.endswith("1"):
                     down_sampling_features.append(x)
             elif k.startswith("max_pooling"):
                 x = op(x)
-                print(k, x.shape)
 
         return x, down_sampling_features
 
@@ -114,9 +121,8 @@ class DecoderBlock(nn.Module):
         self.module_dict = nn.ModuleDict()
 
         for depth in range(model_depth - 2, -1, -1):
-            # print(depth)
             feat_map_channels = 2 ** (depth + 1) * self.num_feat_maps
-            # print(feat_map_channels * 4)
+
             self.deconv = ConvTranspose(in_channels=feat_map_channels * 4, out_channels=feat_map_channels * 4)
             self.module_dict["deconv_{}".format(depth)] = self.deconv
             for i in range(self.num_conv_blocks):
@@ -164,7 +170,7 @@ class UNet3D(nn.Module):
             self,
             input_channels,
             output_channels,
-            n_filters=64,
+            n_filters=16,
             model_depth=4,
             outputs_activation='sigmoid',
             normalization='groupnorm'
