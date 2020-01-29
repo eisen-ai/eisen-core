@@ -81,7 +81,7 @@ def max_pooling_3d():
 
 def conv_block_2_3d(in_dim, out_dim, activation, normalization):
     return nn.Sequential(
-        conv_block_3d(in_dim, out_dim, activation),
+        conv_block_3d(in_dim, out_dim, activation, normalization),
         nn.Conv3d(out_dim, out_dim, kernel_size=3, stride=1, padding=1),
         normalization(out_dim), )
 
