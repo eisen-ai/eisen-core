@@ -162,57 +162,57 @@ class UNet3D(nn.Module):
         self.up_5 = conv_block_2_3d(self.num_filters * 3, self.num_filters * 1, activation, normalization)
 
         # Output
-        self.out = conv_block_3d(self.num_filters, self.out_dim, activation, normalization)
+        self.out = conv_block_3d(self.num_filters, self.out_dim, activation, nn.Identity)
 
         if outputs_activation == 'sigmoid':
             self.outputs_activation_fn = nn.Sigmoid()
         elif outputs_activation == 'softmax':
             self.outputs_activation_fn = nn.Softmax()
-        elif outputs_activation == 'none':
+        else:
             self.outputs_activation_fn = nn.Identity()
 
     def forward(self, x):
         # Down sampling
-        down_1 = self.down_1(x)  # -> [1, 4, 128, 128, 128]
-        pool_1 = self.pool_1(down_1)  # -> [1, 4, 64, 64, 64]
+        down_1 = self.down_1(x)
+        pool_1 = self.pool_1(down_1)
 
-        down_2 = self.down_2(pool_1)  # -> [1, 8, 64, 64, 64]
-        pool_2 = self.pool_2(down_2)  # -> [1, 8, 32, 32, 32]
+        down_2 = self.down_2(pool_1)
+        pool_2 = self.pool_2(down_2)
 
-        down_3 = self.down_3(pool_2)  # -> [1, 16, 32, 32, 32]
-        pool_3 = self.pool_3(down_3)  # -> [1, 16, 16, 16, 16]
+        down_3 = self.down_3(pool_2)
+        pool_3 = self.pool_3(down_3)
 
-        down_4 = self.down_4(pool_3)  # -> [1, 32, 16, 16, 16]
-        pool_4 = self.pool_4(down_4)  # -> [1, 32, 8, 8, 8]
+        down_4 = self.down_4(pool_3)
+        pool_4 = self.pool_4(down_4)
 
-        down_5 = self.down_5(pool_4)  # -> [1, 64, 8, 8, 8]
-        pool_5 = self.pool_5(down_5)  # -> [1, 64, 4, 4, 4]
+        down_5 = self.down_5(pool_4)
+        pool_5 = self.pool_5(down_5)
 
         # Bridge
-        bridge = self.bridge(pool_5)  # -> [1, 128, 4, 4, 4]
+        bridge = self.bridge(pool_5)
 
         # Up sampling
-        trans_1 = self.trans_1(bridge)  # -> [1, 128, 8, 8, 8]
-        concat_1 = torch.cat([trans_1, down_5], dim=1)  # -> [1, 192, 8, 8, 8]
-        up_1 = self.up_1(concat_1)  # -> [1, 64, 8, 8, 8]
+        trans_1 = self.trans_1(bridge)
+        concat_1 = torch.cat([trans_1, down_5], dim=1)
+        up_1 = self.up_1(concat_1)
 
-        trans_2 = self.trans_2(up_1)  # -> [1, 64, 16, 16, 16]
-        concat_2 = torch.cat([trans_2, down_4], dim=1)  # -> [1, 96, 16, 16, 16]
-        up_2 = self.up_2(concat_2)  # -> [1, 32, 16, 16, 16]
+        trans_2 = self.trans_2(up_1)
+        concat_2 = torch.cat([trans_2, down_4], dim=1)
+        up_2 = self.up_2(concat_2)
 
-        trans_3 = self.trans_3(up_2)  # -> [1, 32, 32, 32, 32]
-        concat_3 = torch.cat([trans_3, down_3], dim=1)  # -> [1, 48, 32, 32, 32]
-        up_3 = self.up_3(concat_3)  # -> [1, 16, 32, 32, 32]
+        trans_3 = self.trans_3(up_2)
+        concat_3 = torch.cat([trans_3, down_3], dim=1)
+        up_3 = self.up_3(concat_3)
 
-        trans_4 = self.trans_4(up_3)  # -> [1, 16, 64, 64, 64]
-        concat_4 = torch.cat([trans_4, down_2], dim=1)  # -> [1, 24, 64, 64, 64]
-        up_4 = self.up_4(concat_4)  # -> [1, 8, 64, 64, 64]
+        trans_4 = self.trans_4(up_3)
+        concat_4 = torch.cat([trans_4, down_2], dim=1)
+        up_4 = self.up_4(concat_4)
 
-        trans_5 = self.trans_5(up_4)  # -> [1, 8, 128, 128, 128]
-        concat_5 = torch.cat([trans_5, down_1], dim=1)  # -> [1, 12, 128, 128, 128]
-        up_5 = self.up_5(concat_5)  # -> [1, 4, 128, 128, 128]
+        trans_5 = self.trans_5(up_4)
+        concat_5 = torch.cat([trans_5, down_1], dim=1)
+        up_5 = self.up_5(concat_5)
 
         # Output
-        out = self.out(up_5)  # -> [1, 3, 128, 128, 128]
+        out = self.out(up_5)
 
         return self.outputs_activation_fn(out)

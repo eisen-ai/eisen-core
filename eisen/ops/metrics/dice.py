@@ -26,6 +26,8 @@ class DiceMetric(nn.Module):
         self.weight = weight
 
     def forward(self, predictions, labels):
+        predictions = (predictions >= 0.5).float()
+
         dice = 2.0 * (labels * predictions).sum(dim=self.dim) / (labels ** 2 + predictions ** 2).sum(dim=self.dim)
 
         dice_metric = self.weight * dice.mean()
