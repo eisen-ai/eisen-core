@@ -3,8 +3,32 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-# ATTRIBUTION: this implementation has been obtained from https://github.com/JielongZ/3D-UNet-PyTorch-Implementation
-# The code contained in this file is licensed according to the original license
+# ATTRIBUTION: this implementation has been obtained from https://github.com/UdonDa/3D-UNet-PyTorch
+
+"""
+MIT License
+
+Copyright (c) 2018 HoritaDaichi
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+"""
+
 
 class GroupNorm3D(nn.Module):
     def __init__(self, num_features, num_groups=16, eps=1e-5):
@@ -26,6 +50,7 @@ class GroupNorm3D(nn.Module):
                 self.num_groups,
                 G
             ))
+            self.num_groups = G
 
         x = x.view(N, G, -1)
         mean = x.mean(-1, keepdim=True)
@@ -36,133 +61,29 @@ class GroupNorm3D(nn.Module):
         return x * self.weight + self.bias
 
 
-class ConvBlock(nn.Module):
-    def __init__(self, in_channels, out_channels, normalization, k_size=3, stride=1, padding=1):
-        super(ConvBlock, self).__init__()
-        self.conv3d = nn.Conv3d(in_channels=in_channels, out_channels=out_channels, kernel_size=k_size,
-                                stride=stride, padding=padding)
-        self.batch_norm = normalization(num_features=out_channels)
-
-    def forward(self, x):
-        x = self.batch_norm(self.conv3d(x))
-        x = F.elu(x)
-        return x
+def conv_block_3d(in_dim, out_dim, activation, normalization):
+    return nn.Sequential(
+        nn.Conv3d(in_dim, out_dim, kernel_size=3, stride=1, padding=1),
+        normalization(out_dim),
+        activation, )
 
 
-class EncoderBlock(nn.Module):
-    def __init__(self, in_channels, model_depth, n_filters, normalization, pool_size=2):
-        super(EncoderBlock, self).__init__()
-        self.root_feat_maps = n_filters
-        self.num_conv_blocks = 2
-        # self.module_list = nn.ModuleList()
-        self.module_dict = nn.ModuleDict()
-        for depth in range(model_depth):
-            feat_map_channels = 2 ** (depth + 1) * self.root_feat_maps
-            for i in range(self.num_conv_blocks):
-
-                if depth == 0:
-
-                    self.conv_block = ConvBlock(
-                        in_channels=in_channels,
-                        out_channels=feat_map_channels,
-                        normalization=normalization
-                    )
-                    self.module_dict["conv_{}_{}".format(depth, i)] = self.conv_block
-                    in_channels, feat_map_channels = feat_map_channels, feat_map_channels * 2
-                else:
-
-                    self.conv_block = ConvBlock(
-                        in_channels=in_channels,
-                        out_channels=feat_map_channels,
-                        normalization=normalization
-                    )
-                    self.module_dict["conv_{}_{}".format(depth, i)] = self.conv_block
-                    in_channels, feat_map_channels = feat_map_channels, feat_map_channels * 2
-            if depth == model_depth - 1:
-                break
-            else:
-                self.pooling = nn.MaxPool3d(kernel_size=pool_size, stride=2, padding=0)
-                self.module_dict["max_pooling_{}".format(depth)] = self.pooling
-
-    def forward(self, x):
-        down_sampling_features = []
-        for k, op in self.module_dict.items():
-            if k.startswith("conv"):
-                x = op(x)
-
-                if k.endswith("1"):
-                    down_sampling_features.append(x)
-            elif k.startswith("max_pooling"):
-                x = op(x)
-
-        return x, down_sampling_features
+def conv_trans_block_3d(in_dim, out_dim, activation, normalization):
+    return nn.Sequential(
+        nn.ConvTranspose3d(in_dim, out_dim, kernel_size=3, stride=2, padding=1, output_padding=1),
+        normalization(out_dim),
+        activation, )
 
 
-class ConvTranspose(nn.Module):
-    def __init__(self, in_channels, out_channels, k_size=3, stride=2, padding=1, output_padding=1):
-        super(ConvTranspose, self).__init__()
-        self.conv3d_transpose = nn.ConvTranspose3d(in_channels=in_channels,
-                                                   out_channels=out_channels,
-                                                   kernel_size=k_size,
-                                                   stride=stride,
-                                                   padding=padding,
-                                                   output_padding=output_padding)
-
-    def forward(self, x):
-        return self.conv3d_transpose(x)
+def max_pooling_3d():
+    return nn.MaxPool3d(kernel_size=2, stride=2, padding=0)
 
 
-class DecoderBlock(nn.Module):
-    def __init__(self, out_channels, n_filters, model_depth, normalization):
-        super(DecoderBlock, self).__init__()
-        self.num_conv_blocks = 2
-        self.num_feat_maps = n_filters
-        # user nn.ModuleDict() to store ops
-        self.module_dict = nn.ModuleDict()
-
-        for depth in range(model_depth - 2, -1, -1):
-            feat_map_channels = 2 ** (depth + 1) * self.num_feat_maps
-
-            self.deconv = ConvTranspose(in_channels=feat_map_channels * 4, out_channels=feat_map_channels * 4)
-            self.module_dict["deconv_{}".format(depth)] = self.deconv
-            for i in range(self.num_conv_blocks):
-                if i == 0:
-                    self.conv = ConvBlock(
-                        in_channels=feat_map_channels * 6,
-                        out_channels=feat_map_channels * 2,
-                        normalization=normalization
-                    )
-                    self.module_dict["conv_{}_{}".format(depth, i)] = self.conv
-                else:
-                    self.conv = ConvBlock(
-                        in_channels=feat_map_channels * 2,
-                        out_channels=feat_map_channels * 2,
-                        normalization=normalization
-                    )
-                    self.module_dict["conv_{}_{}".format(depth, i)] = self.conv
-            if depth == 0:
-                self.final_conv = ConvBlock(
-                    in_channels=feat_map_channels * 2,
-                    out_channels=out_channels,
-                    normalization=normalization
-                )
-                self.module_dict["final_conv"] = self.final_conv
-
-    def forward(self, x, down_sampling_features):
-        """
-        :param x: inputs
-        :param down_sampling_features: feature maps from encoder path
-        :return: output
-        """
-        for k, op in self.module_dict.items():
-            if k.startswith("deconv"):
-                x = op(x)
-                x = torch.cat((down_sampling_features[int(k[-1])], x), dim=1)
-            elif k.startswith("conv"):
-                x = op(x)
-            else:
-                x = op(x)
-        return x
+def conv_block_2_3d(in_dim, out_dim, activation, normalization):
+    return nn.Sequential(
+        conv_block_3d(in_dim, out_dim, activation),
+        nn.Conv3d(out_dim, out_dim, kernel_size=3, stride=1, padding=1),
+        normalization(out_dim), )
 
 
 class UNet3D(nn.Module):
@@ -171,7 +92,6 @@ class UNet3D(nn.Module):
             input_channels,
             output_channels,
             n_filters=16,
-            model_depth=4,
             outputs_activation='sigmoid',
             normalization='groupnorm'
     ):
@@ -201,25 +121,48 @@ class UNet3D(nn.Module):
         """
         super(UNet3D, self).__init__()
 
+        self.in_dim = input_channels
+        self.out_dim = output_channels
+        self.num_filters = n_filters
+
         if normalization == 'groupnorm':
             normalization = GroupNorm3D
         elif normalization == 'batchnorm':
-            normalization = nn.BatchNorm2d
+            normalization = nn.BatchNorm3d
         else:
             normalization = nn.Identity
 
-        self.encoder = EncoderBlock(
-            in_channels=input_channels,
-            n_filters=n_filters,
-            model_depth=model_depth,
-            normalization=normalization
-        )
-        self.decoder = DecoderBlock(
-            out_channels=output_channels,
-            n_filters=n_filters,
-            model_depth=model_depth,
-            normalization=normalization
-        )
+        activation = nn.LeakyReLU(0.2, inplace=True)
+
+        # Down sampling
+        self.down_1 = conv_block_2_3d(self.in_dim, self.num_filters, activation, normalization)
+        self.pool_1 = max_pooling_3d()
+        self.down_2 = conv_block_2_3d(self.num_filters, self.num_filters * 2, activation, normalization)
+        self.pool_2 = max_pooling_3d()
+        self.down_3 = conv_block_2_3d(self.num_filters * 2, self.num_filters * 4, activation, normalization)
+        self.pool_3 = max_pooling_3d()
+        self.down_4 = conv_block_2_3d(self.num_filters * 4, self.num_filters * 8, activation, normalization)
+        self.pool_4 = max_pooling_3d()
+        self.down_5 = conv_block_2_3d(self.num_filters * 8, self.num_filters * 16, activation, normalization)
+        self.pool_5 = max_pooling_3d()
+
+        # Bridge
+        self.bridge = conv_block_2_3d(self.num_filters * 16, self.num_filters * 32, activation, normalization)
+
+        # Up sampling
+        self.trans_1 = conv_trans_block_3d(self.num_filters * 32, self.num_filters * 32, activation, normalization)
+        self.up_1 = conv_block_2_3d(self.num_filters * 48, self.num_filters * 16, activation, normalization)
+        self.trans_2 = conv_trans_block_3d(self.num_filters * 16, self.num_filters * 16, activation, normalization)
+        self.up_2 = conv_block_2_3d(self.num_filters * 24, self.num_filters * 8, activation, normalization)
+        self.trans_3 = conv_trans_block_3d(self.num_filters * 8, self.num_filters * 8, activation, normalization)
+        self.up_3 = conv_block_2_3d(self.num_filters * 12, self.num_filters * 4, activation, normalization)
+        self.trans_4 = conv_trans_block_3d(self.num_filters * 4, self.num_filters * 4, activation, normalization)
+        self.up_4 = conv_block_2_3d(self.num_filters * 6, self.num_filters * 2, activation, normalization)
+        self.trans_5 = conv_trans_block_3d(self.num_filters * 2, self.num_filters * 2, activation, normalization)
+        self.up_5 = conv_block_2_3d(self.num_filters * 3, self.num_filters * 1, activation, normalization)
+
+        # Output
+        self.out = conv_block_3d(self.num_filters, self.out_dim, activation)
 
         if outputs_activation == 'sigmoid':
             self.outputs_activation_fn = nn.Sigmoid()
@@ -229,10 +172,47 @@ class UNet3D(nn.Module):
             self.outputs_activation_fn = nn.Identity()
 
     def forward(self, x):
-        x, downsampling_features = self.encoder(x)
+        # Down sampling
+        down_1 = self.down_1(x)  # -> [1, 4, 128, 128, 128]
+        pool_1 = self.pool_1(down_1)  # -> [1, 4, 64, 64, 64]
 
-        x = self.decoder(x, downsampling_features)
+        down_2 = self.down_2(pool_1)  # -> [1, 8, 64, 64, 64]
+        pool_2 = self.pool_2(down_2)  # -> [1, 8, 32, 32, 32]
 
-        x = self.outputs_activation_fn(x)
+        down_3 = self.down_3(pool_2)  # -> [1, 16, 32, 32, 32]
+        pool_3 = self.pool_3(down_3)  # -> [1, 16, 16, 16, 16]
 
-        return x
+        down_4 = self.down_4(pool_3)  # -> [1, 32, 16, 16, 16]
+        pool_4 = self.pool_4(down_4)  # -> [1, 32, 8, 8, 8]
+
+        down_5 = self.down_5(pool_4)  # -> [1, 64, 8, 8, 8]
+        pool_5 = self.pool_5(down_5)  # -> [1, 64, 4, 4, 4]
+
+        # Bridge
+        bridge = self.bridge(pool_5)  # -> [1, 128, 4, 4, 4]
+
+        # Up sampling
+        trans_1 = self.trans_1(bridge)  # -> [1, 128, 8, 8, 8]
+        concat_1 = torch.cat([trans_1, down_5], dim=1)  # -> [1, 192, 8, 8, 8]
+        up_1 = self.up_1(concat_1)  # -> [1, 64, 8, 8, 8]
+
+        trans_2 = self.trans_2(up_1)  # -> [1, 64, 16, 16, 16]
+        concat_2 = torch.cat([trans_2, down_4], dim=1)  # -> [1, 96, 16, 16, 16]
+        up_2 = self.up_2(concat_2)  # -> [1, 32, 16, 16, 16]
+
+        trans_3 = self.trans_3(up_2)  # -> [1, 32, 32, 32, 32]
+        concat_3 = torch.cat([trans_3, down_3], dim=1)  # -> [1, 48, 32, 32, 32]
+        up_3 = self.up_3(concat_3)  # -> [1, 16, 32, 32, 32]
+
+        trans_4 = self.trans_4(up_3)  # -> [1, 16, 64, 64, 64]
+        concat_4 = torch.cat([trans_4, down_2], dim=1)  # -> [1, 24, 64, 64, 64]
+        up_4 = self.up_4(concat_4)  # -> [1, 8, 64, 64, 64]
+
+        trans_5 = self.trans_5(up_4)  # -> [1, 8, 128, 128, 128]
+        concat_5 = torch.cat([trans_5, down_1], dim=1)  # -> [1, 12, 128, 128, 128]
+        up_5 = self.up_5(concat_5)  # -> [1, 4, 128, 128, 128]
+
+        # Output
+        out = self.out(up_5)  # -> [1, 3, 128, 128, 128]
+
+        return self.outputs_activation_fn(out)
