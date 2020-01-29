@@ -162,7 +162,7 @@ class UNet3D(nn.Module):
         self.up_5 = conv_block_2_3d(self.num_filters * 3, self.num_filters * 1, activation, normalization)
 
         # Output
-        self.out = conv_block_3d(self.num_filters, self.out_dim, activation)
+        self.out = conv_block_3d(self.num_filters, self.out_dim, activation, normalization)
 
         if outputs_activation == 'sigmoid':
             self.outputs_activation_fn = nn.Sigmoid()
