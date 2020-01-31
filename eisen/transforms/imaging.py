@@ -26,6 +26,16 @@ def pad_to_minimal_size(image, size, pad_mode='constant'):
 
 
 class CreateConstantFlags:
+    """
+    Transform allowing to create new fields in the data dictionary containing constants of any type
+
+    .. code-block:: python
+
+        from eisen.transforms import CreateConstantFlags
+        tform = CreateConstantFlags(['my_field', 'my_text'], [42.0, 'hello'])
+        tform = tform(data)
+
+    """
     def __init__(self, fields, values):
         """
         :param fields: names of the fields of data dictionary to work on
@@ -33,12 +43,22 @@ class CreateConstantFlags:
         :param values: list of float value to add to data
         :type values: list of float
 
+        .. code-block:: python
+
+            from eisen.transforms import CreateConstantFlags
+
+            tform = CreateConstantFlags(
+                fields=['my_field', 'my_text'],
+                values=[42.0, 'hello']
+            )
+
         <json>
         [
             {"name": "fields", "type": "list:string", "value": ""},
             {"name": "values", "type": "list:float", "value": ""}
         ]
         </json>
+
         """
         self.fields = fields
         self.values = values
@@ -46,6 +66,12 @@ class CreateConstantFlags:
         assert len(fields) == len(values)
 
     def __call__(self, data):
+        """
+        :param data: Data dictionary to be processed by this transform
+        :type data: dict
+        :return: Updated data dictionary
+        :rtype: dict
+        """
         for field, value in zip(self.fields, self.values):
             data[field] = value
 
@@ -53,12 +79,31 @@ class CreateConstantFlags:
 
 
 class RenameFields:
+    """
+    Transform allowing to rename fields in the data dictionary
+
+    .. code-block:: python
+
+        from eisen.transforms import RenameFields
+        tform = RenameFields(['old_name1', 'old_name2'], ['new_name1', 'new_name2'])
+        tform = tform(data)
+
+    """
     def __init__(self, fields, new_fields):
         """
         :param fields: list of names of the fields of data dictionary to rename
         :type fields: list of str
         :param new_fields: new field names for the data dictionary
         :type new_fields: list of str
+
+        .. code-block:: python
+
+            from eisen.transforms import RenameFields
+
+            tform = RenameFields(
+                fields=['old_name1', 'old_name2'],
+                new_fields=['new_name1', 'new_name2']
+            )
 
         <json>
         [
@@ -80,10 +125,27 @@ class RenameFields:
 
 
 class FilterFields:
+    """
+    Transform allowing to retain in the data dictionary only a list of fields specified as init argument
+
+    .. code-block:: python
+
+        from eisen.transforms import FilterFields
+        tform = FilterFields(['field1', 'field2'])
+        tform = tform(data)
+
+    The resulting data dictionary will only have 'field1' and 'field2' as keys.
+    """
     def __init__(self, fields):
         """
         :param fields: list of fields to KEEP after the transform
         :type fields: list of str
+
+        .. code-block:: python
+
+            from eisen.transforms import FilterFields
+            tform = FilterFields(fields=['field1', 'field2'])
+            tform = tform(data)
 
         <json>
         [
@@ -103,6 +165,17 @@ class FilterFields:
 
 
 class ResampleNiftiVolumes:
+    """
+    Transform resampling nifti volumes to a new resolution (expressed in millimeters).
+    This transform can be only applied to fields of the data dictionary containing objects of type Nifti (nibabel)
+
+    .. code-block:: python
+
+        from eisen.transforms import ResampleNiftiVolumes
+        tform = ResampleNiftiVolumes(['nifti_data'], [1.0, 1.0, 1.0], 'linear')
+        tform = tform(data)
+
+    """
     def __init__(self, fields, resolution, interpolation='linear'):
         """
         :param fields: list of names of the fields of data dictionary to work on
@@ -111,6 +184,15 @@ class ResampleNiftiVolumes:
         :type resolution: list of float
         :param interpolation: interpolation strategy to use
         :type interpolation: string
+
+        .. code-block:: python
+
+            from eisen.transforms import ResampleNiftiVolumes
+            tform = ResampleNiftiVolumes(
+                fields=['nifti_data'],
+                resolution=[1.0, 1.0, 1.0],
+                interpolation='linear'
+            )
 
         <json>
         [
@@ -131,6 +213,12 @@ class ResampleNiftiVolumes:
         self.fields = fields
 
     def __call__(self, data):
+        """
+        :param data: Data dictionary to be processed by this transform
+        :type data: dict
+        :return: Updated data dictionary
+        :rtype: dict
+        """
         for field in self.fields:
             original_spacing = data[field].header.get_zooms()
             original_shape = data[field].header.get_data_shape()
@@ -149,10 +237,29 @@ class ResampleNiftiVolumes:
 
 
 class NiftiToNumpy:
+    """
+    This transform allows a Nifti volume to be converted to Numpy format. It is necessary to have this transform
+    at a certain point of every transformation chain as PyTorch uses data in Numpy format before converting it
+    to PyTorch Tensor.
+
+    .. code-block:: python
+
+        from eisen.transforms import NiftiToNumpy
+        tform = NiftiToNumpy(['image', 'label'])
+        tform = tform(data)
+
+
+    """
     def __init__(self, fields):
         """
         :param fields: list of names of the fields of data dictionary to convert from Nifti to Numpy
         :type fields: list of str
+
+        .. code-block:: python
+
+            from eisen.transforms import NiftiToNumpy
+            tform = NiftiToNumpy(fields=['image', 'label'])
+            tform = tform(data)
 
         <json>
         [
@@ -163,6 +270,12 @@ class NiftiToNumpy:
         self.fields = fields
 
     def __call__(self, data):
+        """
+        :param data: Data dictionary to be processed by this transform
+        :type data: dict
+        :return: Updated data dictionary
+        :rtype: dict
+        """
         for field in self.fields:
             entry_t = data[field].get_data().astype(np.float32)
 
@@ -175,12 +288,34 @@ class NiftiToNumpy:
 
 
 class CropCenteredSubVolumes:
+    """
+    Transform implementing padding/cropping of 3D volumes. A 3D volume processed with this transform will be cropped
+    or padded so that its final size will be corresponding to what specified by the user during instantiation.
+
+    .. code-block:: python
+
+        from eisen.transforms import CropCenteredSubVolumes
+        tform = CropCenteredSubVolumes(['image', 'label'], [128, 128, 128])
+        tform = tform(data)
+
+    Will crop the content of the data dictionary at keys 'image' and 'label' (which need to be 3+D numpy volumes) to
+    a size of 128 cubic pixels.
+    """
     def __init__(self, fields, size):
         """
-        :param fields:
+        :param fields: field of the data dictionary to modify and replace with cropped volumes
         :type fields: list of str
-        :param size:
+        :param size: list of 3 integers expressing the desired size of the cropped volumes
         :type size: list of int
+
+        .. code-block:: python
+
+            from eisen.transforms import CropCenteredSubVolumes
+            tform = CropCenteredSubVolumes(
+                fields=['image', 'label'],
+                size=[128, 128, 128]
+            )
+            tform = tform(data)
 
         <json>
         [

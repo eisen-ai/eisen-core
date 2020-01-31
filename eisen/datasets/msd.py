@@ -6,16 +6,41 @@ from eisen.utils import read_json_from_file, check_arg_type
 
 
 class MSDDataset(Dataset):
+    """
+    This object allows Medical Segmentation Decathlon data to be easily impoted in Eisen.
+    More information about the data can be found here http://medicaldecathlon.com
+
+    .. code-block:: python
+
+        from eisen.datasets import MSDDataset
+        dataset = CreateConstantFlags(
+            '/abs/path/to/data',
+            '/path/to/dataset.json',
+            'training',
+            transform,
+        )
+
+    """
     def __init__(self, data_dir, json_file, phase, transform=None):
         """
-        :param data_dir: the base directory where the data is located
+        :param data_dir: the base directory where the data is located (dataset location after unzipping)
         :type data_dir: str
-        :param json_file: the name of the json file containing the MSD data
+        :param json_file: the name of the json file containing for the MSD dataset
         :type json_file: str
-        :param phase: training or test phase
+        :param phase: training or test phase as per MSD dataset convention (look at MSD json file)
         :type phase: string
         :param transform: a transform object (can be the result of a composition of transforms)
         :type transform: object
+
+        .. code-block:: python
+
+            from eisen.datasets import MSDDataset
+            dataset = CreateConstantFlags(
+                data_dir='/abs/path/to/data',
+                json_file='/path/to/dataset.json',
+                phase='training',
+                transform=transform,
+            )
 
         <json>
         [

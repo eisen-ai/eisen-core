@@ -6,6 +6,26 @@ from eisen.utils import read_json_from_file, check_arg_type
 
 
 class JsonDataset(Dataset):
+    """
+    This object implements the capability of reading arbitrary data contained in properly structured JSON file
+    into Eisen. The expected JSON file structure is a list of dictionaries. Each entry of the list contains
+    one element of the dataset. Each key of the dictionary stores different information about that data point.
+
+    Example of JSON structure:
+
+    .. code-block:: json
+
+        [
+            {'image': 'image_file1.png', 'label': 'label_file1.png'},
+            {'image': 'image_file2.png', 'label': 'label_file2.png'}
+        ]
+
+    .. code-block:: python
+
+        from eisen.datasets import JsonDataset
+        dset = JsonDataset('/abs/path/to/data', '/abs/path/to/file.json', transform)
+
+    """
     def __init__(self, data_dir, json_file, transform=None):
         """
         :param data_dir: the base directory where the data is located
@@ -14,6 +34,15 @@ class JsonDataset(Dataset):
         :type json_file: str
         :param transform: a transform object (can be the result of a composition of transforms)
         :type transform: object
+
+        .. code-block:: python
+
+            from eisen.datasets import JsonDataset
+            dset = JsonDataset(
+                data_dir='/abs/path/to/data',
+                json_file='/abs/path/to/file.json',
+                transform=transform
+            )
 
         <json>
         [

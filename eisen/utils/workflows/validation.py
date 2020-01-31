@@ -2,7 +2,7 @@ import logging
 import torch
 
 from eisen import (
-    EISEN_TRAINING_SENDER,
+    EISEN_VALIDATION_SENDER,
     EISEN_END_EPOCH_EVENT,
     EISEN_END_BATCH_EVENT,
 )
@@ -14,8 +14,8 @@ from torch import Tensor
 from pydispatch import dispatcher
 
 
-class Training(GenericWorkflow):
-    def __init__(self, model, data_loader, losses, optimizer, metrics=None, gpu=False, data_parallel=False):
+class Validation(GenericWorkflow):
+    def __init__(self, model, data_loader, losses, metrics=None, gpu=False, data_parallel=False):
         """
         :param model:
         :type model: torch.nn.Module
@@ -23,8 +23,6 @@ class Training(GenericWorkflow):
         :type data_loader: torch.utils.data.DataLoader
         :param losses:
         :type losses: list
-        :param optimizer:
-        :type optimizer: object
         :param metrics:
         :type metrics: list
         :param gpu:
@@ -43,7 +41,6 @@ class Training(GenericWorkflow):
         self.model = model
         self.data_loader = data_loader
         self.losses = losses
-        self.optimizer = optimizer
         self.metrics = metrics
 
         self.gpu = gpu
@@ -60,17 +57,9 @@ class Training(GenericWorkflow):
     def process_batch(self, batch):
         model_argument_dict = {key: batch[key] for key in self.model.input_names}
 
-        self.optimizer.zero_grad()
-
         outputs = self.model(**model_argument_dict)
 
         losses = self.compute_losses(merge_two_dicts(batch, outputs))
-
-        for loss in losses:
-            for key in loss.keys():
-                loss[key].backward(retain_graph=True)
-
-        self.optimizer.step()
 
         metrics = self.compute_metrics(merge_two_dicts(batch, outputs))
 
@@ -84,22 +73,23 @@ class Training(GenericWorkflow):
         return output_dictionary
 
     def run(self):
-        logging.info('INFO: Training epoch {}'.format(self.epoch))
+        logging.info('INFO: Validation epoch {}'.format(self.epoch))
 
-        self.model.train()
+        self.model.eval()
 
-        for i, batch in enumerate(self.data_loader):
-            if self.gpu:
-                for key in batch.keys():
-                    if isinstance(batch[key], Tensor):
-                        batch[key] = batch[key].cuda()
+        with torch.no_grad():
+            for i, batch in enumerate(self.data_loader):
+                if self.gpu:
+                    for key in batch.keys():
+                        if isinstance(batch[key], Tensor):
+                            batch[key] = batch[key].cuda()
 
-            logging.debug('DEBUG: Training epoch {}, batch {}'.format(self.epoch, i))
+                logging.debug('DEBUG: Validation epoch {}, batch {}'.format(self.epoch, i))
 
-            output_dictionary = self.process_batch(batch)
+                output_dictionary = self.process_batch(batch)
 
-            dispatcher.send(message=output_dictionary, signal=EISEN_END_BATCH_EVENT, sender=EISEN_TRAINING_SENDER)
+                dispatcher.send(message=output_dictionary, signal=EISEN_END_BATCH_EVENT, sender=EISEN_VALIDATION_SENDER)
 
-        dispatcher.send(message=self.epoch, signal=EISEN_END_EPOCH_EVENT, sender=EISEN_TRAINING_SENDER)
+            dispatcher.send(message=self.epoch, signal=EISEN_END_EPOCH_EVENT, sender=EISEN_VALIDATION_SENDER)
 
         self.epoch += 1
