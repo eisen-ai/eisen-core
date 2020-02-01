@@ -17,17 +17,17 @@ from pydispatch import dispatcher
 class Validation(GenericWorkflow):
     def __init__(self, model, data_loader, losses, metrics=None, gpu=False, data_parallel=False):
         """
-        :param model:
+        :param model: The model to be used for validation. This model instance will be used only for forward passes.
         :type model: torch.nn.Module
-        :param data_loader:
+        :param data_loader: A DataLoader instance which handles the data loading and batching
         :type data_loader: torch.utils.data.DataLoader
-        :param losses:
-        :type losses: list
-        :param metrics:
+        :param losses: A list of losses objects to be evaluated on the validation set
+        :type losses: list of torch.nn.Modules
+        :param metrics: A list of metrics objects to be evaluated during validation
         :type metrics: list
-        :param gpu:
+        :param gpu: A flag indicating whether GPUs should be used during validation
         :type gpu: bool
-        :param data_parallel:
+        :param data_parallel: A flag indicating whether the network should be data parallel (torch.nn.DataParallel)
         :type data_parallel: bool
 
         <json>
@@ -48,10 +48,10 @@ class Validation(GenericWorkflow):
 
         self.epoch = 0
 
-        if self.gpu:
+        if self.gpu:  # todo check if already gpu
             self.model.cuda()
 
-        if self.data_parallel:
+        if self.data_parallel:  # todo check if already data parallel
             self.model = torch.nn.DataParallel(self.model)
 
     def process_batch(self, batch):

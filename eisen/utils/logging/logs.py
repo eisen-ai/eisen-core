@@ -15,6 +15,17 @@ from prettytable import PrettyTable
 class LoggingHook:
     def __init__(self):
         """
+        Logging object aiming at printing on the console the progress of model training/validation/testing.
+        This logger uses an event based system. The training, validation and test workflows emit events such as
+        EISEN_END_BATCH_EVENT and EISEN_END_EPOCH_EVENT which are picked up by this object and handled.
+
+        The only thing required for the user is to instantiate one such objects. The rest is handled automatically
+
+        .. code-block:: python
+
+            from eisen.utils.logging import LoggingHook
+            logger = LoggingHook()
+
         <json>
         []
         </json>
