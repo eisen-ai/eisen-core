@@ -7,7 +7,7 @@ from eisen import (
     EISEN_END_BATCH_EVENT,
 )
 from eisen.utils import merge_two_dicts
-from eisen.utils.workflows import GenericWorkflow
+from eisen.utils.workflows.workflows import GenericWorkflow
 
 from torch import Tensor
 
