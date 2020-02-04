@@ -74,6 +74,6 @@ class MSDDataset(Dataset):
         item = self.json_dataset[idx]
 
         if self.transform:
-            sample = self.transform(item)
+            item = self.transform(item)
 
-        return sample
+        return item

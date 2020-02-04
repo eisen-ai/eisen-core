@@ -1,2 +1,6 @@
 from .generic import *
 from .msd import *
+from .camelyon import *
+from .json import *
+
+
