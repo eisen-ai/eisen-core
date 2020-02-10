@@ -40,13 +40,11 @@ class TestLoadPatchCamelyon:
         assert np.all(self.item['image'] == 0)
         assert np.all(self.item['label'] == 0)
 
-        assert self.item['image'].shape[0] == 32
+        assert self.item['image'].shape[0] == 3
         assert self.item['image'].shape[1] == 32
-        assert self.item['image'].shape[2] == 3
+        assert self.item['image'].shape[2] == 32
 
         assert self.item['label'].shape[0] == 1
-        assert self.item['label'].shape[1] == 1
-        assert self.item['label'].shape[2] == 1
 
     def test_len(self):
         assert len(self.camelyon_dset) == 2

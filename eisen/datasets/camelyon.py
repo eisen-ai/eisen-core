@@ -1,6 +1,7 @@
 import h5py
 import torch
 import os
+import numpy as np
 
 from torch.utils.data import Dataset
 
@@ -79,8 +80,8 @@ class PatchCamelyon(Dataset):
             idx = idx.tolist()
 
         item = {
-            'image': self.x[idx],
-            'label': self.y[idx]
+            'image': self.x[idx].transpose([2, 0, 1]).astype(np.float32),
+            'label': np.squeeze(self.y[idx].astype(np.float32))[np.newaxis]
         }
 
         if self.mask:

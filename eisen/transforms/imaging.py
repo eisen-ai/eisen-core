@@ -207,7 +207,6 @@ class ResampleNiftiVolumes:
         ]
         </json>
         """
-        assert len(resolution) == 3
         self.interpolation = interpolation
         self.resolution = resolution
         self.fields = fields
@@ -250,10 +249,12 @@ class NiftiToNumpy:
 
 
     """
-    def __init__(self, fields):
+    def __init__(self, fields, multichannel=False):
         """
         :param fields: list of names of the fields of data dictionary to convert from Nifti to Numpy
         :type fields: list of str
+        :param multichannel: need to set this parameter to True if data is multichannel
+        :type multichannel: bool
 
         .. code-block:: python
 
@@ -263,11 +264,13 @@ class NiftiToNumpy:
 
         <json>
         [
-            {"name": "fields", "type": "list:string", "value": ""}
+            {"name": "fields", "type": "list:string", "value": ""},
+            {"name": "multichannel", "type": "bool", "value": "False"}
         ]
         </json>
         """
         self.fields = fields
+        self.multichannel = multichannel
 
     def __call__(self, data):
         """
@@ -279,8 +282,9 @@ class NiftiToNumpy:
         for field in self.fields:
             entry_t = np.asanyarray(data[field].dataobj)
 
-            if entry_t.ndim > 3:
-                entry_t = np.transpose(entry_t, [3, 0, 1, 2])  # channel first if image is multichannel
+            if self.multichannel:
+                dims = list(range(entry_t.ndim))
+                entry_t = np.transpose(entry_t, [dims[-1]] + dims[0:-1])  # channel first if image is multichannel
 
             data[field] = entry_t
 

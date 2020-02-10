@@ -2,7 +2,7 @@ import os
 import torch
 
 from torch.utils.data import Dataset
-from eisen.utils import read_json_from_file, check_arg_type
+from eisen.utils import read_json_from_file
 
 
 class JsonDataset(Dataset):
@@ -53,8 +53,6 @@ class JsonDataset(Dataset):
         json_file = os.path.join(data_dir, json_file)
 
         self.json_dataset = read_json_from_file(json_file)
-
-        check_arg_type(self.json_dataset, list, 'json content')
 
         self.transform = transform
 

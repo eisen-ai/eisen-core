@@ -14,18 +14,6 @@ def merge_two_dicts(x, y):
     return z
 
 
-def check_arg_type(arg, type, arg_name=''):
-    curframe = inspect.currentframe()
-    calframe = inspect.getouterframes(curframe, 2)
-
-    if not isinstance(arg, type):
-        raise TypeError('The {} passed to function {} has erroneous type {} vs. torch.nn.Module'.format(
-            arg_name,
-            calframe[1][3],
-            arg.__class__.__name__
-        ))
-
-
 def read_json_from_file(json_file):
     if not os.path.exists(json_file):
         raise FileNotFoundError('The JSON file {} cannot be read'.format(json_file))

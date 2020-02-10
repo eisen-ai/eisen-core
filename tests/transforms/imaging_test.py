@@ -166,14 +166,19 @@ class TestNiftiToNumpy:
     def setup_class(self):
         self.np_data = np.random.rand(32, 32, 32).astype(np.float32)
 
+        self.np_label = np.random.rand(32, 32, 32, 3).astype(np.float32)
+
         img = nib.Nifti1Image(self.np_data, np.eye(4))
+
+        lbl = nib.Nifti1Image(self.np_label, np.eye(4))
 
         self.data = {
             'image': img,
-            'label': 0
+            'label': lbl
         }
 
         self.tform_one = NiftiToNumpy(['image'])
+        self.tform_two = NiftiToNumpy(['label'], multichannel=True)
 
     def test_call(self):
         self.data = self.tform_one(self.data)
@@ -182,6 +187,14 @@ class TestNiftiToNumpy:
 
         assert self.data['image'].dtype == np.float32
         assert np.all(self.np_data == self.data['image'])
+
+        self.data = self.tform_two(self.data)
+
+        assert isinstance(self.data['label'], np.ndarray)
+
+        assert self.data['label'].dtype == np.float32
+        assert np.all(self.np_label == self.data['label'].transpose([1, 2, 3, 0]))
+        assert self.data['label'].shape[0] == 3
 
 
 class TestCropCenteredSubVolumes:
