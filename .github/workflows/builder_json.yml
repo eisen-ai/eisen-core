@@ -1,0 +1,26 @@
+name: Builder JSON
+on:
+  push:
+    branches:
+      - 'master'
+
+jobs:
+  deploy:
+    name: Deploy job
+    runs-on: ubuntu-latest
+    steps:
+      - name: Authenticate into Google Cloud Platform
+        uses: GoogleCloudPlatform/github-actions/setup-gcloud@master
+        with:
+          service_account_email: ${{ secrets.GCLOUD_EMAIL }}
+          service_account_key: ${{ secrets.GCLOUD_AUTH }}
+      
+      - name: Build JSON
+        run: |
+          pip install ./
+          python generate_builder_json.py
+   
+      - name: Build documentation
+        run: |
+          gcloud components install core --quiet
+          gsutil cp eisen_modules_*.json gs://builder.eisen.ai/json
