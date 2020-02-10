@@ -27,20 +27,10 @@ code-base in a few hours.
 
 Simplicity is the answer.
 
-# Eisen Core
+# Documentation
 
-The code contained in this repository represents the core of 
-Eisen.
-
-# Getting Started
-
-## Docker
-
-## Pip
-
-## Source
-
-# Developers
+Find more information about this project and extensive 
+documentation at http://docs.eisen.ai
 
 
 
