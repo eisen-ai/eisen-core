@@ -5,7 +5,6 @@ import os
 
 from eisen.datasets import PatchCamelyon
 from eisen.datasets import JsonDataset
-from eisen.datasets import ListDataset
 from eisen.datasets import MSDDataset
 
 
