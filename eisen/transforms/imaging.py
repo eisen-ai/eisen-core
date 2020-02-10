@@ -413,7 +413,7 @@ class MapValues:
 
     def __call__(self, data):
         for field in self.fields:
-            if data[field].ndim > 3 and self.channelwise:
+            if self.channelwise:
                 for i in range(data[field].shape[0]):
                     data[field][i] = \
                         (data[field][i] - np.min(data[field][i])) / \
@@ -587,9 +587,9 @@ class LabelMapToOneHot:
 
         for field in self.fields:
 
-            data[field] = data[field].astype(np.int32)
+            data[field] = np.squeeze(data[field].astype(np.int32))
 
-            onehot = np.zeros([self.num_channels] + list(data[field].shape[-3:]), dtype=np.float32)
+            onehot = np.zeros([self.num_channels] + list(data[field].shape), dtype=np.float32)
 
             for c in range(self.num_channels):
                 onehot[c, ...] = (data[field] == self.classes[c]).astype(np.float32)
