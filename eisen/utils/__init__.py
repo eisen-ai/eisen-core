@@ -2,10 +2,30 @@ import numpy as np
 import os
 import json
 import inspect
+import torch
 
 from torch.nn import Module
+from torch.utils.data import Dataset
 
-from ..datasets import ListDataset
+
+class ListDataset(Dataset):
+    def __init__(self, data_list, transform=None):
+        self.data_list = data_list
+        self.transform = transform
+
+    def __len__(self):
+        return len(self.data_list)
+
+    def __getitem__(self, idx):
+        if torch.is_tensor(idx):
+            idx = idx.tolist()
+
+        item = self.data_list[idx]
+
+        if self.transform:
+            item = self.transform(item)
+
+        return item
 
 
 def merge_two_dicts(x, y):
