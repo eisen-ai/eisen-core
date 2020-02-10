@@ -79,8 +79,8 @@ class PatchCamelyon(Dataset):
             idx = idx.tolist()
 
         item = {
-            'x': self.x[idx],
-            'y': self.y[idx]
+            'image': self.x[idx],
+            'label': self.y[idx]
         }
 
         if self.mask:

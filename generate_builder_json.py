@@ -280,7 +280,8 @@ json_modules['optimizer'] = [
 
 json_modules['hyperparameters'] = [
     {'type': '.NumWorker', 'params': [{"name": "value", "type": "int", "value": "4"}]},
-    {'type': '.BatchSize', 'params': [{"name": "value", "type": "int", "value": "4"}]}
+    {'type': '.BatchSize', 'params': [{"name": "value", "type": "int", "value": "4"}]},
+    {'type': '.Seed', 'params': [{"name": "value", "type": "int", "value": "42"}]}
 ]
 
 # creating final JSON for current Eisen version

@@ -40,8 +40,8 @@ class CreateConstantFlags:
         """
         :param fields: names of the fields of data dictionary to work on
         :type fields: list of str
-        :param values: list of float value to add to data
-        :type values: list of float
+        :param values: list of values to add to data
+        :type values: list of values
 
         .. code-block:: python
 
@@ -277,7 +277,7 @@ class NiftiToNumpy:
         :rtype: dict
         """
         for field in self.fields:
-            entry_t = data[field].get_data().astype(np.float32)
+            entry_t = np.asanyarray(data[field].dataobj)
 
             if entry_t.ndim > 3:
                 entry_t = np.transpose(entry_t, [3, 0, 1, 2])  # channel first if image is multichannel
@@ -358,16 +358,40 @@ class CropCenteredSubVolumes:
 
 
 class MapValues:
+    """
+    Transform implementing normalization by standardizing the range of data to a known interval. The formula used here
+    is to subtract the minimum value to each data tensor and divide by its maximum range. After that the tensor is
+    multiplied by the max_value .
+
+    .. code-block:: python
+
+        from eisen.transforms import MapValues
+        tform = MapValues(['image'], 0, 10)
+        tform = tform(data)
+
+    Is an usage examples where data is normalized to fit the range [0, 10].
+    """
     def __init__(self, fields, min_value=0, max_value=1, channelwise=True):
         """
-        :param fields:
+        :param fields: list of fields of the data dictionary that will be affected by this transform
         :type fields: list of str
-        :param min_value:
+        :param min_value: minimum desired data value
         :type min_value: float
-        :param max_value:
+        :param max_value: maximum desired data value
         :type max_value: float
-        :param channelwise:
+        :param channelwise: whether the transformation should be applied to each channel separately
         :type channelwise: bool
+
+        .. code-block:: python
+
+            from eisen.transforms import MapValues
+            tform = MapValues(
+                fields=['image'],
+                min_value=0,
+                max_value=1,
+                channelwise=False
+            )
+            tform = tform(data)
 
         <json>
         [
@@ -395,21 +419,46 @@ class MapValues:
                     (data[field] - np.min(data[field])) / \
                     (np.max(data[field]) - np.min(data[field]) + EPS)
 
-            data[field] *= self.max_value - self.min_value
+            data[field] *= (self.max_value - self.min_value)
             data[field] += self.min_value
 
         return data
 
 
 class ThresholdValues:
+    """
+    This transformation threshold the values contained in a tensor. Depending on a parameter supplied by the user,
+    all the value greater, smaller, greater/equal, smaller/equal of a certain threshold are set to 1 while the
+    others are set to zero.
+
+    .. code-block:: python
+
+        from eisen.transforms import ThresholdValues
+        tform = ThresholdValues(['label'], 0.5, 'greater')
+        tform = tform(data)
+
+    This example thresholds the values of the tensor stored in correspondence of the key 'label' such that
+    those below 0.5 are set to zero and those above 0.5 are set to one.
+    """
     def __init__(self, fields, threshold, direction='greater'):
         """
-        :param fields:
+        :param fields: list of fields of the data dictionary that will be affected by this transform
         :type fields: list of str
-        :param threshold:
+        :param threshold: threshold value for the transform
         :type threshold: float
-        :param direction:
+        :param direction: direction of the comparison values and the threshold
+            possible values are: `greater`, `smaller`, `greater/equal`, `smaller/equal`
         :type direction: string
+
+        .. code-block:: python
+
+            from eisen.transforms import ThresholdValues
+            tform = ThresholdValues(
+                fields=['image'],
+                threshold=0,
+                direction='greater/equal'
+            )
+            tform = tform(data)
 
         <json>
         [
@@ -447,10 +496,31 @@ class ThresholdValues:
 
 
 class AddChannelDimension:
+    """
+    This transformation adds a "channel dimension" to a tensor. Since we use a representation NCHWD for our data,
+    with channels first, this transform creates a new axis in correspondence of the first dimension of the
+    resulting data tensor.
+
+    .. code-block:: python
+
+        from eisen.transforms import AddChannelDimension
+        tform = AddChannelDimension(['image', 'label'])
+        tform = tform(data)
+
+    Adds a singleton dimension to the data stored in correspondence of the keys 'image' and 'label' of data dictionary.
+    """
     def __init__(self, fields):
         """
-        :param fields:
+        :param fields: list of fields of the data dictionary that will be affected by this transform
         :type fields: list of str
+
+        .. code-block:: python
+
+            from eisen.transforms import AddChannelDimension
+            tform = AddChannelDimension(
+                fields=['image', 'label']
+            )
+            tform = tform(data)
 
         <json>
         [
@@ -468,12 +538,35 @@ class AddChannelDimension:
 
 
 class LabelMapToOneHot:
+    """
+    This transformation converts labels having integer values to one-hot labels. In other words, a single channel
+    tensor data containing integer values representing classes is converted to a corresponding multi-channel tensor data
+    having one-hot entries channel-wise. Each channel corresponds to a class.
+
+     .. code-block:: python
+
+        from eisen.transforms import LabelMapToOneHot
+        tform = LabelMapToOneHot(['label'], [1, 2, 25, 3])
+        tform = tform(data)
+
+    This example converts the single channel data['label'] tensor to a 4-channel tensor where each entry
+    represents the corresponding entry of the original tensor in one-hot encoding.
+    """
     def __init__(self, fields, classes):
         """
-        :param fields:
+        :param fields: list of fields of the data dictionary that will be affected by this transform
         :type fields: list of str
-        :param classes:
+        :param classes: list of class identifiers (integers) to be converted to one-hot representation
         :type classes: list of int
+
+        .. code-block:: python
+
+            from eisen.transforms import LabelMapToOneHot
+            tform = LabelMapToOneHot(
+                fields=['label'],
+                classes=[1, 2, 25, 3]
+            )
+            tform = tform(data)
 
         <json>
         [
@@ -503,12 +596,35 @@ class LabelMapToOneHot:
 
 
 class StackImagesChannelwise:
+    """
+    This transform allows stacking together different tensors of the same size stored at different fields of
+    the data dictionary. The tensors are stacked along the channel dimension. The resulting tensor is therefore
+    multi-channel and contains data from all the fields passed as argument by the user.
+
+    .. code-block:: python
+
+        from eisen.transforms import StackImagesChannelwise
+        tform = StackImagesChannelwise(['modality1', 'modality2', 'modality3'], 'allmodalities')
+        tform = tform(data)
+
+    This example stacks together multiple modalities in one multi-channel tensor.
+
+    """
     def __init__(self, fields, dst_field):
         """
-        :param fields:
+        :param fields: list of fields of the data dictionary that will be stacked together in the output tensor
         :type fields: list of str
-        :param dst_field:
+        :param dst_field: string representing the destination field of the data dictionary where outputs will be stored.
         :type dst_field: str
+
+        .. code-block:: python
+
+            from eisen.transforms import StackImagesChannelwise
+            tform = StackImagesChannelwise(
+                fields=['modality1', 'modality2', 'modality3'],
+                dst_field='allmodalities'
+            )
+            tform = tform(data)
 
         <json>
         [
@@ -533,14 +649,37 @@ class StackImagesChannelwise:
 
 
 class FixedMeanStdNormalization:
+    """
+    This transform operates demeaning and division by standard deviation of data tensors. The values for mean
+    and standard deviation need to be provided by the user.
+
+    .. code-block:: python
+
+        from eisen.transforms import FixedMeanStdNormalization
+        tform = FixedMeanStdNormalization(['image'], 0.5, 1.2)
+        tform = tform(data)
+
+    This example manipulates the data stored in data['images'] by removing the mean (0.5) and the std (1.2).
+    """
+
     def __init__(self, fields, mean, std):
         """
-        :param fields:
+        :param fields: list of fields of the data dictionary that will be affected by this transform
         :type fields: list of str
-        :param mean:
+        :param mean: float value representing the mean. This value will be subtracted from the data
         :type mean: float
-        :param std:
+        :param std: float value representing the standard deviation. The data will be divided by this value.
         :type std: float
+
+        .. code-block:: python
+
+            from eisen.transforms import FixedMeanStdNormalization
+            tform = FixedMeanStdNormalization(
+                fields=['image'],
+                mean=0.5,
+                std=1.2
+            )
+            tform = tform(data)
 
         <json>
         [
