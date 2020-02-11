@@ -138,7 +138,7 @@ class EisenTransformWrapper:
         self.module = module(*args, **kwargs)
 
     def __call__(self, data):
-       for field in self.fields:
+        for field in self.fields:
            data[field] = self.module(data[field])
 
         return data
