@@ -97,13 +97,13 @@ class EisenModuleWrapper(Module):
 
             # should print ['prediction']
     """
-    def __init__(self, module, input_names, output_names, **kwargs):
+    def __init__(self, module, input_names, output_names, *args, **kwargs):
         super(EisenModuleWrapper, self).__init__()
 
         self.input_names = input_names
         self.output_names = output_names
 
-        self.module = module(**kwargs)
+        self.module = module(*args, **kwargs)
 
         module_argument_list = inspect.getfullargspec(self.module.forward)[0]
 
@@ -131,7 +131,44 @@ class EisenModuleWrapper(Module):
 
 
 class EisenTransformWrapper:
-    pass
+    def __init__(self, module, fields, *args, **kwargs):
+        super(EisenTransformWrapper, self).__init__()
+        self.fields = fields
+
+        self.module = module(*args, **kwargs)
+
+    def __call__(self, data):
+       for field in self.fields:
+           data[field] = self.module(data[field])
+
+        return data
+
+
+class EisenDatasetWrapper(Dataset):
+    def __init__(self, module, field_names, transform=None, *args, **kwargs):
+        super(EisenDatasetWrapper, self).__init__()
+        self.field_names = field_names
+
+        self.module = module(*args, **kwargs)
+
+        self.transform = transform
+
+    def __getitem__(self, item):
+        items = self.module[item]
+
+        assert len(self.field_names) == len(items)
+
+        ret_arg = {}
+
+        for item, name in zip(items, self.field_names):
+            ret_arg[name] = item
+
+        ret_arg = self.transform(ret_arg)
+
+        return ret_arg
+
+    def __len__(self):
+        return len(self.module)
 
 
 class EisenDatasetSplitter:

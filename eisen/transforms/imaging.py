@@ -280,7 +280,63 @@ class NiftiToNumpy:
         :rtype: dict
         """
         for field in self.fields:
-            entry_t = np.asanyarray(data[field].dataobj)
+            entry_t = np.asanyarray(data[field].dataobj).astype(np.float32)
+
+            if self.multichannel:
+                dims = list(range(entry_t.ndim))
+                entry_t = np.transpose(entry_t, [dims[-1]] + dims[0:-1])  # channel first if image is multichannel
+
+            data[field] = entry_t
+
+        return data
+
+
+class PilToNumpy:
+    """
+    This transform allows a PIL image to be converted to Numpy format. It is necessary to have this transform
+    at a certain point of every transformation chain as PyTorch uses data in Numpy format before converting it
+    to PyTorch Tensor.
+
+    .. code-block:: python
+
+        from eisen.transforms import PilToNumpy
+        tform = PilToNumpy(['image', 'label'])
+        tform = tform(data)
+
+
+    """
+    def __init__(self, fields, multichannel=False):
+        """
+        :param fields: list of names of the fields of data dictionary to convert from PIL to Numpy
+        :type fields: list of str
+        :param multichannel: need to set this parameter to True if data is multichannel
+        :type multichannel: bool
+
+        .. code-block:: python
+
+            from eisen.transforms import PilToNumpy
+            tform = PilToNumpy(fields=['image', 'label'])
+            tform = tform(data)
+
+        <json>
+        [
+            {"name": "fields", "type": "list:string", "value": ""},
+            {"name": "multichannel", "type": "bool", "value": "False"}
+        ]
+        </json>
+        """
+        self.fields = fields
+        self.multichannel = multichannel
+
+    def __call__(self, data):
+        """
+        :param data: Data dictionary to be processed by this transform
+        :type data: dict
+        :return: Updated data dictionary
+        :rtype: dict
+        """
+        for field in self.fields:
+            entry_t = np.asarray(data[field]).astype(np.float32)
 
             if self.multichannel:
                 dims = list(range(entry_t.ndim))
@@ -375,7 +431,7 @@ class MapValues:
 
     Is an usage examples where data is normalized to fit the range [0, 10].
     """
-    def __init__(self, fields, min_value=0, max_value=1, channelwise=True):
+    def __init__(self, fields, min_value=0, max_value=1, channelwise=False):
         """
         :param fields: list of fields of the data dictionary that will be affected by this transform
         :type fields: list of str
@@ -402,7 +458,7 @@ class MapValues:
             {"name": "fields", "type": "list:string", "value": ""},
             {"name": "min_value", "type": "float", "value": "0"},
             {"name": "max_value", "type": "float", "value": "1"},
-            {"name": "channelwise", "type": "bool", "value": "true"}
+            {"name": "channelwise", "type": "bool", "value": "false"}
         ]
         </json>
         """
@@ -587,7 +643,7 @@ class LabelMapToOneHot:
 
         for field in self.fields:
 
-            data[field] = np.squeeze(data[field].astype(np.int32))
+            data[field] = np.squeeze(data[field])
 
             onehot = np.zeros([self.num_channels] + list(data[field].shape), dtype=np.float32)
 
@@ -702,5 +758,53 @@ class FixedMeanStdNormalization:
     def __call__(self, data):
         for field in self.fields:
             data[field] = (data[field] - self.mean) / self.std
+
+        return data
+
+
+class RepeatTensor:
+    """
+    This transform repeats tensors "reps" times on each axis according to user parameters
+
+    .. code-block:: python
+
+        from eisen.transforms import RepeatTensor
+        tform = RepeatTensor(['image'], (10, 1, 1))
+        tform = tform(data)
+
+    This example repeats the tensor 10 times along the first axis and zero times along the others
+    """
+
+    def __init__(self, fields, reps):
+        """
+        :param fields: list of fields of the data dictionary that will be affected by this transform
+        :type fields: list of str
+        :param reps: list of integers representing repetitions along each axis
+        :type reps: list of int
+
+        .. code-block:: python
+
+            from eisen.transforms import RepeatTensor
+            tform = RepeatTensor(
+                fields=['image'],
+                reps=(10, 1, 2)
+            )
+            tform = tform(data)
+
+        <json>
+        [
+            {"name": "fields", "type": "list:string", "value": ""},
+            {"name": "reps", "type": "list:int", "value": ""}
+        ]
+        </json>
+        """
+        assert np.all(np.asarray(reps) > 0)
+
+        self.fields = fields
+        self.reps = reps
+
+    def __call__(self, data):
+        for field in self.fields:
+            data[field] = np.tile(data[field], self.reps)
 
         return data
