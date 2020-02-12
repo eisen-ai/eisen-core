@@ -15,6 +15,11 @@ from pydispatch import dispatcher
 
 
 class Testing(GenericWorkflow):
+    """
+    This object implements a testing workflow, which allows to test a model on a certain dataset by running only the
+    forward pass of the model. The user is allowed to specify model, data loader and metrics to use for evaluation.
+    This workflow supports GPUs and data parallelism across multiple processors.
+    """
     def __init__(self, model, data_loader, metrics, gpu=False, data_parallel=False):
         """
         :param model: The model to be used for testing. This model instance will be used only for forward passes.

@@ -15,6 +15,11 @@ from pydispatch import dispatcher
 
 
 class Validation(GenericWorkflow):
+    """
+    This object implements a Validation workflow which allows to validate a model by running the forward pass on a
+    specific dataset (passed as argument to init). This Validation workflow can take advantage of GPUs and implements
+    data parallelism which allows workload to be distributed across multiple processors (CPU/GPU).
+    """
     def __init__(self, model, data_loader, losses, metrics=None, gpu=False, data_parallel=False):
         """
         :param model: The model to be used for validation. This model instance will be used only for forward passes.
