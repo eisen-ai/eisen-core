@@ -46,56 +46,32 @@ def read_json_from_file(json_file):
 
 class EisenModuleWrapper(Module):
     """
-    This object implements a wrapper allowing standard PyTorch Modules to be used in a Eisen Workflow/context.
+    This object implements a wrapper allowing standard PyTorch Modules (Eg. those implemented in torchvision)
+    to be used within Eisen.
 
-    In Eisen, when we iterate through a dataset using a torch.utils.data.DataLoader each batch is represented as a
-    dictionary of entries. Thanks to the ability of Python to receive function arguments via a dictionary
-    (kwargs) it is possible to input the batch directly into the nn.Module objects (the models) by just feeding
-    the batch dictionary as an **argument. We would like also to receive the results of the nn.Module into a
-    dictionary, so they can be fed to other nn.Module in the same way or stored by keyword for further processing
-    (for example by a Hook).
+    Modules in Eisen accept positional and named arguments in the forward() method. They return values or a tuple of
+    values.
 
-    EisenModuleWrapper allows that. It wraps a nn.Module into an object that still behaves like an nn.Module but
-    has additional data stored into it in order to translate the keys of the batch dictionary, to keys that
-    can be used by the nn.Module. It also packs the results of the forward pass of the wrapped
-    nn.Module into a dictionary.
+    Eisen workflows make use of dictionaries. That is, data batches are represented as dictionaries and directly fed
+    into modules using the **kwargs mechanism provided by Python.
 
-    The fields of the input and output dictionaries are defined by the user during object instantiation.
-
-    Let us suppose we have a torch.utils.data.DataLoader iterating the dataset
-    this DataLoader returns batches (dictionaries) containing the keys 'picture' and 'ground_truth'.
-
-    Our Module belongs to class UNet3D which accepts 'image' as input key for the forward() method
-    This means that its forward method has signature def forward(image).
-
-    Additionally we want that the outputs of the forward() method of our UNet3D object get
-    packed in a dictionary with keys ['prediction'].
+    This wrapper causes standard Modules to behave as prescribed by Eisen. Wrapped modules accept as input a dictionary
+    of keyword arguments with arbitrary (user defined) keys. They return as output a dictionary of keyword values
+    with arbitrary (user defined) keys.
 
     .. code-block:: python
 
-        # We import the module we want to wrap
+        # We import the Module we want to wrap. In this case we import from torchvision
 
-        from eisen.models.segmentation import UNet3D
+        from torchvision.models import resnet18
 
-        # We can then instantiate an object of class EisenModuleWrapper
-        # We want to feed our 'picture' into the 'image' field of the network. The second argument is therefore
-        # ['picture']. We want to store the predictions using the key 'prediction' the third argumet is ['prediction']
+        # We can then instantiate an object of class EisenModuleWrapper and specify the Module we want to
+        # wrap as well as the fields of the data dictionary that will interpreted as input, and the fields
+        # that we desire the output to be stored at. Additional arguments for the Module itself can
+        # be passed as named arguments.
 
-        new_module = EisenModuleWrapper(UNet3D, ['picture'], ['prediction'])
+        adapted_module = EisenModuleWrapper(resnet18, ['image'], ['prediction'], pretrained=False)
 
-        # ...
-
-        for batch in batch_iterator:
-
-            print(batch.keys())
-
-            # should print ['picture', 'ground_truth']
-
-            result_dictionary = new_module(**batch)
-
-            print(result_dictionary.keys())
-
-            # should print ['prediction']
     """
     def __init__(self, module, input_names, output_names, *args, **kwargs):
         super(EisenModuleWrapper, self).__init__()
@@ -131,6 +107,28 @@ class EisenModuleWrapper(Module):
 
 
 class EisenTransformWrapper:
+    """
+    This object implements a wrapper allowing standard PyTorch Transform (Eg. those implemented in torchvision)
+    to be used within Eisen.
+
+    Transforms in Eisen operate on dictionaries. They are in fact always called on a dictionary containing multiple
+    keys that store data.
+
+    This wrapper causes standard Transforms to behave as prescribed by Eisen.
+
+    .. code-block:: python
+
+        # We import the transform we want to wrap. In this case we import from torchvision
+
+        from torchvision.transforms import CenterCrop
+
+        # We can then instantiate an object of class EisenTransformWrapper and specify the Transformation we want to
+        # wrap as well as the field of the data dictionary that should be affected by such Transformation.
+        # Additional arguments for the Transformation itself can be passed as named arguments.
+
+        adapted_transform = EisenTransformWrapper(CenterCrop, ['image'], (224, 224))
+
+    """
     def __init__(self, module, fields, *args, **kwargs):
         super(EisenTransformWrapper, self).__init__()
         self.fields = fields
@@ -145,6 +143,29 @@ class EisenTransformWrapper:
 
 
 class EisenDatasetWrapper(Dataset):
+    """
+    This object implements a wrapper allowing standard PyTorch Datasets (Eg. those implemented in torchvision)
+    to be used within Eisen.
+
+    Datasets in Eisen return items that are always dictionaries. Each key of the dictionary contains information
+    from the dataset.
+
+    This wrapper causes standard Datasets to behave as prescribed by Eisen.
+
+    .. code-block:: python
+
+        # We import the dataset we want to wrap. In this case we import from torchvision
+
+        from torchvision.datasets import MNIST
+
+        # We can then instantiate an object of class EisenDatasetWrapper and specify the Dataset we want to
+        # wrap as well as the fields of the data dictionary that will be returned by the adapted __getitem__ method.
+        # Additional arguments for the Dataset itself can be passed as named arguments.
+
+        adapted_dataset = EisenDatasetWrapper(MNIST, ['image', 'label'], './', download=True)
+
+    """
+
     def __init__(self, module, field_names, transform=None, *args, **kwargs):
         super(EisenDatasetWrapper, self).__init__()
         self.field_names = field_names
@@ -206,13 +227,6 @@ class EisenDatasetSplitter:
         self.transform_test = transform_test
 
     def __call__(self, data):
-        """
-        :param data: the dataset object. Needs to have a data attribute which is a list of dictionaries.
-        :type data: list of dict
-        :return: Random dataset split into training, validation and test set.
-        :rtype: tuple
-        """
-
         perm = np.random.permutation(len(data))
 
         limit_test = int(self.fraction_test * len(perm))

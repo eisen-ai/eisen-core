@@ -23,7 +23,7 @@ class Training(GenericWorkflow):
     """
     This training workflow implements training of a model on a specific dataset with a specific set of losses passed
     as an argument. There is support for both GPU computation and data parallelism (multi GPU/CPU training) via
-    Pytorch. For what concerns GPU utilization, Pytorch must be installed with GPU support. For what concerns
+    PyTorch. For what concerns GPU utilization, PyTorch must be installed with GPU support. For what concerns
     data parallelism, it is implemented using torch.nn.DataParallel which might not be the most efficient solution
     but it is definitely the easiest solution to use and implement.
     """
