@@ -10,7 +10,7 @@ from eisen.ops import losses
 from eisen.ops import metrics
 from eisen.utils import workflows
 from eisen import datasets
-from eisen.utils import logging
+from eisen.utils import logging, artifacts
 
 
 json_modules = {}
@@ -220,7 +220,7 @@ json_modules['datasets'] = json_datasets
 
 # hooks
 
-class_list = [o for o in getmembers(logging) if isclass(o[1])]
+class_list = [o for o in getmembers(logging) if isclass(o[1])] + [o for o in getmembers(artifacts) if isclass(o[1])]
 
 json_hooks = []
 

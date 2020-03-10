@@ -1,11 +1,7 @@
 import numpy as np
 
 from eisen import (
-    EISEN_END_BATCH_EVENT,
     EISEN_END_EPOCH_EVENT,
-    EISEN_TRAINING_SENDER,
-    EISEN_VALIDATION_SENDER,
-    EISEN_TESTING_SENDER
 )
 
 from pydispatch import dispatcher
@@ -13,142 +9,73 @@ from prettytable import PrettyTable
 
 
 class LoggingHook:
-    def __init__(self):
-        """
-        Logging object aiming at printing on the console the progress of model training/validation/testing.
-        This logger uses an event based system. The training, validation and test workflows emit events such as
-        EISEN_END_BATCH_EVENT and EISEN_END_EPOCH_EVENT which are picked up by this object and handled.
+    """
+    Logging object aiming at printing on the console the progress of model training/validation/testing.
+    This logger uses an event based system. The training, validation and test workflows emit events such as
+    EISEN_END_BATCH_EVENT and EISEN_END_EPOCH_EVENT which are picked up by this object and handled.
 
-        The only thing required for the user is to instantiate one such objects. The rest is handled automatically
+    Once the user instantiates such object, the workflow corresponding to the ID passes as argument will be
+    tracked and the results of the workflow in terms of losses and metrics will be printed on the console
+
+    .. code-block:: python
+
+            from eisen.utils.logging import LoggingHook
+
+            workflow = # Eg. An instance of Training workflow
+
+            logger = LoggingHook(workflow.id, 'Training')
+
+    """
+    def __init__(self, workflow_id, phase, artifacts_dir):
+        """
+        :param workflow_id: string containing the workflow id of the workflow being monitored (workflow_instance.id)
+        :type workflow_id: UUID
+        :param phase: string containing the name of the phase (training, testing, ...) of the workflow monitored
+        :type phase: str
 
         .. code-block:: python
 
             from eisen.utils.logging import LoggingHook
-            logger = LoggingHook()
+
+            workflow = # Eg. An instance of Training workflow
+
+            logger = LoggingHook(workflow_id=workflow.id, phase='Training')
 
         <json>
         []
         </json>
         """
-        # training signals
-        dispatcher.connect(self.end_training_batch, signal=EISEN_END_BATCH_EVENT, sender=EISEN_TRAINING_SENDER)
-        dispatcher.connect(self.end_training_epoch, signal=EISEN_END_EPOCH_EVENT, sender=EISEN_TRAINING_SENDER)
 
-        # validation signals
-        dispatcher.connect(self.end_validation_batch, signal=EISEN_END_BATCH_EVENT, sender=EISEN_VALIDATION_SENDER)
-        dispatcher.connect(self.end_validation_epoch, signal=EISEN_END_EPOCH_EVENT, sender=EISEN_VALIDATION_SENDER)
+        dispatcher.connect(self.end_epoch, signal=EISEN_END_EPOCH_EVENT, sender=workflow_id)
 
-        # testing signals
-        dispatcher.connect(self.end_testing_batch, signal=EISEN_END_BATCH_EVENT, sender=EISEN_TESTING_SENDER)
-        dispatcher.connect(self.end_testing_epoch, signal=EISEN_END_EPOCH_EVENT, sender=EISEN_TESTING_SENDER)
+        self.table = PrettyTable()
+        self.phase = phase
+        self.workflow_id = workflow_id
 
-        self.training_epoch_data = {}
-        self.validation_epoch_data = {}
-        self.testing_epoch_data = {}
+    def end_epoch(self, message):
+        all_losses = []
+        all_losses_names = []
+        for dct in message['losses']:
+            for key in dct.keys():
+                all_losses_names.append(key)
+                all_losses.append(np.mean(dct[key]))
 
-        self.table_training = PrettyTable()
-        self.table_validation = PrettyTable()
-        self.table_testing = PrettyTable()
+        all_metrics = []
+        all_metrics_names = []
+        for dct in message['metrics']:
+            for key in dct.keys():
+                all_losses_names.append(key)
+                all_metrics.append(np.mean(dct[key]))
 
-    def end_training_batch(self, message):
-        for typ in ['losses', 'metrics']:
-            if type not in self.training_epoch_data.keys():
-                self.training_epoch_data[typ] = {}
-
-            for dta in message[typ]:
-                for key in dta.keys():
-                    scalar_loss = np.mean(dta[key].cpu().data.numpy())
-
-                    if key not in self.training_epoch_data[typ].keys():
-                        self.training_epoch_data[typ][key] = []
-
-                    self.training_epoch_data[typ][key].append(scalar_loss)
-
-    def end_training_epoch(self, message):
-        self.table_training.field_names = \
+        self.table.field_names = \
             ["Phase"] + \
-            [str(k) + ' (L)' for k in self.training_epoch_data['losses'].keys()] + \
-            [str(k) + ' (M)' for k in self.training_epoch_data['metrics'].keys()]
+            [str(k) + ' (L)' for k in all_losses_names] + \
+            [str(k) + ' (M)' for k in all_metrics_names]
 
-        self.table_training.add_row(
-            ["Training Epoch {}".format(message)] +
-            [
-                str(np.mean(np.asarray(self.training_epoch_data['losses'][key])))
-                for key in self.training_epoch_data['losses'].keys()
-            ] +
-            [
-                str(np.mean(np.asarray(self.training_epoch_data['metrics'][key])))
-                for key in self.training_epoch_data['metrics'].keys()
-            ]
+        self.table.add_row(
+            ["{} - Epoch {}".format(self.phase, message['epoch'])] +
+            [str(loss) for loss in all_losses] +
+            [str(metric) for metric in all_metrics]
         )
 
-        self.training_epoch_data = {}
-
-        print(self.table_training)
-
-    def end_validation_batch(self, message):
-        for typ in ['losses', 'metrics']:
-            if type not in self.validation_epoch_data.keys():
-                self.validation_epoch_data[typ] = {}
-
-            for dta in message[typ]:
-                for key in dta.keys():
-                    scalar_loss = np.mean(dta[key].cpu().data.numpy())
-
-                    if key not in self.validation_epoch_data[typ].keys():
-                        self.validation_epoch_data[typ][key] = []
-
-                    self.validation_epoch_data[typ][key].append(scalar_loss)
-
-    def end_validation_epoch(self, message):
-        self.table_validation.field_names = \
-            ["Phase"] + \
-            [str(k) + ' (L)' for k in self.validation_epoch_data['losses'].keys()] + \
-            [str(k) + ' (M)' for k in self.validation_epoch_data['metrics'].keys()]
-
-        self.table_validation.add_row(
-            ["Validation Epoch {}".format(message)] +
-            [
-                str(np.mean(np.asarray(self.validation_epoch_data['losses'][key])))
-                for key in self.validation_epoch_data['losses'].keys()
-            ] +
-            [
-                str(np.mean(np.asarray(self.validation_epoch_data['metrics'][key])))
-                for key in self.validation_epoch_data['metrics'].keys()
-            ]
-        )
-
-        self.validation_epoch_data = {}
-
-        print(self.table_validation)
-
-    def end_testing_batch(self, message):
-        for typ in ['metrics']:
-            if type not in self.testing_epoch_data.keys():
-                self.testing_epoch_data[typ] = {}
-
-            for dta in message[typ]:
-                for key in dta.keys():
-                    scalar_loss = np.mean(dta[key].cpu().data.numpy())
-
-                    if key not in self.testing_epoch_data[typ].keys():
-                        self.testing_epoch_data[typ][key] = []
-
-                    self.testing_epoch_data[typ][key].append(scalar_loss)
-
-    def end_testing_epoch(self, message):
-        self.table_testing.field_names = \
-            ["Phase"] + \
-            [str(k) + ' (M)' for k in self.testing_epoch_data['metrics'].keys()]
-
-        self.table_testing.add_row(
-            ["Testing Epoch {}".format(message)] +
-            [
-                str(np.mean(np.asarray(self.testing_epoch_data['metrics'][key])))
-                for key in self.testing_epoch_data['metrics'].keys()
-            ]
-        )
-
-        self.testing_epoch_data = {}
-
-        print(self.table_testing)
+        print(self.table)

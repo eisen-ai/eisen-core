@@ -1,13 +1,12 @@
 import logging
 import torch
+import uuid
 
 from eisen import (
-    EISEN_TRAINING_SENDER,
-    EISEN_END_EPOCH_EVENT,
-    EISEN_END_BATCH_EVENT,
+    EISEN_END_EPOCH_EVENT
 )
 from eisen.utils import merge_two_dicts
-from eisen.utils.workflows.workflows import GenericWorkflow
+from eisen.utils.workflows.workflows import GenericWorkflow, EpochDataAggregator
 
 from torch import Tensor
 
@@ -69,6 +68,10 @@ class Training(GenericWorkflow):
         if self.data_parallel:  # todo check if already data parallel
             self.model = torch.nn.DataParallel(self.model)
 
+        self.id = uuid.uuid4()
+
+        self.epoch_aggregator = EpochDataAggregator(self.id)
+
     def process_batch(self, batch):
         model_argument_dict = {key: batch[key] for key in self.model.input_names}
 
@@ -91,6 +94,8 @@ class Training(GenericWorkflow):
             'outputs': outputs,
             'losses': losses,
             'metrics': metrics,
+            'epoch': self.epoch,
+            'model': self.model,
         }
 
         return output_dictionary
@@ -100,19 +105,24 @@ class Training(GenericWorkflow):
 
         self.model.train()
 
-        for i, batch in enumerate(self.data_loader):
-            if self.gpu:
-                for key in batch.keys():
-                    if isinstance(batch[key], Tensor):
-                        batch[key] = batch[key].cuda()
+        with self.epoch_aggregator as ea:
+            for i, batch in enumerate(self.data_loader):
+                if self.gpu:
+                    for key in batch.keys():
+                        if isinstance(batch[key], Tensor):
+                            batch[key] = batch[key].cuda()
 
-            logging.debug('DEBUG: Training epoch {}, batch {}'.format(self.epoch, i))
+                logging.debug('DEBUG: Training epoch {}, batch {}'.format(self.epoch, i))
 
-            output_dictionary = self.process_batch(batch)
+                output_dictionary = self.process_batch(batch)
 
-            dispatcher.send(message=output_dictionary, signal=EISEN_END_BATCH_EVENT, sender=EISEN_TRAINING_SENDER)
+                ea(output_dictionary)
 
-        dispatcher.send(message=self.epoch, signal=EISEN_END_EPOCH_EVENT, sender=EISEN_TRAINING_SENDER)
+        dispatcher.send(
+            message=ea.epoch_data,
+            signal=EISEN_END_EPOCH_EVENT,
+            sender=self.id
+        )
 
         self.epoch += 1
 

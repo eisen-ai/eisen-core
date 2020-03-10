@@ -1,13 +1,13 @@
 import logging
 import torch
+import uuid
 
 from eisen import (
-    EISEN_TESTING_SENDER,
     EISEN_END_EPOCH_EVENT,
     EISEN_END_BATCH_EVENT,
 )
 from eisen.utils import merge_two_dicts
-from eisen.utils.workflows.workflows import GenericWorkflow
+from eisen.utils.workflows.workflows import GenericWorkflow, EpochDataAggregator
 
 from torch import Tensor
 
@@ -55,6 +55,10 @@ class Testing(GenericWorkflow):
         if self.data_parallel:  # todo check if already data parallel
             self.model = torch.nn.DataParallel(self.model)
 
+        self.id = uuid.uuid4()
+
+        self.epoch_aggregator = EpochDataAggregator(self.id)
+
     def process_batch(self, batch):
         model_argument_dict = {key: batch[key] for key in self.model.input_names}
 
@@ -66,6 +70,8 @@ class Testing(GenericWorkflow):
             'inputs': batch,
             'outputs': outputs,
             'metrics': metrics,
+            'model': self.model,
+            'epoch': None,
         }
 
         return output_dictionary
@@ -75,17 +81,18 @@ class Testing(GenericWorkflow):
 
         self.model.eval()
 
-        with torch.no_grad():
-            for i, batch in enumerate(self.data_loader):
-                if self.gpu:
-                    for key in batch.keys():
-                        if isinstance(batch[key], Tensor):
-                            batch[key] = batch[key].cuda()
+        with self.epoch_aggregator as ea:
+            with torch.no_grad():
+                for i, batch in enumerate(self.data_loader):
+                    if self.gpu:
+                        for key in batch.keys():
+                            if isinstance(batch[key], Tensor):
+                                batch[key] = batch[key].cuda()
 
-                logging.debug('DEBUG: Testing epoch batch {}'.format(i))
+                    logging.debug('DEBUG: Testing epoch batch {}'.format(i))
 
-                output_dictionary = self.process_batch(batch)
+                    output_dictionary = self.process_batch(batch)
 
-                dispatcher.send(message=output_dictionary, signal=EISEN_END_BATCH_EVENT, sender=EISEN_TESTING_SENDER)
+                    ea(output_dictionary)
 
-            dispatcher.send(message=0, signal=EISEN_END_EPOCH_EVENT, sender=EISEN_TESTING_SENDER)
+        dispatcher.send(message=ea.epoch_data, signal=EISEN_END_EPOCH_EVENT, sender=self.id)

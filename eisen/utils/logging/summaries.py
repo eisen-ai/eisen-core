@@ -12,8 +12,8 @@ from pydispatch import dispatcher
 
 
 class AutoSummaryManager:
-    def __init__(self, log_dir):
-        self.writer = SummaryWriter(log_dir=log_dir)
+    def __init__(self, workflow_id, phase, artifact_dir):
+        self.writer = SummaryWriter(log_dir=artifact_dir)
 
     def _write_volumetric_image(self, name, value, global_step):
         pass
