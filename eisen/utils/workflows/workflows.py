@@ -62,7 +62,7 @@ class EpochDataAggregator:
         for typ in ['losses', 'metrics']:
             for i in range(len(self.epoch_data[typ])):
                 for key in self.epoch_data[typ][i].keys():
-                    self.epoch_data[typ][i][key] = np.mean(self.epoch_data['losses'][i][key])
+                    self.epoch_data[typ][i][key] = np.mean(self.epoch_data[typ][i][key])
 
         all_losses = []
         for dct in self.epoch_data['losses']:
