@@ -36,8 +36,6 @@ class TensorboardSummaryHook:
 
         for typ in ['inputs', 'outputs']:
             for key in message[typ].keys():
-                print(message[typ][key].ndim)
-
                 if message[typ][key].ndim == 5:
                     # Volumetric image (N, C, W, H, D)
                     pass
@@ -72,7 +70,6 @@ class TensorboardSummaryHook:
     def write_class_probabilities(self, name, value, global_step):
         self.writer.add_image(name, value, global_step=global_step, dataformats='HW')
         self.writer.add_histogram(name + '/distribution', np.argmax(value), global_step=global_step)
-        # todo need to add confusion matrix
 
     def write_vector(self, name, value, global_step):
         self.writer.add_histogram(name, value, global_step=global_step)
