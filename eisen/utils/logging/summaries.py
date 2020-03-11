@@ -1,5 +1,8 @@
 import numpy as np
+import matplotlib.pyplot as plt
 import os
+import itertools
+from sklearn.metrics import confusion_matrix
 
 from eisen import (
     EISEN_END_EPOCH_EVENT
@@ -9,10 +12,54 @@ from torch.utils.tensorboard.writer import SummaryWriter
 from pydispatch import dispatcher
 
 
+def plot_confusion_matrix(cm,
+                          classes,
+                          normalize=False,
+                          title='Confusion matrix',
+                          cmap=plt.cm.Blues):
+    """
+    This function prints and plots the confusion matrix.
+    Normalization can be applied by setting `normalize=True`.
+    """
+    plt.imshow(cm, interpolation='nearest', cmap=cmap)
+    plt.title(title)
+    plt.colorbar()
+    tick_marks = np.arange(len(classes))
+    plt.xticks(tick_marks, classes, rotation=45)
+    plt.yticks(tick_marks, classes)
+
+    if normalize:
+        cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+
+    thresh = cm.max() / 2.
+    for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
+        plt.text(j, i, np.around(cm[i, j], decimals=2),
+                 horizontalalignment="center",
+                 color="white" if cm[i, j] > thresh else "black")
+
+    plt.tight_layout()
+    plt.ylabel('True label')
+    plt.xlabel('Predicted label')
+
+    fig = plt.gcf()
+
+    fig.set_dpi(200)
+
+    fig.canvas.draw()
+
+    image = np.array(fig.canvas.renderer.buffer_rgba())
+
+    plt.close()
+
+    return image
+
+
 class TensorboardSummaryHook:
-    def __init__(self, workflow_id, phase, artifacts_dir):
+    def __init__(self, workflow_id, phase, artifacts_dir, comparison_pairs=None):
         self.workflow_id = workflow_id
         self.phase = phase
+
+        self.comparison_pairs = comparison_pairs
 
         if not os.path.exists(artifacts_dir):
             raise ValueError('The directory specified to save artifacts does not exist!')
@@ -28,6 +75,9 @@ class TensorboardSummaryHook:
 
     def end_epoch(self, message):
         epoch = message['epoch']
+
+        # if epoch == 0:
+        #     self.writer.add_graph(message['model'], ...)
 
         for typ in ['losses', 'metrics']:
             for dct in message[typ]:
@@ -55,6 +105,27 @@ class TensorboardSummaryHook:
                 if message[typ][key].ndim == 0:
                     self.write_scalar(typ + '/{}'.format(key), message[typ][key], epoch)
 
+        for inp, out in self.comparison_pairs:
+            assert message['inputs'][inp].ndim == message['outputs'][out].ndim
+
+            if message['inputs'][inp].ndim == 1:
+                # in case of binary classification >> PR curve
+                if np.max(message['inputs'][inp]) <= 1 and np.max(message['inputs'][out]) <= 1:
+                    self.write_pr_curve(
+                        '{}_Vs_{}/pr_curve'.format(inp, out),
+                        message['inputs'][inp],
+                        message['outputs'][out],
+                        epoch
+                    )
+
+                # in any case for classification >> Confusion Matrix
+                self.write_confusion_matrix(
+                    '{}_Vs_{}/confusion_matrix'.format(inp, out),
+                    message['inputs'][inp],
+                    message['outputs'][out],
+                    epoch
+                )
+
     def write_volumetric_image(self, name, value, global_step):
         pass
 
@@ -66,6 +137,14 @@ class TensorboardSummaryHook:
 
     def write_embedding(self, name, value, global_step):
         pass
+
+    def write_pr_curve(self, name, labels, predictions, global_step):
+        self.writer.add_pr_curve(name + '/pr_curve', labels, predictions, global_step)
+
+    def write_confusion_matrix(self, name, labels, predictions, global_step):
+        cnf_matrix = confusion_matrix(labels, predictions)
+        image = plot_confusion_matrix(cnf_matrix, range(np.max(labels)), normalize=True, title=name)[:, :, 0:3]
+        self.writer.add_image(name, image.astype(float)/255.0, global_step=global_step, dataformats='HWC')
 
     def write_class_probabilities(self, name, value, global_step):
         self.writer.add_image(name, value, global_step=global_step, dataformats='HW')
