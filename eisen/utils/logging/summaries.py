@@ -2,14 +2,15 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 import itertools
+import torch
+
 from sklearn.metrics import confusion_matrix
+from torch.utils.tensorboard.writer import SummaryWriter
+from pydispatch import dispatcher
 
 from eisen import (
     EISEN_END_EPOCH_EVENT
 )
-
-from torch.utils.tensorboard.writer import SummaryWriter
-from pydispatch import dispatcher
 
 
 def plot_confusion_matrix(cm,
@@ -55,7 +56,67 @@ def plot_confusion_matrix(cm,
 
 
 class TensorboardSummaryHook:
+    """
+    Logging object allowing Tensorboard summaries to be automatically exported to the tensorboard. Much of its
+    functionality is automated. This means that the hook will export as much information as possible to the
+    tensorboard.
+
+    Losses, Metrics, Inputs and Outputs are all interpreted and exported according to their dimensionality. Vectors
+    results in mean and standard deviation estimates as well as histograms; Pictures results in image summaries and
+    histograms; etc.
+
+    There is also the possibily of comparing inputs and outputs pair. This needs to be specified during object
+    instantiation.
+
+    Once the user instantiates this object, the workflow corresponding to the ID passes as argument will be
+    tracked and the results of the workflow will be exported to the tensorboard.
+
+    .. code-block:: python
+
+            from eisen.utils.logging import TensorboardSummaryHook
+
+            workflow = # Eg. An instance of Training workflow
+
+            logger = TensorboardSummaryHook(workflow.id, 'Training', '/artifacts/dir')
+    """
     def __init__(self, workflow_id, phase, artifacts_dir, comparison_pairs=None):
+        """
+        This method instantiates an object of type TensorboardSummaryHook. The signature of this method is similar to
+        that of every other hook. There is one additional parameter called `comparison_pairs` which is meant to
+        hold a list of lists each containing a pair of input/output names that share the same dimensionality and can be
+        compared to each other.
+
+        A typical use of `comparison_pairs` is when users want to plot a pr_curve or a confusion matrix by comparing
+        some input with some output. Eg. by comparing the labels with the predictions.
+
+        .. code-block:: python
+
+            from eisen.utils.logging import TensorboardSummaryHook
+
+            workflow = # Eg. An instance of Training workflow
+
+            logger = TensorboardSummaryHook(
+                workflow_id=workflow.id,
+                phase='Training',
+                artifacts_dir='/artifacts/dir'
+                comparison_pairs=[['labels', 'predictions']]
+            )
+
+        :param workflow_id: string containing the workflow id of the workflow being monitored (workflow_instance.id)
+        :type workflow_id: UUID
+        :param phase: string containing the name of the phase (training, testing, ...) of the workflow monitored
+        :type phase: str
+        :param artifacts_dir: whether the history of all models that were at a certain point the best should be saved
+        :type artifacts_dir: bool
+        :param comparison_pairs: list of lists of pairs, which are names of inputs and outputs to be compared directly
+        :type comparison_pairs: list of lists of strings
+
+        <json>
+        [
+            {"name": "comparison_pairs", "type": "list:list:string", "value": ""}
+        ]
+        </json>
+        """
         self.workflow_id = workflow_id
         self.phase = phase
 
@@ -88,7 +149,7 @@ class TensorboardSummaryHook:
             for key in message[typ].keys():
                 if message[typ][key].ndim == 5:
                     # Volumetric image (N, C, W, H, D)
-                    pass
+                    self.write_volumetric_image(typ + '/{}'.format(key), message[typ][key], epoch)
 
                 if message[typ][key].ndim == 4:
                     self.write_2D_image(typ + '/{}'.format(key), message[typ][key], epoch)
@@ -127,7 +188,14 @@ class TensorboardSummaryHook:
                 )
 
     def write_volumetric_image(self, name, value, global_step):
-        pass
+        value = np.transpose(value, [0, 2, 1, 3, 4])
+
+        if value.shape[2] != 3 and value.shape[2] != 1:
+            value = np.sum(value, axis=2, keepdims=True)
+
+        torch_value = torch.tensor(value).float()
+
+        self.writer.add_video(name, torch_value, fps=10, global_step=global_step)
 
     def write_2D_image(self, name, value, global_step):
         self.writer.add_scalar(name + '/mean', np.mean(value), global_step=global_step)
