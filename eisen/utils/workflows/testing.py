@@ -68,10 +68,11 @@ class Testing(GenericWorkflow):
 
         output_dictionary = {
             'inputs': batch,
+            'losses': [],
             'outputs': outputs,
             'metrics': metrics,
             'model': self.model,
-            'epoch': None,
+            'epoch': 0,
         }
 
         return output_dictionary
