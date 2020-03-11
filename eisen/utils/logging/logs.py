@@ -64,7 +64,7 @@ class LoggingHook:
         all_metrics_names = []
         for dct in message['metrics']:
             for key in dct.keys():
-                all_losses_names.append(key)
+                all_metrics_names.append(key)
                 all_metrics.append(np.mean(dct[key]))
 
         self.table.field_names = \
