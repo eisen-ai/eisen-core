@@ -184,7 +184,7 @@ class SaveONNXModelHook:
 
         workflow = # Eg. An instance of Validation workflow
 
-        saver = SaveONNXModelHook(workflow.id, 'Validation', '/my/artifacts', [1, 1, 224, 224])
+        saver = SaveONNXModelHook(workflow.id, 'Validation', '/my/artifacts', [1, 3, 224, 224])
 
     """
     def __init__(self, workflow_id, phase, artifacts_dir, input_size, select_best_loss=True, save_history=False):
@@ -212,7 +212,7 @@ class SaveONNXModelHook:
                 workflow_id=workflow.id,
                 phase='Validation',
                 artifacts_dir='/my/artifacts',
-                input_size=[1, 1, 224, 224],
+                input_size=[1, 3, 224, 224],
                 select_best_loss=True,
                 save_history=False
             )
@@ -240,7 +240,7 @@ class SaveONNXModelHook:
 
         self.input_size = input_size
 
-        self.saver = SaveONNXModel(artifacts_dir, input_size)
+        self.saver = SaveONNXModel(self.artifacts_dir, input_size)
 
     def save_model(self, message):
         dummy_input = torch.randn(*self.input_size)
