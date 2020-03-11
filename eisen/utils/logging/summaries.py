@@ -48,7 +48,7 @@ def plot_confusion_matrix(cm,
 
     fig.canvas.draw()
 
-    image = np.array(fig.canvas.renderer.buffer_rgba())
+    image = np.array(fig.canvas.renderer._renderer)
 
     plt.close()
 
