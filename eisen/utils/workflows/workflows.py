@@ -37,12 +37,12 @@ class EpochDataAggregator:
     def __call__(self, output_dictionary):
         output_dictionary = convert_output_dict_to_cpu(output_dictionary)
 
-        for typ in ['losses', 'metrics']:
-            for i in range(len(output_dictionary[typ])):
-                for key in output_dictionary[typ][i].keys():
-                    output_dictionary[typ][i][key] = [np.mean(output_dictionary[typ][i][key])]
-
         if len(self.epoch_data.keys()) == 0:
+            for typ in ['losses', 'metrics']:
+                for i in range(len(output_dictionary[typ])):
+                    for key in output_dictionary[typ][i].keys():
+                        output_dictionary[typ][i][key] = [output_dictionary[typ][i][key]]
+
             self.epoch_data = output_dictionary
             return
 
@@ -68,12 +68,12 @@ class EpochDataAggregator:
         for typ in ['losses', 'metrics']:
             for i in range(len(self.epoch_data[typ])):
                 for key in self.epoch_data[typ][i].keys():
-                    self.epoch_data[typ][i][key] = np.mean(self.epoch_data[typ][i][key])
+                    self.epoch_data[typ][i][key] = np.asarray(self.epoch_data[typ][i][key])
 
         all_losses = []
         for dct in self.epoch_data['losses']:
             for key in dct.keys():
-                all_losses.append(dct[key])
+                all_losses.append(np.mean(dct[key]))
 
         if len(all_losses) > 0:
             avg_all_losses = np.mean(all_losses)
@@ -85,7 +85,7 @@ class EpochDataAggregator:
         all_metrics = []
         for dct in self.epoch_data['metrics']:
             for key in dct.keys():
-                all_metrics.append(dct[key])
+                all_metrics.append(np.mean(dct[key]))
 
         if len(all_metrics) > 0:
             avg_all_metrics = np.mean(all_metrics)
