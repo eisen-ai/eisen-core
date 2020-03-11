@@ -90,7 +90,7 @@ class Training(GenericWorkflow):
         metrics = self.compute_metrics(merge_two_dicts(batch, outputs))
 
         output_dictionary = {
-            'inputs': model_argument_dict,
+            'inputs': batch,
             'outputs': outputs,
             'losses': losses,
             'metrics': metrics,
@@ -197,7 +197,7 @@ class TrainingAMP(Training):
         metrics = self.compute_metrics(merge_two_dicts(batch, outputs))
 
         output_dictionary = {
-            'inputs': model_argument_dict,
+            'inputs': batch,
             'outputs': outputs,
             'losses': losses,
             'metrics': metrics,

@@ -6,13 +6,19 @@ from pydispatch import dispatcher
 
 def convert_output_dict_to_cpu(output_dict):
     for typ in ['losses', 'metrics']:
-        for i in range(len(output_dict[typ])):
-            for key in output_dict[typ][i].keys():
-                output_dict[typ][i][key] = output_dict[typ][i][key].cpu().data.numpy()
+        try:
+            for i in range(len(output_dict[typ])):
+                for key in output_dict[typ][i].keys():
+                    output_dict[typ][i][key] = output_dict[typ][i][key].cpu().data.numpy()
+        except:
+            pass
 
     for typ in ['inputs', 'outputs']:
-        for key in output_dict[typ].keys():
-            output_dict[typ][key] = output_dict[typ][key].cpu().data.numpy()
+        try:
+            for key in output_dict[typ].keys():
+                output_dict[typ][key] = output_dict[typ][key].cpu().data.numpy()
+        except:
+            pass
 
     return output_dict
 
