@@ -23,7 +23,7 @@ class LoggingHook:
 
             workflow = # Eg. An instance of Training workflow
 
-            logger = LoggingHook(workflow.id, 'Training')
+            logger = LoggingHook(workflow.id, 'Training', '/artifacts/dir')
 
     """
     def __init__(self, workflow_id, phase, artifacts_dir):
@@ -32,6 +32,8 @@ class LoggingHook:
         :type workflow_id: UUID
         :param phase: string containing the name of the phase (training, testing, ...) of the workflow monitored
         :type phase: str
+        :param artifacts_dir: The path of the directory where the artifacts of the workflow are stored
+        :type artifacts_dir: str
 
         .. code-block:: python
 
@@ -39,7 +41,11 @@ class LoggingHook:
 
             workflow = # Eg. An instance of Training workflow
 
-            logger = LoggingHook(workflow_id=workflow.id, phase='Training')
+            logger = LoggingHook(
+                workflow_id=workflow.id,
+                phase='Training',
+                artifacts_dir='/artifacts/dir'
+            )
 
         <json>
         []
@@ -51,6 +57,7 @@ class LoggingHook:
         self.table = PrettyTable()
         self.phase = phase
         self.workflow_id = workflow_id
+        self.artifacts_dir = artifacts_dir
 
     def end_epoch(self, message):
         all_losses = []

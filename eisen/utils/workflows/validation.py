@@ -73,7 +73,7 @@ class Validation(GenericWorkflow):
         metrics = self.compute_metrics(merge_two_dicts(batch, outputs))
 
         output_dictionary = {
-            'inputs': batch,
+            'inputs': model_argument_dict,
             'outputs': outputs,
             'losses': losses,
             'metrics': metrics,
