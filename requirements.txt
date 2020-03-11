@@ -6,3 +6,4 @@ nibabel==3.0.0
 prettytable==0.7.2
 PyDispatcher==2.0.5
 h5py==2.10.0
+tensorboard==2.1.1
