@@ -231,6 +231,9 @@ class SaveONNXModelHook:
         else:
             dispatcher.connect(self.save_model, signal=EISEN_BEST_MODEL_METRIC, sender=workflow_id)
 
+        if not os.path.exists(artifacts_dir):
+            raise ValueError('The directory specified to save artifacts does not exist!')
+
         self.artifacts_dir = os.path.join(artifacts_dir, 'onnx_models')
 
         self.save_history = save_history
@@ -240,7 +243,7 @@ class SaveONNXModelHook:
 
         self.input_size = input_size
 
-        self.saver = SaveONNXModel(self.artifacts_dir, input_size)
+        self.saver = SaveONNXModel(self.artifacts_dir, self.input_size)
 
     def save_model(self, message):
         dummy_input = torch.randn(*self.input_size)

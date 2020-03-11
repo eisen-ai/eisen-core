@@ -1,134 +1,83 @@
 import numpy as np
+import os
 
 from eisen import (
-    EISEN_END_BATCH_EVENT,
-    EISEN_END_EPOCH_EVENT,
-    EISEN_TRAINING_SENDER,
-    EISEN_VALIDATION_SENDER
+    EISEN_END_EPOCH_EVENT
 )
 
 from torch.utils.tensorboard.writer import SummaryWriter
 from pydispatch import dispatcher
 
 
-class AutoSummaryManager:
-    def __init__(self, workflow_id, phase, artifact_dir):
-        self.writer = SummaryWriter(log_dir=artifact_dir)
+class TensorboardSummaryHook:
+    def __init__(self, workflow_id, phase, artifacts_dir):
+        self.workflow_id = workflow_id
+        self.phase = phase
 
-    def _write_volumetric_image(self, name, value, global_step):
-        pass
+        if not os.path.exists(artifacts_dir):
+            raise ValueError('The directory specified to save artifacts does not exist!')
 
-    def _write_2D_image(self, name, value, global_step):
-        self.writer.add_scalar('/mean/' + name, np.mean(value), global_step=global_step)
-        self.writer.add_scalar('/std/' + name, np.std(value), global_step=global_step)
-        self.writer.add_histogram('/histogram/' + name, value.flatten(), global_step=global_step)
-        self.writer.add_images(name, value, global_step=global_step, dataformats='NCHW')
+        dispatcher.connect(self.end_epoch, signal=EISEN_END_EPOCH_EVENT, sender=workflow_id)
 
-    def _write_embedding(self, name, value, global_step):
-        pass
+        self.artifacts_dir = os.path.join(artifacts_dir, 'summaries', phase)
 
-    def _write_class_probabilities(self, name, value, global_step):
-        self.writer.add_image(name, value, global_step=global_step, dataformats='HW')
-        self.writer.add_histogram('/distribution/' + name, np.argmax(value), global_step=global_step)
-        # todo need to add confusion matrix
+        if not os.path.exists(self.artifacts_dir):
+            os.makedirs(self.artifacts_dir)
 
-    def _write_vector(self, name, value, global_step):
-        self.writer.add_histogram(name, value, global_step=global_step)
-        self.writer.add_scalar('/mean/' + name, np.mean(value), global_step=global_step)
-        self.writer.add_scalar('/std/' + name, np.std(value), global_step=global_step)
-        pass
+        self.writer = SummaryWriter(log_dir=self.artifacts_dir)
 
-    def _write_scalar(self, name, value, global_step):
-        self.writer.add_scalar(name, value, global_step=global_step)
-
-    def write(self, data, name, global_step):
-        if data.ndims == 5:
-            # Volumetric image (N, C, W, H, D)
-            pass
-
-        if data.ndims == 4:
-            # 2D image (N, C, W, H)
-            pass
-
-        if data.ndims == 3:
-            # embedding (N, C, W)
-            pass
-
-        if data.ndims == 2:
-            # classes probabilities (N, C)
-            pass
-
-        if data.ndims == 1:
-            # vector of numbers (N)
-            pass
-
-        if data.ndims == 0:
-            # scalar ()
-            pass
-
-
-class SummaryHook:
-    def __init__(self, logs_base_dir):
-        # training signals
-        dispatcher.connect(self.end_training_batch, signal=EISEN_END_BATCH_EVENT, sender=EISEN_TRAINING_SENDER)
-        dispatcher.connect(self.end_training_epoch, signal=EISEN_END_EPOCH_EVENT, sender=EISEN_TRAINING_SENDER)
-
-        # validation signals
-        dispatcher.connect(self.end_validation_batch, signal=EISEN_END_BATCH_EVENT, sender=EISEN_VALIDATION_SENDER)
-        dispatcher.connect(self.end_validation_epoch, signal=EISEN_END_EPOCH_EVENT, sender=EISEN_VALIDATION_SENDER)
-
-        self.last_batch = None
-
-        self.epoch_data = {}
-        self.epoch_metrics = {}
-
-        self.summary_manager = AutoSummaryManager(logs_base_dir)
-
-    def end_training_batch(self, message):
-        self.last_batch = message
+    def end_epoch(self, message):
+        epoch = message['epoch']
 
         for typ in ['losses', 'metrics']:
-            if type not in self.epoch_data.keys():
-                self.epoch_data[typ] = {}
+            for dct in message[typ]:
+                for key in dct.keys():
+                    self.write_vector(typ + '/{}'.format(key), dct[key], epoch)
 
-            for dta in message[typ]:
-                for key in dta.keys():
-                    scalar_loss = np.mean(dta[key].cpu().data.numpy())
+        for typ in ['inputs', 'outputs']:
+            for key in message[typ].keys():
+                print(message[typ][key].ndim)
 
-                    if key not in self.epoch_data[typ].keys():
-                        self.epoch_data[typ][key] = []
+                if message[typ][key].ndim == 5:
+                    # Volumetric image (N, C, W, H, D)
+                    pass
 
-                    self.epoch_data[typ][key].append(scalar_loss)
+                if message[typ][key].ndim == 4:
+                    self.write_2D_image(typ + '/{}'.format(key), message[typ][key], epoch)
 
-    def end_training_epoch(self, message):
+                if message[typ][key].ndim == 3:
+                    self.write_embedding(typ + '/{}'.format(key), message[typ][key], epoch)
 
-        for key in self.epoch_data['losses'].keys():
-            self.summary_manager.write(
-                data=np.mean(np.asarray(self.epoch_data['losses'][key])),
-                name='losses/{}'.format(key),
-                global_step=message
-            )
+                if message[typ][key].ndim == 2:
+                    self.write_class_probabilities(typ + '/{}'.format(key), message[typ][key], epoch)
 
-        for key in self.epoch_data['metrics'].keys():
-            self.summary_manager.write(
-                data=np.mean(np.asarray(self.epoch_data['metrics'][key])),
-                name='metrics/{}'.format(key),
-                global_step=message
-            )
+                if message[typ][key].ndim == 1:
+                    self.write_vector(typ + '/{}'.format(key), message[typ][key], epoch)
 
-        for input in self.last_batch['inputs']:
-            pass
+                if message[typ][key].ndim == 0:
+                    self.write_scalar(typ + '/{}'.format(key), message[typ][key], epoch)
 
-        for output in self.last_batch['outputs']:
-            pass
-
-        self.last_batch = None
-        self.epoch_data = {}
-        self.epoch_metrics = {}
-
-    def end_validation_batch(self, message):
+    def write_volumetric_image(self, name, value, global_step):
         pass
 
-    def end_validation_epoch(self, message):
+    def write_2D_image(self, name, value, global_step):
+        self.writer.add_scalar(name + '/mean', np.mean(value), global_step=global_step)
+        self.writer.add_scalar(name + '/std', np.std(value), global_step=global_step)
+        self.writer.add_histogram(name + '/histogram', value.flatten(), global_step=global_step)
+        self.writer.add_images(name, value, global_step=global_step, dataformats='NCHW')
+
+    def write_embedding(self, name, value, global_step):
         pass
 
+    def write_class_probabilities(self, name, value, global_step):
+        self.writer.add_image(name, value, global_step=global_step, dataformats='HW')
+        self.writer.add_histogram(name + '/distribution', np.argmax(value), global_step=global_step)
+        # todo need to add confusion matrix
+
+    def write_vector(self, name, value, global_step):
+        self.writer.add_histogram(name, value, global_step=global_step)
+        self.writer.add_scalar(name + '/mean', np.mean(value), global_step=global_step)
+        self.writer.add_scalar(name + '/std', np.std(value), global_step=global_step)
+
+    def write_scalar(self, name, value, global_step):
+        self.writer.add_scalar(name, value, global_step=global_step)
