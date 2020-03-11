@@ -166,26 +166,27 @@ class TensorboardSummaryHook:
                 if message[typ][key].ndim == 0:
                     self.write_scalar(typ + '/{}'.format(key), message[typ][key], epoch)
 
-        for inp, out in self.comparison_pairs:
-            assert message['inputs'][inp].ndim == message['outputs'][out].ndim
+        if self.comparison_pairs:
+            for inp, out in self.comparison_pairs:
+                assert message['inputs'][inp].ndim == message['outputs'][out].ndim
 
-            if message['inputs'][inp].ndim == 1:
-                # in case of binary classification >> PR curve
-                if np.max(message['inputs'][inp]) <= 1 and np.max(message['inputs'][out]) <= 1:
-                    self.write_pr_curve(
-                        '{}_Vs_{}/pr_curve'.format(inp, out),
+                if message['inputs'][inp].ndim == 1:
+                    # in case of binary classification >> PR curve
+                    if np.max(message['inputs'][inp]) <= 1 and np.max(message['inputs'][out]) <= 1:
+                        self.write_pr_curve(
+                            '{}_Vs_{}/pr_curve'.format(inp, out),
+                            message['inputs'][inp],
+                            message['outputs'][out],
+                            epoch
+                        )
+
+                    # in any case for classification >> Confusion Matrix
+                    self.write_confusion_matrix(
+                        '{}_Vs_{}/confusion_matrix'.format(inp, out),
                         message['inputs'][inp],
                         message['outputs'][out],
                         epoch
                     )
-
-                # in any case for classification >> Confusion Matrix
-                self.write_confusion_matrix(
-                    '{}_Vs_{}/confusion_matrix'.format(inp, out),
-                    message['inputs'][inp],
-                    message['outputs'][out],
-                    epoch
-                )
 
     def write_volumetric_image(self, name, value, global_step):
         value = np.transpose(value, [0, 2, 1, 3, 4])
