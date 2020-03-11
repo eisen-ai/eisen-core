@@ -8,17 +8,104 @@ from eisen import EISEN_BEST_MODEL_METRIC, EISEN_BEST_MODEL_LOSS
 
 class SaveTorchModel:
     """
+    This object implements model saving for pytorch models. Once instantiated with a parameter consisting of a string
+    representing the path of the directory where the model shall be saved, it can be called on a model in order to save
+    it.
+
+    No information about optimizer and training is saved in the process.
+
+    .. code-block:: python
+
+        from eisen.utils.artifacts import SaveTorchModel
+
+        my_model = # Eg. A torch.nn.Module instance
+
+        saver = SaveTorchModel('/my/artifacts')
+
+        saver(my_model)
+
+    """
+    def __init__(self, artifacts_dir):
+        """
+        Initializes a SaveTorchModel object.
+
+        :param artifacts_dir: The path of the directory where the model shall be stored after serialization
+        :type artifacts_dir: str
+        """
+        self.artifacts_dir = artifacts_dir
+
+        if not os.path.exists(self.artifacts_dir):
+            raise ValueError('The artifacts directory passed as parameter to the SaveTorchModel object does not exist')
+
+    def __call__(self, model, filename='model.pt'):
+        statedict = model.state_dict()
+
+        torch.save(statedict, os.path.join(self.artifacts_dir, filename))
+
+
+class SaveONNXModel:
+    """
+    This object exports a torch.nn.Module in ONNX format. The user is asked to supply two parameters for initialization.
+    The first parameter is the artifact directory, a string representing the path where the model is supposed to be
+    stored after serialization. The second parameter is the input size, a list of integers containing the size
+    of the inputs to be processed by the network.
+
+    .. code-block:: python
+
+        from eisen.utils.artifacts import SaveONNXModel
+
+        my_model = # Eg. A torch.nn.Module instance
+
+        saver = SaveONNXModel('/my/artifacts', [1, 1, 224, 224])
+
+        saver(my_model)
+
+    """
+    def __init__(self, artifacts_dir, input_size):
+        """
+        Initializes a SaveONNXModel object.
+
+        :param artifacts_dir: The path of the directory where the model shall be stored after serialization
+        :type artifacts_dir: str
+        :param input_size: The size of the input the network will be processing after serialization
+        :type input_size: list of int
+        """
+        self.artifacts_dir = artifacts_dir
+
+        self.input_size = input_size
+
+        if not os.path.exists(self.artifacts_dir):
+            raise ValueError('The artifacts directory passed as parameter to the SaveTorchModel object does not exist')
+
+    def __call__(self, model, filename='model.onnx'):
+        dummy_input = torch.randn(*self.input_size)
+
+        torch.onnx.export(
+            model,
+            dummy_input,
+            os.path.join(self.artifacts_dir, filename),
+            export_params=True,
+            opset_version=10,
+            verbose=False,
+            input_names=['input'],
+            output_names=['output'],
+            dynamic_axes={'input': {0: 'batch_size'}, 'output': {0: 'batch_size'}}
+        )
+
+
+class SaveTorchModelHook:
+    """
     Saves a Torch model snapshot of the current best model. The best model can be selected based using the best
     average loss or the best average metric. It is possible to save the whole history of best models seen throughout
     the workflow.
 
     .. code-block:: python
 
-        from eisen.utils.artifacts import SaveTorchModel
+        from eisen.utils.artifacts import SaveTorchModelHook
 
         workflow = # Eg. An instance of Validation workflow
 
-        saver = SaveTorchModel(workflow.id, 'Validation', '/my/artifacts')
+        saver = SaveTorchModelHook(workflow.id, 'Validation', '/my/artifacts')
     """
     def __init__(self, workflow_id, phase, artifacts_dir, select_best_loss=True, save_history=False):
         """
@@ -61,6 +148,9 @@ class SaveTorchModel:
         else:
             dispatcher.connect(self.save_model, signal=EISEN_BEST_MODEL_METRIC, sender=workflow_id)
 
+        if not os.path.exists(artifacts_dir):
+            raise ValueError('The directory specified to save artifacts does not exist!')
+
         self.artifacts_dir = os.path.join(artifacts_dir, 'models')
 
         self.save_history = save_history
@@ -68,17 +158,21 @@ class SaveTorchModel:
         if not os.path.exists(self.artifacts_dir):
             os.makedirs(self.artifacts_dir)
 
-    def save_model(self, message):
-        statedict = message['model'].state_dict()
+        self.saver = SaveTorchModel(self.artifacts_dir)
 
-        torch.save(statedict, os.path.join(self.artifacts_dir, 'model.pt'))
+    def save_model(self, message):
+        # we save an unwrapped version of the model!! (see eisen.utils.EisenModuleWrapper)
+        self.saver(message['model'].module, 'model.pt')
 
         if self.save_history:
             timestr = time.strftime("%Y%m%d-%H%M%S")
-            torch.save(statedict, os.path.join(self.artifacts_dir, 'model_{}.pt'.format(timestr)))
+
+            # we save an unwrapped version of the model!! (see eisen.utils.EisenModuleWrapper)
+            self.saver(message['model'].module, 'model_{}.pt'.format(timestr))
 
 
-class SaveONNXModel:
+
+class SaveONNXModelHook:
     """
     Saves a ONNX model snapshot of the current best model. The best model can be selected based using the best
     average loss or the best average metric. It is possible to save the whole history of best models seen throughout
@@ -86,11 +180,11 @@ class SaveONNXModel:
 
     .. code-block:: python
 
-        from eisen.utils.artifacts import SaveONNXModel
+        from eisen.utils.artifacts import SaveONNXModelHook
 
         workflow = # Eg. An instance of Validation workflow
 
-        saver = SaveONNXModel(workflow.id, 'Validation', '/my/artifacts', [1, 1, 224, 224])
+        saver = SaveONNXModelHook(workflow.id, 'Validation', '/my/artifacts', [1, 1, 224, 224])
 
     """
     def __init__(self, workflow_id, phase, artifacts_dir, input_size, select_best_loss=True, save_history=False):
@@ -110,11 +204,11 @@ class SaveONNXModel:
 
         .. code-block:: python
 
-            from eisen.utils.artifacts import SaveONNXModel
+            from eisen.utils.artifacts import SaveONNXModelHook
 
             workflow = # Eg. An instance of Validation workflow
 
-            saver = SaveONNXModel(
+            saver = SaveONNXModelHook(
                 workflow_id=workflow.id,
                 phase='Validation',
                 artifacts_dir='/my/artifacts',
@@ -146,11 +240,16 @@ class SaveONNXModel:
 
         self.input_size = input_size
 
+        self.saver = SaveONNXModel(artifacts_dir, input_size)
+
     def save_model(self, message):
         dummy_input = torch.randn(*self.input_size)
 
-        torch.onnx.export(message['model'], dummy_input, "model.onnx", verbose=True)
+        # we save an unwrapped version of the model!! (see eisen.utils.EisenModuleWrapper)
+        self.saver(message['model'].module, 'model.onnx')
 
         if self.save_history:
             timestr = time.strftime("%Y%m%d-%H%M%S")
-            torch.onnx.export(message['model'], dummy_input, "model_{}.onnx".format(timestr), verbose=True)
+
+            # we save an unwrapped version of the model!! (see eisen.utils.EisenModuleWrapper)
+            self.saver(message['model'].module, 'model_{}.onnx'.format(timestr))
