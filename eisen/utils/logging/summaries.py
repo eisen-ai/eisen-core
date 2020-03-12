@@ -152,7 +152,7 @@ class TensorboardSummaryHook:
                     self.write_volumetric_image(typ + '/{}'.format(key), message[typ][key], epoch)
 
                 if message[typ][key].ndim == 4:
-                    self.write_2D_image(typ + '/{}'.format(key), message[typ][key], epoch)
+                    self.write_image(typ + '/{}'.format(key), message[typ][key], epoch)
 
                 if message[typ][key].ndim == 3:
                     self.write_embedding(typ + '/{}'.format(key), message[typ][key], epoch)
@@ -197,8 +197,11 @@ class TensorboardSummaryHook:
         torch_value = torch.tensor(value).float()
 
         self.writer.add_video(name, torch_value, fps=10, global_step=global_step)
+        self.writer.add_scalar(name + '/mean', np.mean(value), global_step=global_step)
+        self.writer.add_scalar(name + '/std', np.std(value), global_step=global_step)
+        self.writer.add_histogram(name + '/histogram', value.flatten(), global_step=global_step)
 
-    def write_2D_image(self, name, value, global_step):
+    def write_image(self, name, value, global_step):
         self.writer.add_scalar(name + '/mean', np.mean(value), global_step=global_step)
         self.writer.add_scalar(name + '/std', np.std(value), global_step=global_step)
         self.writer.add_histogram(name + '/histogram', value.flatten(), global_step=global_step)

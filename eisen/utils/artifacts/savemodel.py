@@ -38,6 +38,15 @@ class SaveTorchModel:
             raise ValueError('The artifacts directory passed as parameter to the SaveTorchModel object does not exist')
 
     def __call__(self, model, filename='model.pt'):
+        """
+        Saves a model passed as argument. The model will be saved in Torch (statedict) format.
+
+        :param model: Model to be saved (refrain from using wrapped modules, see EisenModuleWrapper)
+        :type model: torch.nn.Module
+        :param filename: The filename that shall be used to save the model
+        :type filename: str
+        :return: None
+        """
         statedict = model.state_dict()
 
         torch.save(statedict, os.path.join(self.artifacts_dir, filename))
@@ -78,6 +87,16 @@ class SaveONNXModel:
             raise ValueError('The artifacts directory passed as parameter to the SaveTorchModel object does not exist')
 
     def __call__(self, model, filename='model.onnx'):
+        """
+        Saves a model passed as argument. The model will be saved in ONNX format.
+
+        :param model: Model to be saved (refrain from using wrapped modules, see EisenModuleWrapper)
+        :type model: torch.nn.Module
+        :param filename: The filename that shall be used to save the model
+        :type filename: str
+        :return: None
+        """
+
         dummy_input = torch.randn(*self.input_size)
 
         torch.onnx.export(
@@ -171,7 +190,6 @@ class SaveTorchModelHook:
             self.saver(message['model'].module, 'model_{}.pt'.format(timestr))
 
 
-
 class SaveONNXModelHook:
     """
     Saves a ONNX model snapshot of the current best model. The best model can be selected based using the best
@@ -246,8 +264,6 @@ class SaveONNXModelHook:
         self.saver = SaveONNXModel(self.artifacts_dir, self.input_size)
 
     def save_model(self, message):
-        dummy_input = torch.randn(*self.input_size)
-
         # we save an unwrapped version of the model!! (see eisen.utils.EisenModuleWrapper)
         self.saver(message['model'].module, 'model.onnx')
 
