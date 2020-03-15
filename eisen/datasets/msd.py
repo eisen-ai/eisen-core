@@ -10,6 +10,11 @@ class MSDDataset(Dataset):
     This object allows Medical Segmentation Decathlon data to be easily impoted in Eisen.
     More information about the data can be found here http://medicaldecathlon.com
 
+    Through this module, users are able to make use of the challenge data by simply specifying the directory where
+    the data is locally stored. Therefore it is necessary to first download the data, store or unpack it in a specific
+    directory and then instantiate an object of type MSDDataset which will make use of the directory structure and
+    the descriptive json file included in it and make the data available to Eisen.
+
     .. code-block:: python
 
         from eisen.datasets import MSDDataset

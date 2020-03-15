@@ -11,6 +11,11 @@ class CAMUS(Dataset):
     images of the heart. Further information about this dataset can be found on the official website
     https://www.creatis.insa-lyon.fr/Challenge/camus/index.html
 
+    Through this module, users are able to make use of the challenge data by simply specifying the directory where
+    the data is locally stored. Therefore it is necessary to first download the data, store or unpack it in a specific
+    directory and then instantiate an object of type CAMUS which will make use of the data in the directory
+    and make it available to Eisen.
+
     .. code-block:: python
 
         from eisen.datasets import CAMUS

@@ -53,6 +53,11 @@ class RSNAIntracranialHemorrhageDetection(Dataset):
     Further information about this dataset can be found on the official website
     https://www.kaggle.com/c/rsna-intracranial-hemorrhage-detection/overview
 
+    Through this module, users are able to make use of the challenge data by simply specifying the directory where
+    the data is locally stored. Therefore it is necessary to first download the data, store or unpack it in a specific
+    directory and then instantiate an object of type RSNAIntracranialHemorrhageDetection which will parse said
+    directory and make the data available to Eisen.
+
     .. code-block:: python
 
         from eisen.datasets import RSNAIntracranialHemorrhageDetection

@@ -11,6 +11,11 @@ class PatchCamelyon(Dataset):
     This object implements the capability of reading PatchCamelyon data. Further information about this dataset
     can be found on the official website https://patchcamelyon.grand-challenge.org/Introduction/
 
+    Through this module, users are able to make use of the challenge data by simply specifying the directory where
+    the data is locally stored. Therefore it is necessary to first download the data, store or unpack it in a specific
+    directory and then instantiate an object of type PatchCamelyon which will make use of the data in the directory as
+    well as the h5 files that are part of the dataset and make it available to Eisen.
+
     .. code-block:: python
 
         from eisen.datasets import PatchCamelyon
