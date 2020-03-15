@@ -56,9 +56,9 @@ class CAMUS(Dataset):
         <json>
         [
             {"name": "with_ground_truth", "type": "bool", "value": ""},
-            {"name": "with_2CH", "type": "bool", "value": "True"},
-            {"name": "with_4CH", "type": "bool", "value": "True"},
-            {"name": "with_entire_sequences", "type": "bool", "value": "False"}
+            {"name": "with_2CH", "type": "bool", "value": "true"},
+            {"name": "with_4CH", "type": "bool", "value": "true"},
+            {"name": "with_entire_sequences", "type": "bool", "value": "false"}
         ]
         </json>
         """
