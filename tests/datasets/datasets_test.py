@@ -36,16 +36,16 @@ class TestLoadPatchCamelyon:
         self.camelyon_dset = PatchCamelyon(self.base_path, self.file_name_x, self.file_name_y)
 
     def test_getitem(self):
-        self.item = self.camelyon_dset[0]
+        item = self.camelyon_dset[0]
 
-        assert np.all(self.item['image'] == 0)
-        assert np.all(self.item['label'] == 0)
+        assert np.all(item['image'] == 0)
+        assert np.all(item['label'] == 0)
 
-        assert self.item['image'].shape[0] == 3
-        assert self.item['image'].shape[1] == 32
-        assert self.item['image'].shape[2] == 32
+        assert item['image'].shape[0] == 3
+        assert item['image'].shape[1] == 32
+        assert item['image'].shape[2] == 32
 
-        assert self.item['label'].shape[0] == 1
+        assert item['label'].shape[0] == 1
 
     def test_len(self):
         assert len(self.camelyon_dset) == 2
@@ -82,30 +82,34 @@ class TestLoadCAMUS:
         )
 
     def test_getitem(self):
-        self.item = self.camus_dataset[0]
+        item = self.camus_dataset[0]
 
-        assert self.item['image_2CH'] == str(os.path.join(self.base_path, 'patient0001', 'patient0001_2CH_ED.mhd'))
-        assert self.item['image_4CH'] == str(os.path.join(self.base_path, 'patient0001', 'patient0001_4CH_ED.mhd'))
+        assert item['type'] == 'ED'
 
-        assert self.item['label_2CH'] == str(os.path.join(self.base_path, 'patient0001', 'patient0001_2CH_ED_gt.mhd'))
-        assert self.item['label_4CH'] == str(os.path.join(self.base_path, 'patient0001', 'patient0001_4CH_ED_gt.mhd'))
+        assert item['image_2CH'] == str(os.path.join(self.base_path, 'patient0001', 'patient0001_2CH_ED.mhd'))
+        assert item['image_4CH'] == str(os.path.join(self.base_path, 'patient0001', 'patient0001_4CH_ED.mhd'))
 
-        assert self.item['sequence_2CH'] == \
+        assert item['label_2CH'] == str(os.path.join(self.base_path, 'patient0001', 'patient0001_2CH_ED_gt.mhd'))
+        assert item['label_4CH'] == str(os.path.join(self.base_path, 'patient0001', 'patient0001_4CH_ED_gt.mhd'))
+
+        assert item['sequence_2CH'] == \
             str(os.path.join(self.base_path, 'patient0001', 'patient0001_2CH_sequence.mhd'))
-        assert self.item['sequence_4CH'] == \
+        assert item['sequence_4CH'] == \
             str(os.path.join(self.base_path, 'patient0001', 'patient0001_4CH_sequence.mhd'))
 
-        self.item = self.camus_dataset[1]
+        item = self.camus_dataset[1]
 
-        assert self.item['image_2CH'] == str(os.path.join(self.base_path, 'patient0001', 'patient0001_2CH_ES.mhd'))
-        assert self.item['image_4CH'] == str(os.path.join(self.base_path, 'patient0001', 'patient0001_4CH_ES.mhd'))
+        assert item['type'] == 'ES'
 
-        assert self.item['label_2CH'] == str(os.path.join(self.base_path, 'patient0001', 'patient0001_2CH_ES_gt.mhd'))
-        assert self.item['label_4CH'] == str(os.path.join(self.base_path, 'patient0001', 'patient0001_4CH_ES_gt.mhd'))
+        assert item['image_2CH'] == str(os.path.join(self.base_path, 'patient0001', 'patient0001_2CH_ES.mhd'))
+        assert item['image_4CH'] == str(os.path.join(self.base_path, 'patient0001', 'patient0001_4CH_ES.mhd'))
 
-        assert self.item['sequence_2CH'] == \
+        assert item['label_2CH'] == str(os.path.join(self.base_path, 'patient0001', 'patient0001_2CH_ES_gt.mhd'))
+        assert item['label_4CH'] == str(os.path.join(self.base_path, 'patient0001', 'patient0001_4CH_ES_gt.mhd'))
+
+        assert item['sequence_2CH'] == \
             str(os.path.join(self.base_path, 'patient0001', 'patient0001_2CH_sequence.mhd'))
-        assert self.item['sequence_4CH'] == \
+        assert item['sequence_4CH'] == \
             str(os.path.join(self.base_path, 'patient0001', 'patient0001_4CH_sequence.mhd'))
 
     def test_len(self):
