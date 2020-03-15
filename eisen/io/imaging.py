@@ -1,5 +1,59 @@
 import os
 import nibabel as nib
+import SimpleITK as sitk
+
+
+class LoadITKFromFilename:
+    """
+    This transform loads ITK data from filenames contained in specific field of the data dictionary.
+    Although this transform follows the general structure of other transforms, such as those contained in
+    eisen.transforms, it's kept separated from the others as it is responsible for I/O operations interacting
+    with the disk.
+
+    .. code-block:: python
+
+        from eisen.io import LoadITKFromFilename
+        tform = LoadITKFromFilename(['image', 'label'], '/abs/path/to/dataset')
+
+    """
+    def __init__(self, fields, data_dir):
+        """
+        LoadITKFromFilename loads ITK compatible files. The data is always read as float32.
+
+        :param fields: fields of the dictionary containing ITK file paths that need to be read
+        :type fields: list
+        :param data_dir: source data directory where data is located. This directory will be joined with data paths
+        :type data_dir: str
+
+        .. code-block:: python
+
+            from eisen.io import LoadITKFromFilename
+            tform = LoadITKFromFilename(
+                fields=['image', 'label'],
+                data_dir='/abs/path/to/dataset'
+            )
+
+        <json>
+        [
+            {"name": "fields", "type": "list:string", "value": ""}
+        ]
+
+        """
+        self.fields = fields
+        self.data_dir = data_dir
+
+        self.type_filter = sitk.CastImageFilter()
+        self.type_filter.SetOutputPixelType(sitk.sitkFloat32)
+
+    def __call__(self, data):
+        for field in self.fields:
+            volume = sitk.ReadImage(data[field])
+
+            volume = self.type_filter.Execute(volume)
+
+            data[field] = volume
+
+        return data
 
 
 class LoadNiftyFromFilename:

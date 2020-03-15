@@ -1,0 +1,119 @@
+import os
+import torch
+
+from torch.utils.data import Dataset
+
+
+class CAMUS(Dataset):
+    """
+    This object implements the capability of reading CAMUS data. The CAMUS dataset is a dataset of ultrasound
+    images of the heart. Further information about this dataset can be found on the official website
+    https://www.creatis.insa-lyon.fr/Challenge/camus/index.html
+
+    .. code-block:: python
+
+        from eisen.datasets import CAMUS
+
+        dset = CAMUS('/data/root/path')
+
+    """
+    def __init__(
+            self,
+            data_dir,
+            with_ground_truth,
+            with_2CH=True,
+            with_4CH=True,
+            with_entire_sequences=False,
+            transform=None
+    ):
+        """
+        :param data_dir: the base directory where the data is located
+        :type data_dir: str
+        :param with_ground_truth: whether ground truth annotation should be included (won't work during testing)
+        :type with_ground_truth: bool
+        :param with_2CH: whether 2 chambers data should be included (default True)
+        :type with_2CH: bool
+        :param with_4CH: whether 4 chambers data should be included (default True)
+        :type with_4CH: bool
+        :param with_entire_sequences: whether the entire sequences for 4CH and 2CH data should be included (default False)
+        :type with_entire_sequences: bool
+        :param transform: a transform object (can be the result of a composition of transforms)
+        :type transform: object
+
+        .. code-block:: python
+
+            from eisen.datasets import CAMUS
+
+            dset = CAMUS(
+                data_dir='/data/root/path',
+                with_ground_truth=True,
+                with_2CH=True,
+                with_4CH=True,
+                with_entire_sequences=False
+                transform=None
+            )
+
+        <json>
+        [
+            {"name": "with_ground_truth", "type": "bool", "value": ""},
+            {"name": "with_2CH", "type": "bool", "value": "True"},
+            {"name": "with_4CH", "type": "bool", "value": "True"},
+            {"name": "with_entire_sequences", "type": "bool", "value": "False"}
+        ]
+        </json>
+        """
+        self.data_dir = data_dir
+
+        self.with_ground_truth = with_ground_truth
+        self.with_2CH = with_2CH
+        self.with_4CH = with_4CH
+        self.with_entire_sequences = with_entire_sequences
+
+        self.data = []
+
+        all_subdirs = [o for o in os.listdir(self.data_dir) if os.path.isdir(os.path.join(self.data_dir, o))]
+
+        for dir_name in all_subdirs:
+
+            dir = os.path.join(self.data_dir, dir_name)
+
+            for typ in ['ED', 'ES']:
+                item = dict()
+
+                item['type'] = typ
+
+                if self.with_2CH:
+                    item['image_2CH'] = os.path.join(dir, '{}_2CH_{}.mhd'.format(dir_name, typ))
+
+                    if self.with_ground_truth:
+                        item['label_2CH'] = os.path.join(dir, '{}_2CH_{}_gt.mhd'.format(dir_name, typ))
+
+                    if self.with_entire_sequences:
+                        item['sequence_2CH'] = os.path.join(dir, '{}_2CH_sequence.mhd'.format(dir_name))
+
+                if self.with_4CH:
+                    item['image_4CH'] = os.path.join(dir, '{}_4CH_{}.mhd'.format(dir_name, typ))
+
+                    if self.with_ground_truth:
+                        item['label_4CH'] = os.path.join(dir, '{}_4CH_{}_gt.mhd'.format(dir_name, typ))
+
+                    if self.with_entire_sequences:
+                        item['sequence_4CH'] = os.path.join(dir, '{}_4CH_sequence.mhd'.format(dir_name))
+
+            self.data.append(item)
+
+        self.transform = transform
+
+    def __len__(self):
+        return len(self.data)
+
+    def __getitem__(self, idx):
+        if torch.is_tensor(idx):
+            idx = idx.tolist()
+
+        item = self.data[idx]
+
+        if self.transform:
+            item = self.transform(item)
+
+        return item

@@ -1,4 +1,5 @@
 import numpy as np
+import SimpleITK as sitk
 
 from eisen import EPS
 from nilearn.image import resample_img
@@ -233,6 +234,87 @@ class ResampleNiftiVolumes:
             data[field + '_original_shape'] = original_shape
 
         return data
+    
+    
+class ResampleITKVolumes:
+    """
+    Transform resampling ITK volumes to a new resolution (expressed in millimeters).
+    This transform can be only applied to fields of the data dictionary containing objects of type ITK (SimpleITK)
+
+    .. code-block:: python
+
+        from eisen.transforms import ResampleITKVolumes
+        tform = ResampleITKVolumes(['itk_data'], [1.0, 1.0, 1.0], 'linear')
+        tform = tform(data)
+
+    """
+    def __init__(self, fields, resolution, interpolation='linear'):
+        """
+        :param fields: list of names of the fields of data dictionary to work on
+        :type fields: list of str
+        :param resolution: vector of float values expressing desired resolution in mm
+        :type resolution: list of float
+        :param interpolation: interpolation strategy to use
+        :type interpolation: string
+
+        .. code-block:: python
+
+            from eisen.transforms import ResampleITKVolumes
+            tform = ResampleITKVolumes(
+                fields=['itk_data'],
+                resolution=[1.0, 1.0, 1.0],
+                interpolation='linear'
+            )
+
+        <json>
+        [
+            {"name": "fields", "type": "list:string", "value": ""},
+            {"name": "resolution", "type": "list:float", "value": ""},
+            {"name": "interpolation", "type": "string", "value":
+                [
+                    "linear",
+                    "nearest"
+                ]
+            }
+        ]
+        </json>
+        """
+
+        self.fields = fields
+        self.resolution = resolution
+        self.interpolation = interpolation
+
+    def __call__(self, data):
+        original_spacings = {}
+
+        for field in self.fields:
+            original_spacings[field] = []
+
+            resolution = np.asarray(self.resolution, dtype=float)
+
+            original_spacing = np.asarray(data[field].GetSpacing())
+            original_shape = np.asarray(data[field].GetSize())
+
+            factor = original_spacing / resolution
+            new_size = np.asarray(original_shape * factor, dtype=int)
+
+            if self.interpolation == 'nearest':
+                interpolator = sitk.sitkNearestNeighbor
+            else:
+                interpolator = sitk.sitkLinear
+
+            resampler = sitk.ResampleImageFilter()
+            resampler.SetReferenceImage(data[field])
+            resampler.SetOutputSpacing(resolution)
+            resampler.SetSize(new_size)
+            resampler.SetInterpolator(interpolator)
+
+            data[field] = resampler.Execute(data[field])
+
+            data[field + '_original_spacing'] = original_spacing
+            data[field + '_original_shape'] = original_shape
+
+        return data
 
 
 class NiftiToNumpy:
@@ -285,6 +367,55 @@ class NiftiToNumpy:
             if self.multichannel:
                 dims = list(range(entry_t.ndim))
                 entry_t = np.transpose(entry_t, [dims[-1]] + dims[0:-1])  # channel first if image is multichannel
+
+            data[field] = entry_t
+
+        return data
+
+
+class ITKToNumpy:
+    """
+    This transform allows a ITK volume to be converted to Numpy format. It is necessary to have this transform
+    at a certain point of every transformation chain as PyTorch uses data in Numpy format before converting it
+    to PyTorch Tensor.
+
+    .. code-block:: python
+
+        from eisen.transforms import ITKToNumpy
+        tform = ITKToNumpy(['image', 'label'])
+        tform = tform(data)
+
+    """
+    def __init__(self, fields, multichannel=False):
+        """
+        :param fields: list of names of the fields of data dictionary to convert from ITK to Numpy
+        :type fields: list of str
+        :param multichannel: need to set this parameter to True if data is multichannel
+        :type multichannel: bool
+
+        .. code-block:: python
+
+            from eisen.transforms import ITKToNumpy
+            tform = ITKToNumpy(fields=['image', 'label'], multichannel=False)
+            tform = tform(data)
+
+        <json>
+        [
+            {"name": "fields", "type": "list:string", "value": ""},
+            {"name": "multichannel", "type": "bool", "value": "False"}
+        ]
+        </json>
+        """
+        self.fields = fields
+        self.multichannel = multichannel
+
+    def __call__(self, data):
+        for field in self.fields:
+            entry_t = sitk.GetArrayFromImage(data[field]).astype(dtype=np.float32)
+
+            if self.multichannel:
+                dims = list(range(entry_t.ndim))
+                entry_t = np.transpose(entry_t, [dims[-1]] + dims[0:-1])
 
             data[field] = entry_t
 
