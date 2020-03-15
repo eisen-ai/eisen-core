@@ -1,5 +1,6 @@
 import os
 import torch
+import copy
 
 from torch.utils.data import Dataset
 
@@ -77,6 +78,10 @@ class CAMUS(Dataset):
 
             dir = os.path.join(self.data_dir, dir_name)
 
+            if len(os.listdir(dir)) == 0:
+                print('WARNING: dataset directory {} appears empty'.format(dir))
+                continue
+
             for typ in ['ED', 'ES']:
                 item = dict()
 
@@ -100,7 +105,7 @@ class CAMUS(Dataset):
                     if self.with_entire_sequences:
                         item['sequence_4CH'] = os.path.join(dir, '{}_4CH_sequence.mhd'.format(dir_name))
 
-            self.data.append(item)
+                self.data.append(item)
 
         self.transform = transform
 
@@ -111,7 +116,7 @@ class CAMUS(Dataset):
         if torch.is_tensor(idx):
             idx = idx.tolist()
 
-        item = self.data[idx]
+        item = copy.deepcopy(self.data[idx])
 
         if self.transform:
             item = self.transform(item)

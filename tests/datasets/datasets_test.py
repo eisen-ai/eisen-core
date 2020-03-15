@@ -2,10 +2,12 @@ import numpy as np
 import tempfile
 import h5py
 import os
+import SimpleITK as sitk
 
 from eisen.datasets import PatchCamelyon
 from eisen.datasets import JsonDataset
 from eisen.datasets import MSDDataset
+from eisen.datasets import CAMUS
 
 
 class TestLoadPatchCamelyon:
@@ -47,3 +49,64 @@ class TestLoadPatchCamelyon:
 
     def test_len(self):
         assert len(self.camelyon_dset) == 2
+
+
+def touch(fname, times=None):
+    with open(fname, 'a'):
+        os.utime(fname, times)
+
+
+class TestLoadCAMUS:
+    def setup_class(self):
+        self.base_path = tempfile.mkdtemp()
+
+        os.makedirs(os.path.join(self.base_path, 'patient0001'), exist_ok=True)
+
+        touch(os.path.join(self.base_path, 'patient0001', 'patient0001_2CH_ED.mhd'))
+        touch(os.path.join(self.base_path, 'patient0001', 'patient0001_2CH_ES.mhd'))
+        touch(os.path.join(self.base_path, 'patient0001', 'patient0001_4CH_ED.mhd'))
+        touch(os.path.join(self.base_path, 'patient0001', 'patient0001_4CH_ES.mhd'))
+        touch(os.path.join(self.base_path, 'patient0001', 'patient0001_2CH_ED_gt.mhd'))
+        touch(os.path.join(self.base_path, 'patient0001', 'patient0001_2CH_ES_gt.mhd'))
+        touch(os.path.join(self.base_path, 'patient0001', 'patient0001_4CH_ED_gt.mhd'))
+        touch(os.path.join(self.base_path, 'patient0001', 'patient0001_4CH_ES_gt.mhd'))
+        touch(os.path.join(self.base_path, 'patient0001', 'patient0001_4CH_sequence.mhd'))
+        touch(os.path.join(self.base_path, 'patient0001', 'patient0001_2CH_sequence.mhd'))
+
+        self.camus_dataset = CAMUS(
+            self.base_path,
+            with_ground_truth=True,
+            with_2CH=True,
+            with_4CH=True,
+            with_entire_sequences=True
+        )
+
+    def test_getitem(self):
+        self.item = self.camus_dataset[0]
+
+        assert self.item['image_2CH'] == str(os.path.join(self.base_path, 'patient0001', 'patient0001_2CH_ED.mhd'))
+        assert self.item['image_4CH'] == str(os.path.join(self.base_path, 'patient0001', 'patient0001_4CH_ED.mhd'))
+
+        assert self.item['label_2CH'] == str(os.path.join(self.base_path, 'patient0001', 'patient0001_2CH_ED_gt.mhd'))
+        assert self.item['label_4CH'] == str(os.path.join(self.base_path, 'patient0001', 'patient0001_4CH_ED_gt.mhd'))
+
+        assert self.item['sequence_2CH'] == \
+            str(os.path.join(self.base_path, 'patient0001', 'patient0001_2CH_sequence.mhd'))
+        assert self.item['sequence_4CH'] == \
+            str(os.path.join(self.base_path, 'patient0001', 'patient0001_4CH_sequence.mhd'))
+
+        self.item = self.camus_dataset[1]
+
+        assert self.item['image_2CH'] == str(os.path.join(self.base_path, 'patient0001', 'patient0001_2CH_ES.mhd'))
+        assert self.item['image_4CH'] == str(os.path.join(self.base_path, 'patient0001', 'patient0001_4CH_ES.mhd'))
+
+        assert self.item['label_2CH'] == str(os.path.join(self.base_path, 'patient0001', 'patient0001_2CH_ES_gt.mhd'))
+        assert self.item['label_4CH'] == str(os.path.join(self.base_path, 'patient0001', 'patient0001_4CH_ES_gt.mhd'))
+
+        assert self.item['sequence_2CH'] == \
+            str(os.path.join(self.base_path, 'patient0001', 'patient0001_2CH_sequence.mhd'))
+        assert self.item['sequence_4CH'] == \
+            str(os.path.join(self.base_path, 'patient0001', 'patient0001_4CH_sequence.mhd'))
+
+    def test_len(self):
+        assert len(self.camus_dataset) == 2
