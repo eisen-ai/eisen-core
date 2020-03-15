@@ -1,6 +1,7 @@
 import os
 import nibabel as nib
 import SimpleITK as sitk
+import pydicom
 
 
 class LoadITKFromFilename:
@@ -114,5 +115,67 @@ class LoadNiftyFromFilename:
             data[field] = img
             data[field + '_affines'] = img.affine
             data[field + '_orientations'] = nib.aff2axcodes(img.affine)
+
+        return data
+
+
+class LoadDICOMFromFilename:
+    """
+    This transform loads DICOM data from filenames contained in a specific field of the data dictionary.
+    Although this transform follows the general structure of other transforms, such as those contained in
+    eisen.transforms, it's kept separated from the others as it is responsible for I/O operations interacting
+    with the disk
+
+    .. code-block:: python
+
+        from eisen.io import LoadDICOMFromFilename
+        tform = LoadDICOMFromFilename(['image', 'label'], '/abs/path/to/dataset')
+
+    """
+    def __init__(self, fields, data_dir, store_data_array=True):
+        """
+        :param fields: list of names of the field of data dictionary to work on. These fields should contain data paths
+        :type fields: list
+        :param data_dir: source data directory where data is located. This directory will be joined with data paths
+        :type data_dir: str
+        :param store_data_array: whether image data as numpy array should be stored (in "field" + "_pixel_array")
+        :type store_data_array: bool
+
+        .. code-block:: python
+
+            from eisen.io import LoadDICOMFromFilename
+            tform = LoadDICOMFromFilename(
+                fields=['image'],
+                data_dir='/abs/path/to/dataset'
+                store_data_array=True
+            )
+
+        <json>
+        [
+            {"name": "fields", "type": "list:string", "value": ""},
+            {"name": "store_data_array", "type": "bool", "value": "false"}
+        ]
+        </json>
+        """
+        self.data_dir = data_dir
+        self.fields = fields
+        self.store_data_array = store_data_array
+
+    def __call__(self, data):
+        """
+        :param data: Data dictionary to be processed by this transform
+        :type data: dict
+        :return: Updated data dictionary
+        :rtype: dict
+        """
+        for field in self.fields:
+            dataset = pydicom.dcmread(os.path.join(self.data_dir, data[field]))
+
+            if self.store_data_array:
+                img = dataset.pixel_array
+
+                data[field + '_pixel_array'] = img
+
+            data[field] = dataset
 
         return data
