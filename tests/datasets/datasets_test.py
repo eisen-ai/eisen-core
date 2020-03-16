@@ -3,6 +3,7 @@ import tempfile
 import h5py
 import os
 import csv
+import json
 
 from eisen.datasets import PatchCamelyon
 from eisen.datasets import JsonDataset
@@ -10,6 +11,11 @@ from eisen.datasets import MSDDataset
 from eisen.datasets import CAMUS
 from eisen.datasets import RSNABoneAgeChallenge
 from eisen.datasets import RSNAIntracranialHemorrhageDetection
+
+
+def touch(fname, times=None):
+    with open(fname, 'a'):
+        os.utime(fname, times)
 
 
 class TestPatchCamelyon:
@@ -51,11 +57,6 @@ class TestPatchCamelyon:
 
     def test_len(self):
         assert len(self.camelyon_dset) == 2
-
-
-def touch(fname, times=None):
-    with open(fname, 'a'):
-        os.utime(fname, times)
 
 
 class TestCAMUS:
@@ -252,3 +253,32 @@ class TestRSNAIntracranialHemorrhageDetection:
     def test_len(self):
         assert len(self.dataset_train) == 2
         assert len(self.dataset_test) == 2
+
+
+class TestJsonDataset:
+    def setup_class(self):
+        self.base_path = tempfile.mkdtemp()
+
+        dataset = [
+            {'image': '/path/to/image_1.png', 'label': '/path/to/label_1png'},
+            {'image': '/path/to/image_2.png', 'label': '/path/to/label_2.png'},
+        ]
+
+        with open(os.path.join(self.base_path, 'json_file.json'), 'w') as outfile:
+            json.dump(dataset, outfile)
+
+        self.dataset = JsonDataset(self.base_path, 'json_file.json')
+
+    def test_getitem(self):
+        item = self.dataset[0]
+
+        assert item['image'] == '/path/to/image_1.png'
+        assert item['label'] == '/path/to/label_1png'
+
+        item = self.dataset[1]
+
+        assert item['image'] == '/path/to/image_2.png'
+        assert item['label'] == '/path/to/label_2.png'
+
+    def test_len(self):
+        assert len(self.dataset) == 2
