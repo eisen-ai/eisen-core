@@ -2,6 +2,7 @@ import os
 import nibabel as nib
 import SimpleITK as sitk
 import pydicom
+import PIL.Image
 
 
 class LoadITKFromFilename:
@@ -177,5 +178,58 @@ class LoadDICOMFromFilename:
                 data[field + '_pixel_array'] = img
 
             data[field] = dataset
+
+        return data
+
+
+class LoadPILImageFromFilename:
+    """
+    This transform loads Images from filenames contained in a specific field of the data dictionary. The images are
+    loaded via Pillow, an imaging library for Python.
+    Although this transform follows the general structure of other transforms, such as those contained in
+    eisen.transforms, it's kept separated from the others as it is responsible for I/O operations interacting
+    with the disk
+
+    .. code-block:: python
+
+        from eisen.io import LoadPILImageFromFilename
+        tform = LoadPILImageFromFilename(['image', 'label'], '/abs/path/to/dataset')
+
+    """
+    def __init__(self, fields, data_dir):
+        """
+        :param fields: list of names of the field of data dictionary to work on. These fields should contain data paths
+        :type fields: list
+        :param data_dir: source data directory where data is located. This directory will be joined with data paths
+        :type data_dir: str
+
+        .. code-block:: python
+
+            from eisen.io import LoadPILImageFromFilename
+            tform = LoadPILImageFromFilename(
+                fields=['image'],
+                data_dir='/abs/path/to/dataset'
+            )
+
+        <json>
+        [
+            {"name": "fields", "type": "list:string", "value": ""}
+        ]
+        </json>
+        """
+        self.data_dir = data_dir
+        self.fields = fields
+
+    def __call__(self, data):
+        """
+        :param data: Data dictionary to be processed by this transform
+        :type data: dict
+        :return: Updated data dictionary
+        :rtype: dict
+        """
+        for field in self.fields:
+            image = PIL.Image.open(os.path.join(self.data_dir, data[field]))
+
+            data[field] = image
 
         return data
