@@ -3,8 +3,15 @@ import nibabel as nib
 import tempfile
 import os
 import copy
+import SimpleITK as sitk
+import PIL
+
+from pydicom.dataset import FileDataset
 
 from eisen.io.imaging import LoadNiftyFromFilename
+from eisen.io.imaging import LoadDICOMFromFilename
+from eisen.io.imaging import LoadITKFromFilename
+from eisen.io.imaging import LoadPILImageFromFilename
 
 
 class TestLoadNiftyFromFilename:
@@ -45,6 +52,115 @@ class TestLoadNiftyFromFilename:
         assert np.all(self.data == np.asanyarray(self.dset_nii_gz['nii_gz'].dataobj))
         assert np.all(self.data == np.asanyarray(self.dset_all['nii'].dataobj))
         assert np.all(self.data == np.asanyarray(self.dset_all['nii_gz'].dataobj))
+
+
+class TestLoadPILImageFromFilename:
+    def setup_class(self):
+        self.data = np.random.rand(32, 32).astype(np.float32)
+
+        self.data = (self.data - np.min(self.data)) / (np.max(self.data) - np.min(self.data)) * 255.0
+
+        self.data = np.round(self.data)
+
+        self.base_path = tempfile.mkdtemp()
+
+        self.png_name = 'file.png'
+
+        self.file_path = os.path.join(self.base_path, self.png_name)
+
+        im = PIL.Image.fromarray(self.data)
+        im = im.convert("L")
+
+        im.save(self.file_path)
+
+        self.data_entry = {
+            'png': self.png_name
+        }
+
+        self.loader = LoadPILImageFromFilename(['png'], self.base_path)
+
+    def test_call(self):
+        data_entry_transformed = self.loader(copy.deepcopy(self.data_entry))
+
+        assert isinstance(data_entry_transformed['png'], PIL.PngImagePlugin.PngImageFile)
+
+        np_im = np.array(data_entry_transformed['png'])
+
+        assert np.all(self.data == np_im)
+
+
+class TestLoadITKImageFromFilename:
+    def setup_class(self):
+        self.data = np.random.randn(32, 32, 32).astype(np.int32)
+
+        self.base_path = tempfile.mkdtemp()
+
+        self.mhd_name = 'file.mhd'
+
+        self.file_path = os.path.join(self.base_path, self.mhd_name)
+
+        sitk_image = sitk.GetImageFromArray(self.data)
+
+        castImageFilter = sitk.CastImageFilter()
+        castImageFilter.SetOutputPixelType(sitk.sitkInt32)
+
+        sitk_image = castImageFilter.Execute(sitk_image)
+
+        sitk.WriteImage(sitk_image, self.file_path)
+
+        self.data_entry = {
+            'mhd': self.mhd_name
+        }
+
+        self.loader = LoadITKFromFilename(['mhd'], self.base_path)
+
+    def test_call(self):
+        data_entry_transformed = self.loader(copy.deepcopy(self.data_entry))
+
+        assert isinstance(data_entry_transformed['mhd'], sitk.Image)
+
+        assert np.all(self.data == sitk.GetArrayFromImage(data_entry_transformed['mhd']))
+
+
+class TestLoadDICOMImageFromFilename:
+    def setup_class(self):
+        self.data = np.random.randn(32, 32).astype(np.int32)
+
+        self.base_path = tempfile.mkdtemp()
+
+        self.dcm_name = 'file.dcm'
+
+        self.file_path = os.path.join(self.base_path, self.dcm_name)
+
+        sitk_image = sitk.GetImageFromArray(self.data, )
+
+        castImageFilter = sitk.CastImageFilter()
+        castImageFilter.SetOutputPixelType(sitk.sitkInt32)
+
+        sitk_image = castImageFilter.Execute(sitk_image)
+
+        sitk.WriteImage(sitk_image, self.file_path)
+
+        self.data_entry = {
+            'dcm': self.dcm_name
+        }
+
+        self.loader = LoadDICOMFromFilename(['dcm'], self.base_path)
+        self.loader_px_data = LoadDICOMFromFilename(['dcm'], self.base_path, store_data_array=True)
+
+    def test_call(self):
+        data_entry_transformed = self.loader(copy.deepcopy(self.data_entry))
+
+        data_entry_transformed_with_data_array = self.loader_px_data(copy.deepcopy(self.data_entry))
+
+        assert isinstance(data_entry_transformed['dcm'], FileDataset)
+        assert isinstance(data_entry_transformed_with_data_array['dcm'], FileDataset)
+        assert isinstance(data_entry_transformed_with_data_array['dcm_pixel_array'], np.ndarray)
+
+        assert np.all(self.data == np.asanyarray(data_entry_transformed['dcm'].pixel_array))
+        assert np.all(self.data == np.asanyarray(data_entry_transformed_with_data_array['dcm_pixel_array']))
+        assert np.all(self.data == np.asanyarray(data_entry_transformed_with_data_array['dcm'].pixel_array))
+
 
 
 

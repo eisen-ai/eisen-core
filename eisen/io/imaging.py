@@ -49,7 +49,7 @@ class LoadITKFromFilename:
 
     def __call__(self, data):
         for field in self.fields:
-            volume = sitk.ReadImage(data[field])
+            volume = sitk.ReadImage(os.path.join(self.data_dir, data[field]))
 
             volume = self.type_filter.Execute(volume)
 
