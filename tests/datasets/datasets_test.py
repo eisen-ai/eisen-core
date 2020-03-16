@@ -282,3 +282,63 @@ class TestJsonDataset:
 
     def test_len(self):
         assert len(self.dataset) == 2
+
+
+class TestMSDDataset:
+    def setup_class(self):
+        self.base_path = tempfile.mkdtemp()
+
+        dataset = {
+            "name": "Hippocampus",
+            "description": "Left and right hippocampus segmentation",
+            "reference": " Vanderbilt University Medical Center",
+            "licence": "CC-BY-SA 4.0",
+            "relase": "1.0 04/05/2018",
+            "tensorImageSize": "3D",
+            "modality": {
+                "0": "MRI"
+            },
+            "labels": {
+                "0": "background",
+                "1": "Anterior",
+                "2": "Posterior"
+            },
+            "numTraining": 260,
+            "numTest": 130,
+            "training": [
+                {"image": "./imagesTr/hippocampus_367.nii.gz", "label": "./labelsTr/hippocampus_367.nii.gz"},
+                {"image": "./imagesTr/hippocampus_304.nii.gz", "label": "./labelsTr/hippocampus_304.nii.gz"}
+            ],
+            "test": [
+                "./imagesTs/hippocampus_267.nii.gz",
+                "./imagesTs/hippocampus_379.nii.gz"
+            ]
+        }
+        with open(os.path.join(self.base_path, 'json_file.json'), 'w') as outfile:
+            json.dump(dataset, outfile)
+
+        self.dataset_train = MSDDataset(self.base_path, 'json_file.json', phase='training')
+        self.dataset_test = MSDDataset(self.base_path, 'json_file.json', phase='test')
+
+    def test_getitem(self):
+        item = self.dataset_train[0]
+
+        assert item['image'] == './imagesTr/hippocampus_367.nii.gz'
+        assert item['label'] == './labelsTr/hippocampus_367.nii.gz'
+
+        item = self.dataset_train[1]
+
+        assert item['image'] == './imagesTr/hippocampus_304.nii.gz'
+        assert item['label'] == './labelsTr/hippocampus_304.nii.gz'
+
+        item = self.dataset_test[0]
+
+        assert item['image'] == './imagesTs/hippocampus_267.nii.gz'
+
+        item = self.dataset_test[1]
+
+        assert item['image'] == './imagesTs/hippocampus_379.nii.gz'
+
+    def test_len(self):
+        assert len(self.dataset_train) == 2
+        assert len(self.dataset_test) == 2
