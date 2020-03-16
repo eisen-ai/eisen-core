@@ -20,16 +20,17 @@ def read_bone_age_kaggle_label_csv(file, training):
                 bone_age = row[1]
 
                 data[image_id] = {
-                    'male': male,
-                    'label': bone_age
+                    'male': male == 'True',
+                    'label': int(bone_age)
                 }
 
             else:
                 male = row[1]
 
                 data[image_id] = {
-                    'male': male
+                    'male': male == 'M'
                 }
+
     return data
 
 
@@ -51,12 +52,14 @@ class RSNABoneAgeChallenge(Dataset):
         dset = RSNABoneAgeChallenge('/data/root/path', True)
 
     """
-    def __init__(self, data_dir, training):
+    def __init__(self, data_dir, training, transform=None):
         """
         :param data_dir: The dataset root path directory where the challenge dataset is stored
         :type data_dir: str
         :param training: Boolean indicating whether training or test data should be loaded
         :type training: bool
+        :param transform: a transform object (can be the result of a composition of transforms)
+        :type transform: object
 
         .. code-block:: python
 
@@ -75,6 +78,7 @@ class RSNABoneAgeChallenge(Dataset):
         """
         self.data_dir = data_dir
         self.training = training
+        self.transform = transform
 
         self.data = []
 
@@ -87,7 +91,7 @@ class RSNABoneAgeChallenge(Dataset):
                 image_id = os.path.splitext(image)[0]
 
                 item = {
-                    'image': image,
+                    'image': os.path.join('boneage-training-dataset', 'boneage-training-dataset', image),
                     'label': labels[image_id]['label'],
                     'male': labels[image_id]['male']
                 }
@@ -100,9 +104,11 @@ class RSNABoneAgeChallenge(Dataset):
             images = [o for o in os.listdir(test_dir) if 'png' in o]
 
             for image in images:
+                image_id = os.path.splitext(image)[0]
+
                 item = {
-                    'image': image,
-                    'male': metadata['male']
+                    'image': os.path.join('boneage-test-dataset', 'boneage-test-dataset', image),
+                    'male': metadata[image_id]['male']
                 }
 
                 self.data.append(item)

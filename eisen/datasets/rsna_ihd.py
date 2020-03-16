@@ -65,12 +65,14 @@ class RSNAIntracranialHemorrhageDetection(Dataset):
         dset = RSNAIntracranialHemorrhageDetection('/data/root/path', True)
 
     """
-    def __init__(self, data_dir, training):
+    def __init__(self, data_dir, training, transform=None):
         """
         :param data_dir: The dataset root path directory where the challenge dataset is stored
         :type data_dir: str
         :param training: Boolean indicating whether training or test data should be loaded
         :type training: bool
+        :param transform: a transform object (can be the result of a composition of transforms)
+        :type transform: object
 
         .. code-block:: python
 
@@ -89,6 +91,7 @@ class RSNAIntracranialHemorrhageDetection(Dataset):
         """
         self.data_dir = data_dir
         self.training = training
+        self.transform = transform
 
         self.data = []
 
@@ -103,7 +106,7 @@ class RSNAIntracranialHemorrhageDetection(Dataset):
                 label_array = label_dict_to_array(labels[image_id])
 
                 item = {
-                    'image': image,
+                    'image': os.path.join('stage_2_train', image),
                     'label': label_array
                 }
 
@@ -115,7 +118,7 @@ class RSNAIntracranialHemorrhageDetection(Dataset):
 
             for image in images:
                 item = {
-                    'image': image,
+                    'image': os.path.join('stage_2_test', image),
                 }
 
                 self.data.append(item)
