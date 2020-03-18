@@ -2,6 +2,14 @@ from torch import nn
 
 
 class DiceMetric(nn.Module):
+    """
+    The Dice coefficient is often used in segmentation tasks to evaluate the performance of algorithms by providing a
+    scalar result expressing the amount of overlap between the ground truth contour and the prediction.
+    The Dice coefficient is robust to class imbalance and therefore suitable to evaluate small foreground
+    regions in images or volumes.
+
+    This version of the Dice metrics supports multi-class segmentation (although in a naive manner).
+    """
     def __init__(self, weight=1.0, dim=None):
         """
         :param weight: absolute weight of this metric

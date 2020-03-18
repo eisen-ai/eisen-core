@@ -2,6 +2,13 @@ from torch import nn
 
 
 class DiceLoss(nn.Module):
+    """
+    Dice loss is often used in segmentation tasks to optimize the overlap between the ground truth contour
+    and the prediction. Dice loss is robust to class imbalance and therefore suitable to segment small foreground
+    regions in images or volumes.
+
+    This version of the Dice loss supports multi-class segmentation (although in a naive manner).
+    """
     def __init__(self, weight=1.0, dim=None):
         """
         :param weight: absolute weight of this loss
