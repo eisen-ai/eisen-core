@@ -234,10 +234,11 @@ class DilationBlock(nn.Module):
 class HighResNet(nn.Module):
     def __init__(
             self,
-            in_channels,
-            out_channels,
-            dimensions=None,
+            input_channels,
+            output_channels,
             initial_out_channels_power=4,
+            outputs_activation='sigmoid',
+            dimensions=None,
             layers_per_residual_block=2,
             residual_blocks_per_dilation=3,
             dilations=3,
@@ -249,8 +250,8 @@ class HighResNet(nn.Module):
             ):
         assert dimensions in (2, 3)
         super().__init__()
-        self.in_channels = in_channels
-        self.out_channels = out_channels
+        self.in_channels = input_channels
+        self.out_channels = output_channels
         self.layers_per_residual_block = layers_per_residual_block
         self.residual_blocks_per_dilation = residual_blocks_per_dilation
         self.dilations = dilations
@@ -327,10 +328,18 @@ class HighResNet(nn.Module):
         )
 
         blocks.append(classifier)
+
+        if outputs_activation == 'sigmoid':
+            self.outputs_activation = nn.Sigmoid()
+        elif outputs_activation == 'softmax':
+            self.outputs_activation = nn.Softmax()
+        elif outputs_activation == 'none':
+            self.outputs_activation = nn.Identity()
+
         self.block = nn.Sequential(*blocks)
 
     def forward(self, x):
-        return self.block(x)
+        return self.outputs_activation(self.block(x))
 
     @property
     def num_parameters(self):
@@ -357,12 +366,82 @@ class HighResNet(nn.Module):
 
 
 class HighRes2DNet(HighResNet):
-    def __init__(self, *args, **kwargs):
-        kwargs['dimensions'] = 2
-        super().__init__(*args, **kwargs)
+    def __init__(self,
+                 input_channels,
+                 output_channels,
+                 initial_out_channels_power=4,
+                 outputs_activation='sigmoid',
+                 *args,
+                 **kwargs
+                 ):
+        """
+        :param input_channels: number of input channels
+        :type input_channels: int
+        :param output_channels: number of output channels
+        :type output_channels: int
+        :param initial_out_channels_power: initial output channels power
+        :type initial_out_channels_power: int
+        :param outputs_activation: output activation type either sigmoid, softmax or none
+        :type outputs_activation: str
+
+        <json>
+        [
+            {"name": "input_names", "type": "list:string", "value": "['images']"},
+            {"name": "output_names", "type": "list:string", "value": "['output']"},
+            {"name": "input_channels", "type": "int", "value": ""},
+            {"name": "output_channels", "type": "int", "value": ""},
+            {"name": "initial_out_channels_power", "type": "int", "value": "4"},
+            {"name": "outputs_activation", "type": "string", "value": ["sigmoid", "softmax", "none"]}
+        ]
+        </json>
+       """
+        super().__init__(
+            input_channels,
+            output_channels,
+            initial_out_channels_power,
+            outputs_activation,
+            dimensions=2,
+            *args,
+            **kwargs
+        )
 
 
 class HighRes3DNet(HighResNet):
-    def __init__(self, *args, **kwargs):
-        kwargs['dimensions'] = 3
-        super().__init__(*args, **kwargs)
+    def __init__(self,
+                 input_channels,
+                 output_channels,
+                 initial_out_channels_power=4,
+                 outputs_activation='sigmoid',
+                 *args,
+                 **kwargs
+                 ):
+        """
+        :param input_channels: number of input channels
+        :type input_channels: int
+        :param output_channels: number of output channels
+        :type output_channels: int
+        :param initial_out_channels_power: initial output channels power
+        :type initial_out_channels_power: int
+        :param outputs_activation: output activation type either sigmoid, softmax or none
+        :type outputs_activation: str
+
+        <json>
+        [
+            {"name": "input_names", "type": "list:string", "value": "['images']"},
+            {"name": "output_names", "type": "list:string", "value": "['output']"},
+            {"name": "input_channels", "type": "int", "value": ""},
+            {"name": "output_channels", "type": "int", "value": ""},
+            {"name": "initial_out_channels_power", "type": "int", "value": "4"},
+            {"name": "outputs_activation", "type": "string", "value": ["sigmoid", "softmax", "none"]}
+        ]
+        </json>
+       """
+        super().__init__(
+            input_channels,
+            output_channels,
+            initial_out_channels_power,
+            outputs_activation,
+            dimensions=3,
+            *args,
+            **kwargs
+        )
