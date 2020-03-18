@@ -3,7 +3,8 @@ import torch
 import uuid
 
 from eisen import (
-    EISEN_END_EPOCH_EVENT
+    EISEN_END_EPOCH_EVENT,
+    EISEN_END_BATCH_EVENT
 )
 from eisen.utils import merge_two_dicts
 from eisen.utils.workflows.workflows import GenericWorkflow, EpochDataAggregator
@@ -115,6 +116,12 @@ class Training(GenericWorkflow):
                 logging.debug('DEBUG: Training epoch {}, batch {}'.format(self.epoch, i))
 
                 output_dictionary = self.process_batch(batch)
+
+                dispatcher.send(
+                    message=output_dictionary,
+                    signal=EISEN_END_BATCH_EVENT,
+                    sender=self.id
+                )
 
                 ea(output_dictionary)
 

@@ -39,30 +39,42 @@ class EpochDataAggregator:
 
         if len(self.epoch_data.keys()) == 0:
             for typ in ['losses', 'metrics']:
-                for i in range(len(output_dictionary[typ])):
-                    for key in output_dictionary[typ][i].keys():
-                        output_dictionary[typ][i][key] = [output_dictionary[typ][i][key]]
+                try:
+                    for i in range(len(output_dictionary[typ])):
+                        for key in output_dictionary[typ][i].keys():
+                            output_dictionary[typ][i][key] = [output_dictionary[typ][i][key]]
+                except (AttributeError, ValueError):
+                    # if the data is not compliant, remove it from epoch data
+                    self.epoch_data[typ].pop(key, None)
 
             self.epoch_data = output_dictionary
             return
 
         for typ in ['losses', 'metrics']:
-            for i in range(len(output_dictionary[typ])):
-                for key in output_dictionary[typ][i].keys():
-                    self.epoch_data[typ][i][key].append(output_dictionary[typ][i][key])
+            try:
+                for i in range(len(output_dictionary[typ])):
+                    for key in output_dictionary[typ][i].keys():
+                        self.epoch_data[typ][i][key].append(output_dictionary[typ][i][key])
+            except (AttributeError, ValueError):
+                # if the data is not compliant, remove it from epoch data
+                self.epoch_data[typ].pop(key, None)
 
         for typ in ['inputs', 'outputs']:
-            for key in output_dictionary[typ].keys():
-                # if data is not high dimensional (Eg. it is a vector) we save all of it (throughout the epoch)
-                # the behaviour we want to have is that classification data (for example) can be saved for the
-                # whole epoch instead of only one batch
-                if output_dictionary[typ][key].ndim == 1:
-                    self.epoch_data[typ][key] = \
-                        np.concatenate([self.epoch_data[typ][key], output_dictionary[typ][key]], axis=0)
-                else:
-                    # we do not save high dimensional data throughout the epoch, we just save the last batch
-                    # the behaviour in this case is to save images and volumes only for the last batch of the epoch
-                    self.epoch_data[typ][key] = output_dictionary[typ][key]
+            try:
+                for key in output_dictionary[typ].keys():
+                    # if data is not high dimensional (Eg. it is a vector) we save all of it (throughout the epoch)
+                    # the behaviour we want to have is that classification data (for example) can be saved for the
+                    # whole epoch instead of only one batch
+                    if output_dictionary[typ][key].ndim == 1:
+                        self.epoch_data[typ][key] = \
+                            np.concatenate([self.epoch_data[typ][key], output_dictionary[typ][key]], axis=0)
+                    else:
+                        # we do not save high dimensional data throughout the epoch, we just save the last batch
+                        # the behaviour in this case is to save images and volumes only for the last batch of the epoch
+                        self.epoch_data[typ][key] = output_dictionary[typ][key]
+            except (AttributeError, ValueError):
+                # if the data is not compliant, remove it from epoch data
+                self.epoch_data[typ].pop(key, None)
 
     def __exit__(self, *args, **kwargs):
         for typ in ['losses', 'metrics']:

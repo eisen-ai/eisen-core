@@ -94,6 +94,12 @@ class Testing(GenericWorkflow):
 
                     output_dictionary = self.process_batch(batch)
 
+                    dispatcher.send(
+                        message=output_dictionary,
+                        signal=EISEN_END_BATCH_EVENT,
+                        sender=self.id
+                    )
+
                     ea(output_dictionary)
 
         dispatcher.send(message=ea.epoch_data, signal=EISEN_END_EPOCH_EVENT, sender=self.id)
