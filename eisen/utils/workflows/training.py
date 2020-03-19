@@ -63,7 +63,7 @@ class Training(GenericWorkflow):
 
         self.epoch = 0
 
-        if self.gpu:  # todo check if already gpu
+        if self.gpu and not next(self.model.parameters()).is_cuda:
             self.model.cuda()
 
         if self.data_parallel:  # todo check if already data parallel
