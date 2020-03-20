@@ -324,7 +324,7 @@ def partition_idx_weight_list(weights, idx=None):
 
 
 def get_n_idx_partitions(weights, n):
-    assert n > 1 and ((n & (n - 1)) == 0), f"the parameters n has to be power of 2. you supplied {n}"
+    assert n > 1 and ((n & (n - 1)) == 0), "the parameters n has to be power of 2. you supplied {}".format(n)
 
     weights = np.asarray(weights)
 
