@@ -7,6 +7,8 @@ import torch
 from torch.nn import Module
 from torch.utils.data import Dataset
 
+from collections import OrderedDict
+
 
 class ListDataset(Dataset):
     def __init__(self, data_list, transform=None):
@@ -261,3 +263,222 @@ class EisenDatasetSplitter:
         dataset_test = ListDataset(data_test, self.transform_test)
 
         return dataset_train, dataset_valid, dataset_test
+
+
+def estimate_modulesize(model, input_size, type_size=4):
+    """
+    Not at all a precise estimate. Only serves the purprose of fair model splitting across GPUs
+    """
+    para = sum([np.prod(list(p.size())) for p in model.parameters()])
+
+    input_ = torch.FloatTensor(*input_size).cuda()
+
+    total_size = []
+
+    def hook(module, input, output):
+        total_size.append(np.prod(torch.tensor(output.size()).numpy()))
+
+        return
+
+    mods = list(model.modules())
+
+    for i in range(1, len(mods)):
+        sub_mod = list(mods[i].modules())
+        if len(sub_mod) == 1:
+            sub_mod[0].register_forward_hook(hook)
+
+    out = model(input_)
+
+    out_size = torch.tensor(out.size()).numpy()
+
+    for i in range(1, len(mods)):
+        sub_mod = list(mods[i].modules())
+        if len(sub_mod) == 1:
+            sub_mod[0]._forward_hooks = OrderedDict()
+
+    total_size.append(np.prod(torch.tensor(out.size()).numpy()))
+
+    total_tensorsize_fw = np.sum(np.asarray(total_size)) * type_size / 1024 / 1024
+    total_paramsize = para * type_size / 1024 / 1024
+
+    total_size = total_tensorsize_fw + total_paramsize * 2
+
+    return total_size, out_size
+
+
+def partition_idx_weight_list(weights, idx=None):
+    weights = np.asarray(weights)
+
+    total = np.sum(weights)
+
+    half = total / 2 + 1
+
+    for i in range(len(weights)):
+        if np.sum(weights[0:i]) >= half:
+            break
+
+    if idx is None:
+        return [np.asarray(range(0, i, 1)), np.asarray(range(i, len(weights), 1))]
+    else:
+        return [np.asarray(idx[range(0, i, 1)]), np.asarray(idx[range(i, len(weights), 1)])]
+
+
+def get_n_idx_partitions(weights, n):
+    assert n > 1 and ((n & (n - 1)) == 0), f"the parameters n has to be power of 2. you supplied {n}"
+
+    weights = np.asarray(weights)
+
+    partitioning = partition_idx_weight_list(weights, idx=None)
+
+    while len(partitioning) is not n:
+        result = []
+        for entry in partitioning:
+            result = result + list(partition_idx_weight_list(weights[entry], idx=entry))
+
+        partitioning = result
+
+    return partitioning
+
+
+class InputArgumentPlacementChanger:
+    def __init__(self, gpu_name):
+        self.gpu_name = gpu_name
+
+    def __call__(self, module, argument):
+        if hasattr(argument, "__iter__"):
+            tensor_list = []
+
+            for element in argument:
+                tensor_list.append(element.to(self.gpu_name))
+
+            return tuple(tensor_list)
+        else:
+            argument = argument.to(self.gpu_name)
+
+            return argument
+
+
+class PipelineExecutionStreamer(nn.Module):
+    def __init__(self, operations_sequence, split_size):
+        super(PipelineExecutionStreamer, self).__init__()
+        self.operations_sequence = operations_sequence
+        self.split_size = split_size
+
+    def forward(self, x):
+        splits = iter(list(x.split(self.split_size, dim=0)) + [None] * (len(self.operations_sequence) - 1))
+
+        pipeline = [None] * (len(self.operations_sequence) - 1)
+
+        outputs = []
+
+        def make_tuple(argument):
+            if not isinstance(outputs, (tuple)):
+                argument = tuple([argument])
+
+            return argument
+
+        fresh_data = make_tuple(next(splits))
+
+        pipeline[0] = self.operations_sequence[0](*fresh_data)
+
+        # loops until element before the last
+        reverse_loop_counter = list(range(len(pipeline)))[::-1]
+
+        for split in splits:
+            for idx in reverse_loop_counter:
+                # from the last stage to the first
+                if pipeline[idx] is not None:
+                    if idx == (len(pipeline) - 1):
+                        dta = make_tuple(pipeline[idx])
+                        outputs.append(self.operations_sequence[idx + 1](*dta))
+                    else:
+                        dta = make_tuple(pipeline[idx])
+                        pipeline[idx + 1] = self.operations_sequence[idx + 1](*dta)
+
+                if idx == 0:
+                    make_tuple(split)
+                    if fresh_data is not None:
+                        pipeline[idx] = self.operations_sequence[idx](*fresh_data)
+
+                    if fresh_data is None:
+                        pipeline[idx] = None
+
+        return torch.cat(outputs)
+
+
+class EisenAutoModelParallelModuleWrapper(EisenModuleWrapper):
+    """
+    Experimental feature: automatic model parallelism. Might not work.
+    """
+    def __init__(self, module, number_gpus, *args, **kwargs):
+        super(EisenAutoModelParallelModuleWrapper, self).__init__(module, *args, **kwargs)
+
+        self.number_gpus = number_gpus
+
+        self.gpu_device_ids = [f'cuda:{idx}' for idx in range(self.number_gpus)]
+
+        self.first_run = True
+
+    def forward(self, **kwargs):
+        input_dict = {}
+
+        execution_list = []
+
+        for dst_arg, src_arg in zip(self.module_argument_list, self.input_names):
+            input_dict[dst_arg] = kwargs[src_arg]
+
+        if self.first_run:
+            self.first_run = False
+
+            print(f'Automatically distributing the model across {self.number_gpus} GPUs...')
+
+            input_size = input_dict[list(input_dict.keys())[0]].size()
+
+            # estimate module children size
+
+            children = list(self.module.children())
+
+            children_size = []
+
+            for child in children:
+                size, out_size = estimate_modulesize(child, input_size)
+
+                children_size.append(size)
+
+                input_size = out_size
+
+            partitions_idx = get_n_idx_partitions(children_size, self.number_gpus)
+
+            for curr_gpu, indices in enumerate(partitions_idx):
+                curr_gpu_name = self.gpu_device_ids[curr_gpu]
+
+                seq_list = []
+
+                for idx in indices:
+                    children[idx] = children[idx].to(curr_gpu_name)
+
+                    seq_list.append(children[idx])
+
+                sequential_block = torch.nn.Sequential(*seq_list)
+
+                argument_placement_changer = InputArgumentPlacementChanger(curr_gpu_name)
+
+                sequential_block.register_forward_pre_hook(argument_placement_changer)
+
+                execution_list.append(sequential_block)
+
+                self.module = PipelineExecutionStreamer(execution_list, split_size=2)
+
+        input_tensor = input_dict[list(input_dict.keys())[0]]
+
+        outputs = self.module(input_tensor).to(self.gpu_device_ids[0])
+
+        if not isinstance(outputs, (list, tuple)):
+            outputs = (outputs,)
+
+        ret_dict = {}
+
+        for output, output_name in zip(outputs, self.output_names):
+            ret_dict[output_name] = output
+
+        return ret_dict

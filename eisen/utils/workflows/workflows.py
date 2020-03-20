@@ -38,16 +38,16 @@ class EpochDataAggregator:
         output_dictionary = convert_output_dict_to_cpu(output_dictionary)
 
         if len(self.epoch_data.keys()) == 0:
-            for typ in ['losses', 'metrics']:
-                try:
-                    for i in range(len(output_dictionary[typ])):
-                        for key in output_dictionary[typ][i].keys():
-                            output_dictionary[typ][i][key] = [output_dictionary[typ][i][key]]
-                except (AttributeError, ValueError):
-                    # if the data is not compliant, remove it from epoch data
-                    self.epoch_data[typ].pop(key, None)
-
             self.epoch_data = output_dictionary
+
+            for typ in ['losses', 'metrics']:
+                for i in range(len(output_dictionary[typ])):
+                    try:
+                        for key in output_dictionary[typ][i].keys():
+                            self.epoch_data[typ][i][key] = [output_dictionary[typ][i][key]]
+                    except (AttributeError, ValueError):
+                        # if the data is not compliant, remove it from epoch data
+                        self.epoch_data[typ][i].pop(key, None)
             return
 
         for typ in ['losses', 'metrics']:
