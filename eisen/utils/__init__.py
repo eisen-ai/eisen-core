@@ -410,7 +410,7 @@ class EisenAutoModelParallelModuleWrapper(EisenModuleWrapper):
     """
     Experimental feature: automatic model parallelism. Might not work.
     """
-    def __init__(self, module, number_gpus, *args, **kwargs):
+    def __init__(self, module, number_gpus, split_size, *args, **kwargs):
         super(EisenAutoModelParallelModuleWrapper, self).__init__(module, *args, **kwargs)
 
         self.number_gpus = number_gpus
@@ -467,7 +467,7 @@ class EisenAutoModelParallelModuleWrapper(EisenModuleWrapper):
 
                 execution_list.append(sequential_block)
 
-                self.module = PipelineExecutionStreamer(execution_list, split_size=2)
+                self.module = PipelineExecutionStreamer(execution_list, split_size=split_size)
 
         input_tensor = input_dict[list(input_dict.keys())[0]]
 
