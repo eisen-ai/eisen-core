@@ -419,6 +419,8 @@ class EisenAutoModelParallelModuleWrapper(EisenModuleWrapper):
 
         self.first_run = True
 
+        self.split_size = split_size
+
     def forward(self, **kwargs):
         input_dict = {}
 
@@ -467,7 +469,7 @@ class EisenAutoModelParallelModuleWrapper(EisenModuleWrapper):
 
                 execution_list.append(sequential_block)
 
-                self.module = PipelineExecutionStreamer(execution_list, split_size=split_size)
+                self.module = PipelineExecutionStreamer(execution_list, split_size=self.split_size)
 
         input_tensor = input_dict[list(input_dict.keys())[0]]
 
