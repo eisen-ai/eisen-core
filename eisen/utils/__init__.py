@@ -358,7 +358,7 @@ class InputArgumentPlacementChanger:
             return argument
 
 
-class PipelineExecutionStreamer(nn.Module):
+class PipelineExecutionStreamer(torch.nn.Module):
     def __init__(self, operations_sequence, split_size):
         super(PipelineExecutionStreamer, self).__init__()
         self.operations_sequence = operations_sequence
@@ -372,7 +372,7 @@ class PipelineExecutionStreamer(nn.Module):
         outputs = []
 
         def make_tuple(argument):
-            if not isinstance(outputs, (tuple)):
+            if not isinstance(outputs, tuple):
                 argument = tuple([argument])
 
             return argument
