@@ -432,7 +432,7 @@ class EisenAutoModelParallelModuleWrapper(EisenModuleWrapper):
         if self.first_run:
             self.first_run = False
 
-            print(f'Automatically distributing the model across {self.number_gpus} GPUs...')
+            print('Automatically distributing the model across {} GPUs...'.format(self.number_gpus))
 
             input_size = input_dict[list(input_dict.keys())[0]].size()
 
