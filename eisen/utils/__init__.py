@@ -415,7 +415,7 @@ class EisenAutoModelParallelModuleWrapper(EisenModuleWrapper):
 
         self.number_gpus = number_gpus
 
-        self.gpu_device_ids = [f'cuda:{idx}' for idx in range(self.number_gpus)]
+        self.gpu_device_ids = ['cuda:{}'.format(idx) for idx in range(self.number_gpus)]
 
         self.first_run = True
 
