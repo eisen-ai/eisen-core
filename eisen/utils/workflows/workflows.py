@@ -43,6 +43,9 @@ class EpochDataAggregator:
     def __call__(self, output_dictionary):
         output_dictionary = convert_output_dict_to_cpu(output_dictionary)
 
+        self.epoch_data['epoch'] = output_dictionary['epoch']
+        self.epoch_data['model'] = output_dictionary['model']
+
         for typ in ['losses', 'metrics']:
 
             if typ not in self.epoch_data.keys():
