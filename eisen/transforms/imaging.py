@@ -541,9 +541,9 @@ class CropCenteredSubVolumes:
 
             data[field] = image_patch
 
-            data[field + '_start_px'] = crop_before - pad_before
+            data[field + '_start_px'] = (crop_before - pad_before).tolist()
 
-            data[field + '_end_px'] = crop_after - pad_after
+            data[field + '_end_px'] = (crop_after - pad_after).tolist()
 
         return data
 
