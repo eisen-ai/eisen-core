@@ -1,24 +1,30 @@
 import numpy as np
+import torch
 
 from eisen import EISEN_BEST_MODEL_LOSS, EISEN_BEST_MODEL_METRIC
 from pydispatch import dispatcher
 
 
+
 def convert_output_dict_to_cpu(output_dict):
     for typ in ['losses', 'metrics']:
-        try:
-            for i in range(len(output_dict[typ])):
-                for key in output_dict[typ][i].keys():
+        for i in range(len(output_dict[typ])):
+            for key in output_dict[typ][i].keys():
+                if isinstance(output_dict[typ][i][key], torch.Tensor):
                     output_dict[typ][i][key] = output_dict[typ][i][key].cpu().data.numpy()
-        except:
-            pass
+                elif isinstance(output_dict[typ][key], np.ndarray):
+                    pass
+                else:
+                    output_dict[typ][i].pop(key, None)
 
     for typ in ['inputs', 'outputs']:
-        try:
-            for key in output_dict[typ].keys():
+        for key in output_dict[typ].keys():
+            if isinstance(output_dict[typ][key], torch.Tensor):
                 output_dict[typ][key] = output_dict[typ][key].cpu().data.numpy()
-        except:
-            pass
+            elif isinstance(output_dict[typ][key], np.ndarray):
+                pass
+            else:
+                output_dict[typ].pop(key, None)
 
     return output_dict
 
@@ -37,44 +43,42 @@ class EpochDataAggregator:
     def __call__(self, output_dictionary):
         output_dictionary = convert_output_dict_to_cpu(output_dictionary)
 
-        if len(self.epoch_data.keys()) == 0:
-            self.epoch_data = output_dictionary
-
-            for typ in ['losses', 'metrics']:
-                for i in range(len(output_dictionary[typ])):
-                    try:
-                        for key in output_dictionary[typ][i].keys():
-                            self.epoch_data[typ][i][key] = [output_dictionary[typ][i][key]]
-                    except (AttributeError, ValueError):
-                        # if the data is not compliant, remove it from epoch data
-                        self.epoch_data[typ][i].pop(key, None)
-            return
-
         for typ in ['losses', 'metrics']:
-            try:
-                for i in range(len(output_dictionary[typ])):
-                    for key in output_dictionary[typ][i].keys():
-                        self.epoch_data[typ][i][key].append(output_dictionary[typ][i][key])
-            except (AttributeError, ValueError):
-                # if the data is not compliant, remove it from epoch data
-                self.epoch_data[typ].pop(key, None)
+
+            if typ not in self.epoch_data.keys():
+                self.epoch_data[typ] = [{}] * len(output_dictionary[typ])
+
+            for i in range(len(output_dictionary[typ])):
+                for key in output_dictionary[typ][i].keys():
+                    data = output_dictionary[typ][i][key]
+                    if isinstance(data, np.ndarray):
+                        if key not in self.epoch_data[typ][i].keys():
+                            self.epoch_data[typ][i][key] = [data]
+                        else:
+                            self.epoch_data[typ][i][key].append(data)
 
         for typ in ['inputs', 'outputs']:
-            try:
-                for key in output_dictionary[typ].keys():
-                    # if data is not high dimensional (Eg. it is a vector) we save all of it (throughout the epoch)
-                    # the behaviour we want to have is that classification data (for example) can be saved for the
-                    # whole epoch instead of only one batch
-                    if output_dictionary[typ][key].ndim == 1:
-                        self.epoch_data[typ][key] = \
-                            np.concatenate([self.epoch_data[typ][key], output_dictionary[typ][key]], axis=0)
+            if typ not in self.epoch_data.keys():
+                self.epoch_data[typ] = {}
+
+            for key in output_dictionary[typ].keys():
+                data = output_dictionary[typ][key]
+
+                if isinstance(data, np.ndarray):
+                    if typ not in self.epoch_data.keys():
+                        self.epoch_data[typ][key] = data
+
                     else:
-                        # we do not save high dimensional data throughout the epoch, we just save the last batch
-                        # the behaviour in this case is to save images and volumes only for the last batch of the epoch
-                        self.epoch_data[typ][key] = output_dictionary[typ][key]
-            except (AttributeError, ValueError):
-                # if the data is not compliant, remove it from epoch data
-                self.epoch_data[typ].pop(key, None)
+                        # if data is not high dimensional (Eg. it is a vector) we save all of it (throughout the epoch)
+                        # the behaviour we want to have is that classification data (for example) can be saved for the
+                        # whole epoch instead of only one batch
+                        if output_dictionary[typ][key].ndim == 1:
+                            self.epoch_data[typ][key] = \
+                                np.concatenate([self.epoch_data[typ][key], output_dictionary[typ][key]], axis=0)
+                        else:
+                            # we do not save high dimensional data throughout the epoch, we just save the last batch
+                            # the behaviour in this case is to save images and volumes only for the last batch of the epoch
+                            self.epoch_data[typ][key] = output_dictionary[typ][key]
 
     def __exit__(self, *args, **kwargs):
         for typ in ['losses', 'metrics']:
