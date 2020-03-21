@@ -396,11 +396,11 @@ class PipelineExecutionStreamer(torch.nn.Module):
                         pipeline[idx + 1] = self.operations_sequence[idx + 1](*dta)
 
                 if idx == 0:
-                    make_tuple(split)
-                    if fresh_data is not None:
-                        pipeline[idx] = self.operations_sequence[idx](*fresh_data)
+                    if split is not None:
+                        dta = make_tuple(split)
+                        pipeline[idx] = self.operations_sequence[idx](*dta)
 
-                    if fresh_data is None:
+                    if split is None:
                         pipeline[idx] = None
 
         return torch.cat(outputs)
