@@ -9,7 +9,7 @@ from pydispatch import dispatcher
 def convert_output_dict_to_cpu(output_dict):
     for typ in ['losses', 'metrics']:
         for i in range(len(output_dict[typ])):
-            for key in output_dict[typ][i].keys():
+            for key in list(output_dict[typ][i].keys()):
                 if isinstance(output_dict[typ][i][key], torch.Tensor):
                     output_dict[typ][i][key] = output_dict[typ][i][key].cpu().data.numpy()
                 elif isinstance(output_dict[typ][key], np.ndarray):
@@ -18,7 +18,7 @@ def convert_output_dict_to_cpu(output_dict):
                     output_dict[typ][i].pop(key, None)
 
     for typ in ['inputs', 'outputs']:
-        for key in output_dict[typ].keys():
+        for key in list(output_dict[typ].keys()):
             if isinstance(output_dict[typ][key], torch.Tensor):
                 output_dict[typ][key] = output_dict[typ][key].cpu().data.numpy()
             elif isinstance(output_dict[typ][key], np.ndarray):

@@ -10,3 +10,4 @@ tensorboard==2.1.1
 matplotlib==3.0.3
 SimpleITK==1.2.4
 pydicom==1.4.2
+moviepy==1.0.1
