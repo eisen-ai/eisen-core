@@ -339,6 +339,13 @@ class HighResNet(nn.Module):
         self.block = nn.Sequential(*blocks)
 
     def forward(self, x):
+        """
+        Computes output of the network.
+
+        :param x: Input tensor containing images
+        :type x: torch.Tensor
+        :return: prediction
+        """
         return self.outputs_activation(self.block(x))
 
     @property

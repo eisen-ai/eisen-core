@@ -153,6 +153,14 @@ class UNet(nn.Module):
             self.outputs_activation_fn = nn.Identity()
 
     def forward(self, x):
+        """
+        Computes output of the network.
+
+        :param x: Input tensor containing images
+        :type x: torch.Tensor
+        :return: prediction
+        """
+
         x1 = self.inc(x)
         x2 = self.down1(x1)
         x3 = self.down2(x2)

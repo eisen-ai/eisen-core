@@ -33,6 +33,15 @@ class DiceLoss(nn.Module):
         self.weight = weight
 
     def forward(self, predictions, labels):
+        """
+        Computes Dice loss between predictions and labels.
+
+        :param predictions: Predictions by the neural network
+        :type predictions: torch.Tensor
+        :param labels: Ground truth annotation from dataset
+        :type predictions: torch.Tensor
+        :return: Dice loss
+        """
         dice_loss = 1.0 - \
                     2.0 * (labels * predictions).sum(dim=self.dim) / (labels ** 2 + predictions ** 2).sum(dim=self.dim)
 

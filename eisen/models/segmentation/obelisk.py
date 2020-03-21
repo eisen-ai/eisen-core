@@ -110,7 +110,16 @@ class ObeliskMIDL(nn.Module):
         elif outputs_activation == 'none':
             self.outputs_activation = nn.Identity()
 
-    def forward(self, images, sample_grid=None, **kwargs):
+    def forward(self, images, sample_grid=None):
+        """
+        Computes output of the Obelisk network.
+
+        :param images: Input tensor containing images
+        :type images: torch.Tensor
+        :param sample_grid: Optional parameter, sampling grid. can be obtained via F.affine_grid(...)
+        :type sample_grid: torch.Tensor
+        :return: prediction
+        """
         B, C, D, H, W = images.size()
 
         if (sample_grid is None):

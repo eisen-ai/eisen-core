@@ -172,6 +172,13 @@ class UNet3D(nn.Module):
             self.outputs_activation_fn = nn.Identity()
 
     def forward(self, x):
+        """
+        Computes output of the network.
+
+        :param x: Input tensor containing images
+        :type x: torch.Tensor
+        :return: prediction
+        """
         # Down sampling
         down_1 = self.down_1(x)
         pool_1 = self.pool_1(down_1)

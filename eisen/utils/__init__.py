@@ -76,6 +76,18 @@ class EisenModuleWrapper(Module):
 
     """
     def __init__(self, module, input_names, output_names, *args, **kwargs):
+        """
+        :param module: This is a Module type, not a Module instance. Aka a class name, not a class instance.
+        :type module: type
+        :param input_names: list of strings corresponding to batch keys, to be supplied to the module positionally
+        :type input_names: list of str
+        :param output_names: list of strings corresponding to output dictionary keys to hold module outputs
+        :type output_names: list of str
+        :param args: positional argument to instantiate the module
+        :type args: list
+        :param kwargs: keyword arguments to instantiate the module
+        :type kwargs: dict
+        """
         super(EisenModuleWrapper, self).__init__()
 
         self.input_names = input_names
@@ -359,7 +371,20 @@ class InputArgumentPlacementChanger:
 
 
 class PipelineExecutionStreamer(torch.nn.Module):
+    """
+    This execution streamer takes a sequence of operations (torch.nn.Module) and executes them in a pipeline.
+    Clearly this is only useful when each operation is executed on a different device. In this way,
+    the execution can be asynchronously kicked off on each device separately, therefore maximizing the GPU usage.
+    More details about this idea can be found here:
+    https://pytorch.org/tutorials/intermediate/model_parallel_tutorial.html#speed-up-by-pipelining-inputs
+    """
     def __init__(self, operations_sequence, split_size):
+        """
+        :param operations_sequence: A list containing operations that should be done in sequence
+        :type operations_sequence: list of torch.nn.Module
+        :param split_size: Split size in order to obtain chunks of each batch to fill the pipeline
+        :type split_size: int
+        """
         super(PipelineExecutionStreamer, self).__init__()
         self.operations_sequence = operations_sequence
         self.split_size = split_size
@@ -408,9 +433,27 @@ class PipelineExecutionStreamer(torch.nn.Module):
 
 class EisenAutoModelParallelModuleWrapper(EisenModuleWrapper):
     """
-    Experimental feature: automatic model parallelism. Might not work.
+    Eisen Module Wrapper having the capability of distributing the model across different GPUs as specified by the user.
+    The module being wrapped should have >= number_gpus children (sub modules) in order for this approach to be
+    effective. In case this is not true, the wrapper still works (but won't make use/occupy some of the GPUs). Usually
+    modules have multiple children, therefore for normal use this condition is verified.
+
+    This object, estimates the size of each child module and decides a distribution that places consequent operations
+    in each GPU so that the memory usage of each GPUs is balanced across all processors.
     """
     def __init__(self, module, number_gpus, split_size, *args, **kwargs):
+        """
+        :param module: This is a Module type, not a Module instance. Aka a class name, not a class instance.
+        :type module: type
+        :param number_gpus: how many GPUs should be used
+        :type number_gpus: int
+        :param split_size: split size for pipeline execution
+        :type split_size: int
+        :param args: positional arguments for superclass EisenModuleWrapper and the Module itself
+        :type args: list
+        :param kwargs: keyword arguments for superclass EisenModuleWrapper and the Module itself
+        :type kwargs: dict
+        """
         super(EisenAutoModelParallelModuleWrapper, self).__init__(module, *args, **kwargs)
 
         self.number_gpus = number_gpus

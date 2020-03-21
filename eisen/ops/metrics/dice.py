@@ -34,6 +34,15 @@ class DiceMetric(nn.Module):
         self.weight = weight
 
     def forward(self, predictions, labels):
+        """
+        Computes Dice metric between predictions and labels.
+
+        :param predictions: Predictions by the neural network
+        :type predictions: torch.Tensor
+        :param labels: Ground truth annotation from dataset
+        :type predictions: torch.Tensor
+        :return: Dice metric
+        """
         predictions = (predictions >= 0.5).float()
 
         dice = 2.0 * (labels * predictions).sum(dim=self.dim) / (labels ** 2 + predictions ** 2).sum(dim=self.dim)
