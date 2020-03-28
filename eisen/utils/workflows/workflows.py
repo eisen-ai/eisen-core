@@ -46,42 +46,47 @@ class EpochDataAggregator:
         self.epoch_data['epoch'] = output_dictionary['epoch']
         self.epoch_data['model'] = output_dictionary['model']
 
-        for typ in [key for key in self.epoch_data.keys() if key == 'losses' or key == 'metrics']:
-
+        for typ in ['losses', 'metrics']:
             if typ not in self.epoch_data.keys():
                 self.epoch_data[typ] = [{}] * len(output_dictionary[typ])
 
             for i in range(len(output_dictionary[typ])):
                 for key in output_dictionary[typ][i].keys():
-                    data = output_dictionary[typ][i][key]
-                    if isinstance(data, np.ndarray):
-                        if key not in self.epoch_data[typ][i].keys():
-                            self.epoch_data[typ][i][key] = [data]
-                        else:
-                            self.epoch_data[typ][i][key].append(data)
+                    try:
+                        data = output_dictionary[typ][i][key]
+                        if isinstance(data, np.ndarray):
+                            if key not in self.epoch_data[typ][i].keys():
+                                self.epoch_data[typ][i][key] = [data]
+                            else:
+                                self.epoch_data[typ][i][key].append(data)
+                    except KeyError:
+                        pass
 
-        for typ in [key for key in self.epoch_data.keys() if key == 'inputs' or key == 'outputs']:
+        for typ in ['inputs', 'outputs']:
             if typ not in self.epoch_data.keys():
                 self.epoch_data[typ] = {}
 
             for key in output_dictionary[typ].keys():
-                data = output_dictionary[typ][key]
+                try:
+                    data = output_dictionary[typ][key]
 
-                if isinstance(data, np.ndarray):
-                    if typ not in self.epoch_data.keys():
-                        self.epoch_data[typ][key] = data
+                    if isinstance(data, np.ndarray):
+                        if typ not in self.epoch_data.keys():
+                            self.epoch_data[typ][key] = data
 
-                    else:
-                        # if data is not high dimensional (Eg. it is a vector) we save all of it (throughout the epoch)
-                        # the behaviour we want to have is that classification data (for example) can be saved for the
-                        # whole epoch instead of only one batch
-                        if output_dictionary[typ][key].ndim == 1:
-                            self.epoch_data[typ][key] = \
-                                np.concatenate([self.epoch_data[typ][key], output_dictionary[typ][key]], axis=0)
                         else:
-                            # we do not save high dimensional data throughout the epoch, we just save the last batch
-                            # the behaviour in this case is to save images and volumes only for the last batch of the epoch
-                            self.epoch_data[typ][key] = output_dictionary[typ][key]
+                            # if data is not high dimensional (Eg. it is a vector) we save all of it (throughout the epoch)
+                            # the behaviour we want to have is that classification data (for example) can be saved for the
+                            # whole epoch instead of only one batch
+                            if output_dictionary[typ][key].ndim == 1:
+                                self.epoch_data[typ][key] = \
+                                    np.concatenate([self.epoch_data[typ][key], output_dictionary[typ][key]], axis=0)
+                            else:
+                                # we do not save high dimensional data throughout the epoch, we just save the last batch
+                                # the behaviour in this case is to save images and volumes only for the last batch of the epoch
+                                self.epoch_data[typ][key] = output_dictionary[typ][key]
+                except KeyError:
+                    pass
 
     def __exit__(self, *args, **kwargs):
         for typ in ['losses', 'metrics']:
