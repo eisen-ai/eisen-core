@@ -196,7 +196,7 @@ class VNet(nn.Module):
     def forward(self, images):
         """
         Computes output of the network.
-        
+
         :param images: Input tensor containing images
         :type images: torch.Tensor
         :return: prediction
