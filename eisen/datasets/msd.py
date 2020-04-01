@@ -18,7 +18,8 @@ class MSDDataset(Dataset):
     .. code-block:: python
 
         from eisen.datasets import MSDDataset
-        dataset = CreateConstantFlags(
+
+        dataset = MSDDataset(
             '/abs/path/to/data',
             '/path/to/dataset.json',
             'training',
@@ -40,7 +41,8 @@ class MSDDataset(Dataset):
         .. code-block:: python
 
             from eisen.datasets import MSDDataset
-            dataset = CreateConstantFlags(
+
+            dataset = MSDDataset(
                 data_dir='/abs/path/to/data',
                 json_file='/path/to/dataset.json',
                 phase='training',
