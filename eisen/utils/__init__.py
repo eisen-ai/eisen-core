@@ -68,33 +68,31 @@ class EisenModuleWrapper(Module):
 
         from torchvision.models import resnet18
 
-        # We can then instantiate an object of class EisenModuleWrapper and specify the Module we want to
+        # We can then instantiate an object of class EisenModuleWrapper and instantiate the Module we want to
         # wrap as well as the fields of the data dictionary that will interpreted as input, and the fields
         # that we desire the output to be stored at. Additional arguments for the Module itself can
         # be passed as named arguments.
 
-        adapted_module = EisenModuleWrapper(resnet18, ['image'], ['prediction'], pretrained=False)
+        module = resnet18(pretrained=False)
+
+        adapted_module = EisenModuleWrapper(module, ['image'], ['prediction'])
 
     """
-    def __init__(self, module, input_names, output_names, *args, **kwargs):
+    def __init__(self, module, input_names, output_names):
         """
-        :param module: This is a Module type, not a Module instance. Aka a class name, not a class instance.
-        :type module: type
+        :param module: This is a Module instance
+        :type module: torch.nn.Module
         :param input_names: list of strings corresponding to batch keys, to be supplied to the module positionally
         :type input_names: list of str
         :param output_names: list of strings corresponding to output dictionary keys to hold module outputs
         :type output_names: list of str
-        :param args: positional argument to instantiate the module
-        :type args: list
-        :param kwargs: keyword arguments to instantiate the module
-        :type kwargs: dict
         """
         super(EisenModuleWrapper, self).__init__()
 
         self.input_names = input_names
         self.output_names = output_names
 
-        self.module = module(*args, **kwargs)
+        self.module = module
 
         module_argument_list = inspect.getfullargspec(self.module.forward)[0]
 
@@ -141,18 +139,20 @@ class EisenTransformWrapper:
         # wrap as well as the field of the data dictionary that should be affected by such Transformation.
         # Additional arguments for the Transformation itself can be passed as named arguments.
 
-        adapted_transform = EisenTransformWrapper(CenterCrop, ['image'], (224, 224))
+        transform = CenterCrop((224, 224))
+
+        adapted_transform = EisenTransformWrapper(transform, ['image'])
 
     """
-    def __init__(self, module, fields, *args, **kwargs):
+    def __init__(self, transform, fields):
         super(EisenTransformWrapper, self).__init__()
         self.fields = fields
 
-        self.module = module(*args, **kwargs)
+        self.transform = transform
 
     def __call__(self, data):
         for field in self.fields:
-           data[field] = self.module(data[field])
+           data[field] = self.transform(data[field])
 
         return data
 
@@ -177,20 +177,22 @@ class EisenDatasetWrapper(Dataset):
         # wrap as well as the fields of the data dictionary that will be returned by the adapted __getitem__ method.
         # Additional arguments for the Dataset itself can be passed as named arguments.
 
-        adapted_dataset = EisenDatasetWrapper(MNIST, ['image', 'label'], './', download=True)
+        dataset = MNIST('./', download=True)
+        
+        adapted_dataset = EisenDatasetWrapper(dataset, ['image', 'label'])
 
     """
 
-    def __init__(self, module, field_names, transform=None, *args, **kwargs):
+    def __init__(self, dataset, field_names, transform=None):
         super(EisenDatasetWrapper, self).__init__()
         self.field_names = field_names
 
-        self.module = module(*args, **kwargs)
+        self.dataset = dataset
 
         self.transform = transform
 
     def __getitem__(self, item):
-        items = self.module[item]
+        items = self.dataset[item]
 
         assert len(self.field_names) == len(items)
 
@@ -204,7 +206,7 @@ class EisenDatasetWrapper(Dataset):
         return ret_arg
 
     def __len__(self):
-        return len(self.module)
+        return len(self.dataset)
 
 
 class EisenDatasetSplitter:
@@ -436,6 +438,11 @@ class ModelParallel(Module):
     def __init__(self, module, split_size, device_ids=None, output_device=None, dim=0):
         super(ModelParallel, self).__init__()
 
+        module_argument_list = inspect.getfullargspec(module.forward)[0]
+
+        if len(module_argument_list) > 2:
+            raise NotImplementedError('Support for modules with more than one input is not yet implemented.')
+
         self.first_run = True
         self.split_size = split_size
 
@@ -459,13 +466,13 @@ class ModelParallel(Module):
             self.first_run = False
             self.module.cuda(device_ids[0])
 
-    def forward(self, *inputs, **kwargs):
+    def forward(self, x):
         execution_list = []
 
         if self.first_run:
             self.first_run = False
 
-            input_size = inputs[0].size()
+            input_size = x.size()
 
             # estimate module children size
 
@@ -502,104 +509,7 @@ class ModelParallel(Module):
 
                 self.module = PipelineExecutionStreamer(execution_list, split_size=self.split_size)
 
-        outputs = self.module(*inputs).to(self.output_device)
+        outputs = self.module(x).to(self.output_device)
 
         return outputs
 
-
-class EisenAutoModelParallelModuleWrapper(EisenModuleWrapper):
-    """
-    Eisen Module Wrapper having the capability of distributing the model across different GPUs as specified by the user.
-    The module being wrapped should have >= number_gpus children (sub modules) in order for this approach to be
-    effective. In case this is not true, the wrapper still works (but won't make use/occupy some of the GPUs). Usually
-    modules have multiple children, therefore for normal use this condition is verified.
-
-    This object, estimates the size of each child module and decides a distribution that places consequent operations
-    in each GPU so that the memory usage of each GPUs is balanced across all processors.
-    """
-    def __init__(self, module, number_gpus, split_size, *args, **kwargs):
-        """
-        :param module: This is a Module type, not a Module instance. Aka a class name, not a class instance.
-        :type module: type
-        :param number_gpus: how many GPUs should be used
-        :type number_gpus: int
-        :param split_size: split size for pipeline execution
-        :type split_size: int
-        :param args: positional arguments for superclass EisenModuleWrapper and the Module itself
-        :type args: list
-        :param kwargs: keyword arguments for superclass EisenModuleWrapper and the Module itself
-        :type kwargs: dict
-        """
-        super(EisenAutoModelParallelModuleWrapper, self).__init__(module, *args, **kwargs)
-
-        self.number_gpus = number_gpus
-
-        self.gpu_device_ids = ['cuda:{}'.format(idx) for idx in range(self.number_gpus)]
-
-        self.first_run = True
-
-        self.split_size = split_size
-
-    def forward(self, **kwargs):
-        input_dict = {}
-
-        execution_list = []
-
-        for dst_arg, src_arg in zip(self.module_argument_list, self.input_names):
-            input_dict[dst_arg] = kwargs[src_arg]
-
-        if self.first_run:
-            self.first_run = False
-
-            print('Automatically distributing the model across {} GPUs...'.format(self.number_gpus))
-
-            input_size = input_dict[list(input_dict.keys())[0]].size()
-
-            # estimate module children size
-
-            children = list(self.module.children())
-
-            children_size = []
-
-            for child in children:
-                size, out_size = _estimate_modulesize(child, input_size)
-
-                children_size.append(size)
-
-                input_size = out_size
-
-            partitions_idx = _get_n_idx_partitions(children_size, self.number_gpus)
-
-            for curr_gpu, indices in enumerate(partitions_idx):
-                curr_gpu_name = self.gpu_device_ids[curr_gpu]
-
-                seq_list = []
-
-                for idx in indices:
-                    children[idx] = children[idx].to(curr_gpu_name)
-
-                    seq_list.append(children[idx])
-
-                sequential_block = torch.nn.Sequential(*seq_list)
-
-                argument_placement_changer = InputArgumentPlacementChanger(curr_gpu_name)
-
-                sequential_block.register_forward_pre_hook(argument_placement_changer)
-
-                execution_list.append(sequential_block)
-
-                self.module = PipelineExecutionStreamer(execution_list, split_size=self.split_size)
-
-        input_tensor = input_dict[list(input_dict.keys())[0]]
-
-        outputs = self.module(input_tensor).to(self.gpu_device_ids[0])
-
-        if not isinstance(outputs, (list, tuple)):
-            outputs = (outputs,)
-
-        ret_dict = {}
-
-        for output, output_name in zip(outputs, self.output_names):
-            ret_dict[output_name] = output
-
-        return ret_dict
