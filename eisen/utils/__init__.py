@@ -11,6 +11,97 @@ from torch.cuda._utils import _get_device_index
 from collections import OrderedDict
 
 
+def merge_two_dicts(x, y):
+    z = x.copy()
+    z.update(y)
+    return z
+
+
+def read_json_from_file(json_file):
+    if not os.path.exists(json_file):
+        raise FileNotFoundError('The JSON file {} cannot be read'.format(json_file))
+
+    with open(json_file) as json_file:
+        dictionary = json.load(json_file)
+
+    return dictionary
+
+
+def _estimate_modulesize(model, input_size, type_size=4):
+    """
+    Not at all a precise estimate. Only serves the purpose of fair model splitting across GPUs
+    """
+    para = sum([np.prod(list(p.size())) for p in model.parameters()])
+
+    input_ = torch.FloatTensor(*input_size).cuda()
+
+    total_size = []
+
+    def hook(module, input, output):
+        total_size.append(np.prod(torch.tensor(output.size()).numpy()))
+
+        return
+
+    mods = list(model.modules())
+
+    for i in range(1, len(mods)):
+        sub_mod = list(mods[i].modules())
+        if len(sub_mod) == 1:
+            sub_mod[0].register_forward_hook(hook)
+
+    out = model(input_)
+
+    out_size = torch.tensor(out.size()).numpy()
+
+    for i in range(1, len(mods)):
+        sub_mod = list(mods[i].modules())
+        if len(sub_mod) == 1:
+            sub_mod[0]._forward_hooks = OrderedDict()
+
+    total_size.append(np.prod(torch.tensor(out.size()).numpy()))
+
+    total_tensorsize_fw = np.sum(np.asarray(total_size)) * type_size / 1024 / 1024
+    total_paramsize = para * type_size / 1024 / 1024
+
+    total_size = total_tensorsize_fw + total_paramsize * 2
+
+    return total_size, out_size
+
+
+def _partition_idx_weight_list(weights, idx=None):
+    weights = np.asarray(weights)
+
+    total = np.sum(weights)
+
+    half = total / 2 + 1
+
+    for i in range(len(weights)):
+        if np.sum(weights[0:i]) >= half:
+            break
+
+    if idx is None:
+        return [np.asarray(range(0, i, 1)), np.asarray(range(i, len(weights), 1))]
+    else:
+        return [np.asarray(idx[range(0, i, 1)]), np.asarray(idx[range(i, len(weights), 1)])]
+
+
+def _get_n_idx_partitions(weights, n):
+    assert n > 1 and ((n & (n - 1)) == 0), "the parameters n has to be power of 2. you supplied {}".format(n)
+
+    weights = np.asarray(weights)
+
+    partitioning = _partition_idx_weight_list(weights, idx=None)
+
+    while len(partitioning) is not n:
+        result = []
+        for entry in partitioning:
+            result = result + list(_partition_idx_weight_list(weights[entry], idx=entry))
+
+        partitioning = result
+
+    return partitioning
+
+
 class ListDataset(Dataset):
     def __init__(self, data_list, transform=None):
         self.data_list = data_list
@@ -29,22 +120,6 @@ class ListDataset(Dataset):
             item = self.transform(item)
 
         return item
-
-
-def merge_two_dicts(x, y):
-    z = x.copy()
-    z.update(y)
-    return z
-
-
-def read_json_from_file(json_file):
-    if not os.path.exists(json_file):
-        raise FileNotFoundError('The JSON file {} cannot be read'.format(json_file))
-
-    with open(json_file) as json_file:
-        dictionary = json.load(json_file)
-
-    return dictionary
 
 
 class EisenModuleWrapper(Module):
@@ -278,81 +353,6 @@ class EisenDatasetSplitter:
         dataset_test = ListDataset(data_test, self.transform_test)
 
         return dataset_train, dataset_valid, dataset_test
-
-
-def _estimate_modulesize(model, input_size, type_size=4):
-    """
-    Not at all a precise estimate. Only serves the purpose of fair model splitting across GPUs
-    """
-    para = sum([np.prod(list(p.size())) for p in model.parameters()])
-
-    input_ = torch.FloatTensor(*input_size).cuda()
-
-    total_size = []
-
-    def hook(module, input, output):
-        total_size.append(np.prod(torch.tensor(output.size()).numpy()))
-
-        return
-
-    mods = list(model.modules())
-
-    for i in range(1, len(mods)):
-        sub_mod = list(mods[i].modules())
-        if len(sub_mod) == 1:
-            sub_mod[0].register_forward_hook(hook)
-
-    out = model(input_)
-
-    out_size = torch.tensor(out.size()).numpy()
-
-    for i in range(1, len(mods)):
-        sub_mod = list(mods[i].modules())
-        if len(sub_mod) == 1:
-            sub_mod[0]._forward_hooks = OrderedDict()
-
-    total_size.append(np.prod(torch.tensor(out.size()).numpy()))
-
-    total_tensorsize_fw = np.sum(np.asarray(total_size)) * type_size / 1024 / 1024
-    total_paramsize = para * type_size / 1024 / 1024
-
-    total_size = total_tensorsize_fw + total_paramsize * 2
-
-    return total_size, out_size
-
-
-def _partition_idx_weight_list(weights, idx=None):
-    weights = np.asarray(weights)
-
-    total = np.sum(weights)
-
-    half = total / 2 + 1
-
-    for i in range(len(weights)):
-        if np.sum(weights[0:i]) >= half:
-            break
-
-    if idx is None:
-        return [np.asarray(range(0, i, 1)), np.asarray(range(i, len(weights), 1))]
-    else:
-        return [np.asarray(idx[range(0, i, 1)]), np.asarray(idx[range(i, len(weights), 1)])]
-
-
-def _get_n_idx_partitions(weights, n):
-    assert n > 1 and ((n & (n - 1)) == 0), "the parameters n has to be power of 2. you supplied {}".format(n)
-
-    weights = np.asarray(weights)
-
-    partitioning = _partition_idx_weight_list(weights, idx=None)
-
-    while len(partitioning) is not n:
-        result = []
-        for entry in partitioning:
-            result = result + list(_partition_idx_weight_list(weights[entry], idx=entry))
-
-        partitioning = result
-
-    return partitioning
 
 
 class InputArgumentPlacementChanger:
