@@ -27,7 +27,7 @@ class Training(GenericWorkflow):
     data parallelism, it is implemented using torch.nn.DataParallel which might not be the most efficient solution
     but it is definitely the easiest solution to use and implement.
     """
-    def __init__(self, model, data_loader, losses, optimizer, metrics=None, gpu=False, data_parallel=False):
+    def __init__(self, model, data_loader, losses, optimizer, metrics=None, gpu=False):
         """
         :param model: The model to be used for training. This model instance will be optimized by the Training module.
         :type model: torch.nn.Module
@@ -41,13 +41,10 @@ class Training(GenericWorkflow):
         :type metrics: list
         :param gpu: A flag indicating whether GPUs should be used during training
         :type gpu: bool
-        :param data_parallel: A flag indicating whether the network should be data parallel (torch.nn.DataParallel)
-        :type data_parallel: bool
 
         <json>
         [
-            {"name": "gpu", "type": "bool", "value": "false"},
-            {"name": "data_parallel", "type": "bool", "value": "false"}
+            {"name": "gpu", "type": "bool", "value": "false"}
         ]
         </json>
         """
@@ -59,15 +56,11 @@ class Training(GenericWorkflow):
         self.metrics = metrics
 
         self.gpu = gpu
-        self.data_parallel = data_parallel
 
         self.epoch = 0
 
         if self.gpu and not next(self.model.parameters()).is_cuda:
             self.model.cuda()
-
-        if self.data_parallel:  # todo check if already data parallel
-            self.model = torch.nn.DataParallel(self.model)
 
         self.id = uuid.uuid4()
 
@@ -149,7 +142,6 @@ class TrainingAMP(Training):
             losses,
             optimizer,
             metrics=None,
-            data_parallel=False,
             opt_level='O1'
     ):
         """
@@ -170,20 +162,15 @@ class TrainingAMP(Training):
 
         <json>
         [
-            {"name": "data_parallel", "type": "bool", "value": "false"},
             {"name": "opt_level", "type": "string", "value": "O1"}
         ]
         </json>
         """
         super(TrainingAMP, self).__init__(model, data_loader, losses, optimizer, metrics, True, False)
 
-        self.data_parallel = data_parallel
         self.opt_level = opt_level
 
         self.model, self.optimizer = amp.initialize(self.model, self.optimizer, opt_level=self.opt_level)
-
-        if self.data_parallel:  # todo check if already data parallel
-            self.model = torch.nn.DataParallel(self.model)
 
     def process_batch(self, batch):
         model_argument_dict = {key: batch[key] for key in self.model.input_names}

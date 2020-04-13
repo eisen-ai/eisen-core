@@ -20,7 +20,7 @@ class Testing(GenericWorkflow):
     forward pass of the model. The user is allowed to specify model, data loader and metrics to use for evaluation.
     This workflow supports GPUs and data parallelism across multiple processors.
     """
-    def __init__(self, model, data_loader, metrics, gpu=False, data_parallel=False):
+    def __init__(self, model, data_loader, metrics, gpu=False):
         """
         :param model: The model to be used for testing. This model instance will be used only for forward passes.
         :type model: torch.nn.Module
@@ -30,14 +30,10 @@ class Testing(GenericWorkflow):
         :type metrics: list
         :param gpu: A flag indicating whether GPUs should be used during test
         :type gpu: bool
-        :param data_parallel: A flag indicating whether the network should be data parallel (torch.nn.DataParallel)
-        :type data_parallel: bool
-
 
         <json>
         [
-            {"name": "gpu", "type": "bool", "value": "false"},
-            {"name": "data_parallel", "type": "bool", "value": "false"}
+            {"name": "gpu", "type": "bool", "value": "false"}
         ]
         </json>
         """
@@ -47,13 +43,9 @@ class Testing(GenericWorkflow):
         self.metrics = metrics
 
         self.gpu = gpu
-        self.data_parallel = data_parallel
 
-        if self.gpu:  # todo check if already gpu
+        if self.gpu and not next(self.model.parameters()).is_cuda:
             self.model.cuda()
-
-        if self.data_parallel:  # todo check if already data parallel
-            self.model = torch.nn.DataParallel(self.model)
 
         self.id = uuid.uuid4()
 

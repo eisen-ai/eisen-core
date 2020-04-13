@@ -20,7 +20,7 @@ class Validation(GenericWorkflow):
     specific dataset (passed as argument to init). This Validation workflow can take advantage of GPUs and implements
     data parallelism which allows workload to be distributed across multiple processors (CPU/GPU).
     """
-    def __init__(self, model, data_loader, losses, metrics=None, gpu=False, data_parallel=False):
+    def __init__(self, model, data_loader, losses, metrics=None, gpu=False):
         """
         :param model: The model to be used for validation. This model instance will be used only for forward passes.
         :type model: torch.nn.Module
@@ -32,13 +32,10 @@ class Validation(GenericWorkflow):
         :type metrics: list
         :param gpu: A flag indicating whether GPUs should be used during validation
         :type gpu: bool
-        :param data_parallel: A flag indicating whether the network should be data parallel (torch.nn.DataParallel)
-        :type data_parallel: bool
 
         <json>
         [
-            {"name": "gpu", "type": "bool", "value": "false"},
-            {"name": "data_parallel", "type": "bool", "value": "false"}
+            {"name": "gpu", "type": "bool", "value": "false"}
         ]
         </json>
         """
@@ -49,15 +46,11 @@ class Validation(GenericWorkflow):
         self.metrics = metrics
 
         self.gpu = gpu
-        self.data_parallel = data_parallel
 
         self.epoch = 0
 
-        if self.gpu:  # todo check if already gpu
+        if self.gpu and not next(self.model.parameters()).is_cuda:
             self.model.cuda()
-
-        if self.data_parallel:  # todo check if already data parallel
-            self.model = torch.nn.DataParallel(self.model)
 
         self.id = uuid.uuid4()
 

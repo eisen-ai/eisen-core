@@ -178,7 +178,7 @@ class EisenDatasetWrapper(Dataset):
         # Additional arguments for the Dataset itself can be passed as named arguments.
 
         dataset = MNIST('./', download=True)
-        
+
         adapted_dataset = EisenDatasetWrapper(dataset, ['image', 'label'])
 
     """
