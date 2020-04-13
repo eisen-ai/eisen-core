@@ -6,6 +6,7 @@ import torch
 
 from torch.nn import Module
 from torch.utils.data import Dataset
+from torch.cuda._utils import _get_device_index
 
 from collections import OrderedDict
 
@@ -277,9 +278,9 @@ class EisenDatasetSplitter:
         return dataset_train, dataset_valid, dataset_test
 
 
-def estimate_modulesize(model, input_size, type_size=4):
+def _estimate_modulesize(model, input_size, type_size=4):
     """
-    Not at all a precise estimate. Only serves the purprose of fair model splitting across GPUs
+    Not at all a precise estimate. Only serves the purpose of fair model splitting across GPUs
     """
     para = sum([np.prod(list(p.size())) for p in model.parameters()])
 
@@ -318,7 +319,7 @@ def estimate_modulesize(model, input_size, type_size=4):
     return total_size, out_size
 
 
-def partition_idx_weight_list(weights, idx=None):
+def _partition_idx_weight_list(weights, idx=None):
     weights = np.asarray(weights)
 
     total = np.sum(weights)
@@ -335,17 +336,17 @@ def partition_idx_weight_list(weights, idx=None):
         return [np.asarray(idx[range(0, i, 1)]), np.asarray(idx[range(i, len(weights), 1)])]
 
 
-def get_n_idx_partitions(weights, n):
+def _get_n_idx_partitions(weights, n):
     assert n > 1 and ((n & (n - 1)) == 0), "the parameters n has to be power of 2. you supplied {}".format(n)
 
     weights = np.asarray(weights)
 
-    partitioning = partition_idx_weight_list(weights, idx=None)
+    partitioning = _partition_idx_weight_list(weights, idx=None)
 
     while len(partitioning) is not n:
         result = []
         for entry in partitioning:
-            result = result + list(partition_idx_weight_list(weights[entry], idx=entry))
+            result = result + list(_partition_idx_weight_list(weights[entry], idx=entry))
 
         partitioning = result
 
@@ -431,6 +432,81 @@ class PipelineExecutionStreamer(torch.nn.Module):
         return torch.cat(outputs)
 
 
+class ModelParallel(Module):
+    def __init__(self, module, split_size, device_ids=None, output_device=None, dim=0):
+        super(ModelParallel, self).__init__()
+
+        self.first_run = True
+        self.split_size = split_size
+
+        if not torch.cuda.is_available():
+            self.module = module
+            self.device_ids = []
+            self.first_run = False
+            return
+
+        if device_ids is None:
+            device_ids = list(range(torch.cuda.device_count()))
+        if output_device is None:
+            output_device = device_ids[0]
+
+        self.dim = dim
+        self.module = module
+        self.device_ids = list(map(lambda x: _get_device_index(x, True), device_ids))
+        self.output_device = _get_device_index(output_device, True)
+
+        if len(self.device_ids) == 1:
+            self.first_run = False
+            self.module.cuda(device_ids[0])
+
+    def forward(self, *inputs, **kwargs):
+        execution_list = []
+
+        if self.first_run:
+            self.first_run = False
+
+            input_size = inputs[0].size()
+
+            # estimate module children size
+
+            children = list(self.module.children())
+
+            children_size = []
+
+            for child in children:
+                size, out_size = _estimate_modulesize(child, input_size)
+
+                children_size.append(size)
+
+                input_size = out_size
+
+            partitions_idx = _get_n_idx_partitions(children_size, len(self.device_ids))
+
+            for curr_gpu, indices in enumerate(partitions_idx):
+                curr_gpu_name = torch.device("cuda:{}".format(self.device_ids[curr_gpu]))
+
+                seq_list = []
+
+                for idx in indices:
+                    children[idx] = children[idx].to(curr_gpu_name)
+
+                    seq_list.append(children[idx])
+
+                sequential_block = torch.nn.Sequential(*seq_list)
+
+                argument_placement_changer = InputArgumentPlacementChanger(curr_gpu_name)
+
+                sequential_block.register_forward_pre_hook(argument_placement_changer)
+
+                execution_list.append(sequential_block)
+
+                self.module = PipelineExecutionStreamer(execution_list, split_size=self.split_size)
+
+        outputs = self.module(*inputs).to(self.output_device)
+
+        return outputs
+
+
 class EisenAutoModelParallelModuleWrapper(EisenModuleWrapper):
     """
     Eisen Module Wrapper having the capability of distributing the model across different GPUs as specified by the user.
@@ -486,13 +562,13 @@ class EisenAutoModelParallelModuleWrapper(EisenModuleWrapper):
             children_size = []
 
             for child in children:
-                size, out_size = estimate_modulesize(child, input_size)
+                size, out_size = _estimate_modulesize(child, input_size)
 
                 children_size.append(size)
 
                 input_size = out_size
 
-            partitions_idx = get_n_idx_partitions(children_size, self.number_gpus)
+            partitions_idx = _get_n_idx_partitions(children_size, self.number_gpus)
 
             for curr_gpu, indices in enumerate(partitions_idx):
                 curr_gpu_name = self.gpu_device_ids[curr_gpu]
