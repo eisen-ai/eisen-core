@@ -435,7 +435,64 @@ class PipelineExecutionStreamer(torch.nn.Module):
 
 
 class ModelParallel(Module):
-    def __init__(self, module, split_size, device_ids=None, output_device=None, dim=0):
+    """
+    This object implements model parallelism for PyTorch models. Model parallelism refers to the practice of using
+    multiple GPUs for training by splitting layers across different GPUs. In this way huge models can be stored
+    and trained. This module offers pipelined execution for model parallelism as shown in the PyTorch documentation:
+    https://pytorch.org/tutorials/intermediate/model_parallel_tutorial.html#speed-up-by-pipelining-inputs
+
+    Additionally, this module works in a completely automatic manner and it behaves similarly to
+    torch.nn.DataParallel. The interface implemented here will look familiar to anyone using torch.nn.DataParallel
+
+    .. warning::
+
+        Only single input models can be parallelized via the current version of ModelParallel implemented here.
+        Most models such as Resnet, VNet, Unet etc have a single input (for example a batch of images) therefore
+        we trust that most use cases are covered by the current implementation.
+
+    .. code-block:: python
+
+        from eisen.utils import ModelParallel
+        from eisen.models.segmentation import UNet
+
+        # Transforming a model instance in a model parallel model instance
+
+        model = ModelParallel(UNet(input_channels=1, output_channels=1), split_size=2)
+
+        # model is ModelParallel and will execute on multiple GPUs
+
+        """
+    def __init__(self, module, split_size, device_ids=None, output_device=None):
+        """
+        This method instantiates a ModelParallel Module from a module instance passed by the user. The
+        model must have a single input (forward(x) type of signature for the forward method) otherwise an error is
+        returned.
+
+        An example is here:
+
+        .. code-block:: python
+
+            from eisen.utils import ModelParallel
+            from eisen.models.segmentation import UNet
+
+
+            model = ModelParallel(
+                module=UNet(input_channels=1, output_channels=1),
+                split_size=2,
+                device_ids=[0, 1, 2, 3],
+                output_device=0
+            )
+
+
+        :param module: an instance of the model that should be parallelized
+        :type module: torch.nn.Module
+        :param split_size: split size for pipelined execution
+        :type split_size: int
+        :param device_ids: list of int or torch devices indicating GPUs to use
+        :type device_ids: list
+        :param output_device: int or torch device indicating output devices
+        :type output_device: int or torch device
+        """
         super(ModelParallel, self).__init__()
 
         module_argument_list = inspect.getfullargspec(module.forward)[0]
@@ -457,7 +514,6 @@ class ModelParallel(Module):
         if output_device is None:
             output_device = device_ids[0]
 
-        self.dim = dim
         self.module = module
         self.device_ids = list(map(lambda x: _get_device_index(x, True), device_ids))
         self.output_device = _get_device_index(output_device, True)
