@@ -38,7 +38,7 @@ def plot_confusion_matrix(cm,
             j, i, np.around(cm[i, j], decimals=2),
             horizontalalignment="center",
             color="white" if cm[i, j] > thresh else "black",
-            fontsize=7
+            fontsize=15
         )
 
     plt.tight_layout()
