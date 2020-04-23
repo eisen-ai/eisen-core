@@ -77,7 +77,10 @@ class EpochDataAggregator:
                             # if data is NOT high dimensional (Eg. it is a vector) we save all of it (throughout the epoch)
                             # the behaviour we want to have is that classification data (for example) can be saved for the
                             # whole epoch instead of only one batch
-                            if output_dictionary[typ][key].ndim <= 1:
+                            if output_dictionary[typ][key].ndim == 0:
+                                output_dictionary[typ][key] = output_dictionary[typ][key][np.newaxis]
+                                
+                            if output_dictionary[typ][key].ndim == 1:
                                 self.epoch_data[typ][key] = \
                                     np.concatenate([self.epoch_data[typ][key], output_dictionary[typ][key]], axis=0)
                             else:
