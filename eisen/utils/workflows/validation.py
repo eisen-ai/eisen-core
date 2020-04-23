@@ -56,6 +56,11 @@ class Validation(GenericWorkflow):
 
         self.epoch_aggregator = EpochDataAggregator(self.id)
 
+    def __call__(self, batch):
+        output_dictionary = self.process_batch(batch)
+
+        return output_dictionary['outputs'], output_dictionary['losses'], output_dictionary['metrics']
+
     def process_batch(self, batch):
         model_argument_dict = {key: batch[key] for key in self.model.input_names}
 

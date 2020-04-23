@@ -5,7 +5,6 @@ from eisen import EISEN_BEST_MODEL_LOSS, EISEN_BEST_MODEL_METRIC
 from pydispatch import dispatcher
 
 
-
 def convert_output_dict_to_cpu(output_dict):
     for typ in ['losses', 'metrics']:
         for i in range(len(output_dict[typ])):
@@ -71,14 +70,14 @@ class EpochDataAggregator:
                     data = output_dictionary[typ][key]
 
                     if isinstance(data, np.ndarray):
-                        if typ not in self.epoch_data.keys():
+                        if key not in self.epoch_data[typ].keys():
                             self.epoch_data[typ][key] = data
 
                         else:
-                            # if data is not high dimensional (Eg. it is a vector) we save all of it (throughout the epoch)
+                            # if data is NOT high dimensional (Eg. it is a vector) we save all of it (throughout the epoch)
                             # the behaviour we want to have is that classification data (for example) can be saved for the
                             # whole epoch instead of only one batch
-                            if output_dictionary[typ][key].ndim == 1:
+                            if output_dictionary[typ][key].ndim <= 1:
                                 self.epoch_data[typ][key] = \
                                     np.concatenate([self.epoch_data[typ][key], output_dictionary[typ][key]], axis=0)
                             else:
