@@ -38,7 +38,7 @@ def plot_confusion_matrix(cm,
             j, i, np.around(cm[i, j], decimals=2),
             horizontalalignment="center",
             color="white" if cm[i, j] > thresh else "black",
-            fontsize=6
+            fontsize=7
         )
 
     plt.tight_layout()
@@ -48,6 +48,7 @@ def plot_confusion_matrix(cm,
     fig = plt.gcf()
 
     fig.set_dpi(150)
+    fig.set_size_inches(len(classes) + 3, len(classes))
 
     fig.canvas.draw()
 
