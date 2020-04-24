@@ -48,7 +48,7 @@ def plot_confusion_matrix(cm,
     fig = plt.gcf()
 
     fig.set_dpi(72)
-    fig.set_size_inches(len(classes) + 3, len(classes))
+    fig.set_size_inches(int(len(classes) * 0.7) + 3, int(len(classes) * 0.7))
 
     fig.canvas.draw()
 
