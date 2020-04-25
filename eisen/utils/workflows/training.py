@@ -29,6 +29,19 @@ class Training(GenericWorkflow):
     """
     def __init__(self, model, data_loader, losses, optimizer, metrics=None, gpu=True):
         """
+        A training workflow is usually employed to train models. Takes as input, in addition to a model, instance of
+        torch.nn.Module, a data loader instance of class torch.utils.data.DataLoader, a list of losses, a torch
+        optimizer, a list of metrics and a flag indicating whether the GPU should be used for computation or not.
+
+        An example is shown here:
+
+        .. code-block:: python
+
+            workflow = Training(model, data_loader, [loss1, loss2, loss3], torch.optim.Adam(lr=0.001), [], gpu=True)
+
+        Once it is instantiated it can be run with .run() on the data provided by the data_loader (for an entire epoch)
+        and it can be also called on data batches in order to obtain results.
+
         :param model: The model to be used for training. This model instance will be optimized by the Training module.
         :type model: torch.nn.Module
         :param data_loader: A DataLoader instance which handles the data loading and batching

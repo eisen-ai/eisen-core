@@ -130,6 +130,15 @@ class GenericWorkflow:
     """
     def __init__(self, model, gpu=True):
         """
+        A generic workflow is usually employed as base class for other workflow classes. Of course it can also be used
+        on its own. A generic workflow can be instantiated as shown below:
+
+        .. code-block:: python
+
+            workflow = GenericWorkflow(model, gpu=True)
+
+        It can be called on data batches and return results.
+
         :param model: The model to be used for training. This model instance will be optimized by the Training module.
         :type model: torch.nn.Module
         :param gpu: A flag indicating whether GPUs should be used during training
@@ -151,8 +160,18 @@ class GenericWorkflow:
 
     def __call__(self, batch):
         """
-        A workflow is callable on a batches of data. Eisen batches are dictionaries containing (at least)
-        fields named after the input names contained in model.input_names
+        Calling a workflow on a data batch will result in the prediction output being accessible to futher use.
+
+        Having a data batch in a format compatible with Eisen, in other words as a dictionaries containing
+        keys that can be matches with model input arguments, a workflow can be callend on such dictionary
+
+        .. code-block:: python
+
+            workflow = GenericWorkflow(model, gpu=True)
+
+            batch = {'image': np.random.rand(3, 224, 224)}
+
+            prediction, losses, metrics = workflow(batch)
 
         :param batch: Data batch to be processed by the
         :type batch: dict
