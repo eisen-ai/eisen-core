@@ -1,7 +1,9 @@
 import numpy as np
 import torch
+import uuid
 
 from eisen import EISEN_BEST_MODEL_LOSS, EISEN_BEST_MODEL_METRIC
+from eisen.utils import merge_two_dicts
 from pydispatch import dispatcher
 
 
@@ -122,6 +124,61 @@ class EpochDataAggregator:
 
 
 class GenericWorkflow:
+    """
+    The generic workflow implements basic workflow functionality and serves as base class for more specific workflow
+    such as those used for training, testing and validation.
+    """
+    def __init__(self, model, gpu=True):
+        """
+        :param model: The model to be used for training. This model instance will be optimized by the Training module.
+        :type model: torch.nn.Module
+        :param gpu: A flag indicating whether GPUs should be used during training
+        :type gpu: bool
+
+        """
+        self.model = model
+
+        self.losses = []
+        self.metrics = []
+        self.optimizer = None
+
+        self.gpu = gpu
+
+        if self.gpu and not next(self.model.parameters()).is_cuda:
+            self.model.cuda()
+
+        self.id = uuid.uuid4()
+
+    def __call__(self, batch):
+        """
+        A workflow is callable on a batches of data. Eisen batches are dictionaries containing (at least)
+        fields named after the input names contained in model.input_names
+
+        :param batch: Data batch to be processed by the
+        :type batch: dict
+
+        :return: tuple containing outputs, losses and metrics
+
+        """
+        model_argument_dict = {key: batch[key] for key in self.model.input_names}
+
+        self.optimizer.zero_grad()
+
+        outputs = self.model(**model_argument_dict)
+
+        losses = self.compute_losses(merge_two_dicts(batch, outputs))
+
+        for loss in losses:
+            for key in loss.keys():
+                loss[key].backward(retain_graph=True)
+
+        if self.optimizer is not None:
+            self.optimizer.step()
+
+        metrics = self.compute_metrics(merge_two_dicts(batch, outputs))
+
+        return outputs, losses, metrics
+
     def compute_losses(self, arguments):
         results = []
 

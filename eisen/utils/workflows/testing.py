@@ -38,34 +38,29 @@ class Testing(GenericWorkflow):
         </json>
         """
 
-        self.model = model
+        super(Testing, self).__init__(model, gpu)
+
         self.data_loader = data_loader
         self.metrics = metrics
 
-        self.gpu = gpu
-
-        if self.gpu and not next(self.model.parameters()).is_cuda:
-            self.model.cuda()
-
-        self.id = uuid.uuid4()
-
         self.epoch_aggregator = EpochDataAggregator(self.id)
 
-    def __call__(self, batch):
-        output_dictionary = self.process_batch(batch)
+    def get_output_dictionary(self, batch):
+        """
+        Calls the class on the batch and converts output tuple to an output dictionary.
 
-        return output_dictionary['outputs'], output_dictionary['metrics']
+        :param batch: a dictionary containing a batch of data (as per Eisen specifications)
+        :type batch: dict
 
-    def process_batch(self, batch):
-        model_argument_dict = {key: batch[key] for key in self.model.input_names}
+        :return: output dictionary
 
-        outputs = self.model(**model_argument_dict)
+        """
 
-        metrics = self.compute_metrics(merge_two_dicts(batch, outputs))
+        outputs, losses, metrics = super(Testing, self).__call__(batch)
 
         output_dictionary = {
             'inputs': batch,
-            'losses': [],
+            'losses': losses,
             'outputs': outputs,
             'metrics': metrics,
             'model': self.model,
@@ -89,7 +84,7 @@ class Testing(GenericWorkflow):
 
                     logging.debug('DEBUG: Testing epoch batch {}'.format(i))
 
-                    output_dictionary = self.process_batch(batch)
+                    output_dictionary = self.get_output_dictionary(batch)
 
                     dispatcher.send(
                         message=output_dictionary,

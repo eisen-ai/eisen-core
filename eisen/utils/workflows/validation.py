@@ -20,7 +20,7 @@ class Validation(GenericWorkflow):
     specific dataset (passed as argument to init). This Validation workflow can take advantage of GPUs and implements
     data parallelism which allows workload to be distributed across multiple processors (CPU/GPU).
     """
-    def __init__(self, model, data_loader, losses, metrics=None, gpu=False):
+    def __init__(self, model, data_loader, losses, metrics=None, gpu=True):
         """
         :param model: The model to be used for validation. This model instance will be used only for forward passes.
         :type model: torch.nn.Module
@@ -35,40 +35,33 @@ class Validation(GenericWorkflow):
 
         <json>
         [
-            {"name": "gpu", "type": "bool", "value": "false"}
+            {"name": "gpu", "type": "bool", "value": "true"}
         ]
         </json>
         """
 
-        self.model = model
+        super(Validation, self).__init__(model, gpu)
+
         self.data_loader = data_loader
+
         self.losses = losses
         self.metrics = metrics
 
-        self.gpu = gpu
-
         self.epoch = 0
-
-        if self.gpu and not next(self.model.parameters()).is_cuda:
-            self.model.cuda()
-
-        self.id = uuid.uuid4()
 
         self.epoch_aggregator = EpochDataAggregator(self.id)
 
-    def __call__(self, batch):
-        output_dictionary = self.process_batch(batch)
+    def get_output_dictionary(self, batch):
+        """
+        Calls the class on the batch and converts output tuple to an output dictionary.
 
-        return output_dictionary['outputs'], output_dictionary['losses'], output_dictionary['metrics']
+        :param batch: a dictionary containing a batch of data (as per Eisen specifications)
+        :type batch: dict
 
-    def process_batch(self, batch):
-        model_argument_dict = {key: batch[key] for key in self.model.input_names}
+        :return: output dictionary
+        """
 
-        outputs = self.model(**model_argument_dict)
-
-        losses = self.compute_losses(merge_two_dicts(batch, outputs))
-
-        metrics = self.compute_metrics(merge_two_dicts(batch, outputs))
+        outputs, losses, metrics = super(Validation, self).__call__(batch)
 
         output_dictionary = {
             'inputs': batch,
@@ -96,7 +89,7 @@ class Validation(GenericWorkflow):
 
                     logging.debug('DEBUG: Validation epoch {}, batch {}'.format(self.epoch, i))
 
-                    output_dictionary = self.process_batch(batch)
+                    output_dictionary = self.get_output_dictionary(batch)
 
                     dispatcher.send(
                         message=output_dictionary,

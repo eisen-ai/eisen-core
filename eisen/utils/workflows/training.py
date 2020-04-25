@@ -27,7 +27,7 @@ class Training(GenericWorkflow):
     data parallelism, it is implemented using torch.nn.DataParallel which might not be the most efficient solution
     but it is definitely the easiest solution to use and implement.
     """
-    def __init__(self, model, data_loader, losses, optimizer, metrics=None, gpu=False):
+    def __init__(self, model, data_loader, losses, optimizer, metrics=None, gpu=True):
         """
         :param model: The model to be used for training. This model instance will be optimized by the Training module.
         :type model: torch.nn.Module
@@ -44,49 +44,34 @@ class Training(GenericWorkflow):
 
         <json>
         [
-            {"name": "gpu", "type": "bool", "value": "false"}
+            {"name": "gpu", "type": "bool", "value": "true"}
         ]
         </json>
         """
 
-        self.model = model
-        self.data_loader = data_loader
+        super(Training, self).__init__(model, gpu)
+
         self.losses = losses
-        self.optimizer = optimizer
         self.metrics = metrics
 
-        self.gpu = gpu
+        self.optimizer = optimizer
+
+        self.data_loader = data_loader
 
         self.epoch = 0
 
-        if self.gpu and not next(self.model.parameters()).is_cuda:
-            self.model.cuda()
-
-        self.id = uuid.uuid4()
-
         self.epoch_aggregator = EpochDataAggregator(self.id)
 
-    def __call__(self, batch):
-        output_dictionary = self.process_batch(batch)
+    def get_output_dictionary(self, batch):
+        """
+        Calls the class on the batch and converts output tuple to an output dictionary.
 
-        return output_dictionary['outputs'], output_dictionary['losses'], output_dictionary['metrics']
+        :param batch: a dictionary containing a batch of data (as per Eisen specifications)
+        :type batch: dict
 
-    def process_batch(self, batch):
-        model_argument_dict = {key: batch[key] for key in self.model.input_names}
-
-        self.optimizer.zero_grad()
-
-        outputs = self.model(**model_argument_dict)
-
-        losses = self.compute_losses(merge_two_dicts(batch, outputs))
-
-        for loss in losses:
-            for key in loss.keys():
-                loss[key].backward(retain_graph=True)
-
-        self.optimizer.step()
-
-        metrics = self.compute_metrics(merge_two_dicts(batch, outputs))
+        :return: output dictionary
+        """
+        outputs, losses, metrics = super(Training, self).__call__(batch)
 
         output_dictionary = {
             'inputs': batch,
@@ -113,7 +98,7 @@ class Training(GenericWorkflow):
 
                 logging.debug('DEBUG: Training epoch {}, batch {}'.format(self.epoch, i))
 
-                output_dictionary = self.process_batch(batch)
+                output_dictionary = self.get_output_dictionary(batch)
 
                 dispatcher.send(
                     message=output_dictionary,
@@ -132,7 +117,7 @@ class Training(GenericWorkflow):
         self.epoch += 1
 
 
-class TrainingAMP(Training):
+class TrainingApexAMP(Training):
     """
     This training workflow is able to take advantage of automatic mixed precision mechanism implemented in APEX
     (https://github.com/NVIDIA/apex). This offers significant training speed up thanks to the utilization of tensor
@@ -160,8 +145,6 @@ class TrainingAMP(Training):
         :type optimizer: torch.optim.optimizer
         :param metrics: A list of metrics objects to be evaluated during training (similar to losses, but not optimized)
         :type metrics: list
-        :param data_parallel: A flag indicating whether the network should be data parallel (torch.nn.DataParallel)
-        :type data_parallel: bool
         :param opt_level: Level of optimization for Apex
         :type opt_level: str
 
@@ -171,18 +154,22 @@ class TrainingAMP(Training):
         ]
         </json>
         """
-        super(TrainingAMP, self).__init__(model, data_loader, losses, optimizer, metrics, True, False)
+        super(TrainingApexAMP, self).__init__(model, data_loader, losses, optimizer, metrics, gpu=True)
 
         self.opt_level = opt_level
 
         self.model, self.optimizer = amp.initialize(self.model, self.optimizer, opt_level=self.opt_level)
 
-    def __call__(self, batch):
-        output_dictionary = self.process_batch(batch)
+    def get_output_dictionary(self, batch):
+        """
+        Calls the class on the batch and converts output tuple to an output dictionary.
+        With Automatic Mixed Precision (AMP).
 
-        return output_dictionary['outputs'], output_dictionary['losses'], output_dictionary['metrics']
+        :param batch: Data batch to be processed by the
+        :type batch: dict
 
-    def process_batch(self, batch):
+        :return: output_dictionary
+        """
         model_argument_dict = {key: batch[key] for key in self.model.input_names}
 
         self.optimizer.zero_grad()
@@ -196,7 +183,8 @@ class TrainingAMP(Training):
                 with amp.scale_loss(loss[key], self.optimizer) as scaled_loss:
                     scaled_loss.backward(retain_graph=True)
 
-        self.optimizer.step()
+        if self.optimizer is not None:
+            self.optimizer.step()
 
         metrics = self.compute_metrics(merge_two_dicts(batch, outputs))
 
@@ -210,3 +198,4 @@ class TrainingAMP(Training):
         }
 
         return output_dictionary
+
