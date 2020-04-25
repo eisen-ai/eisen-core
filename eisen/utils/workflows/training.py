@@ -98,6 +98,14 @@ class Training(GenericWorkflow):
         return output_dictionary
 
     def run(self):
+        """
+        Runs an entire Training epoch on the data provided by the DataLoader passed as argument during initialization.
+
+        PyDispatch events will be generated as a result of the computation so that model saving, summaries and logs
+        can be generated via associated hooks.
+
+        :return: None
+        """
         logging.info('INFO: Training epoch {}'.format(self.epoch))
 
         self.model.train()

@@ -162,8 +162,9 @@ class GenericWorkflow:
         """
         Calling a workflow on a data batch will result in the prediction output being accessible to futher use.
 
-        Having a data batch in a format compatible with Eisen, in other words as a dictionaries containing
-        keys that can be matches with model input arguments, a workflow can be callend on such dictionary
+        Having a data batch in a format compatible with Eisen, in other words as a dictionary containing
+        keys that can be matches with model input arguments, a workflow can be called on such dictionary and
+        return results. 
 
         .. code-block:: python
 
