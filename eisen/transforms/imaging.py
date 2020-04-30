@@ -409,7 +409,7 @@ class NumpyToNifti:
         <json>
         [
             {"name": "fields", "type": "list:string", "value": ""},
-            {"name": "multichannel", "type": "bool", "value": "False"}
+            {"name": "multichannel", "type": "bool", "value": "False"},
             {"name": "data_types", "type": "dict", "value": "None"}
         ]
         </json>
