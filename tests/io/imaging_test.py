@@ -180,22 +180,22 @@ class TestWriteNiftiToFile:
         self.base_path = tempfile.mkdtemp()
 
     def test_call(self):
-        nifti_tform = NumpyToNifti(self.data,
-                                   affine=self.affine, 
-                                   data_types=self.data_types)
+        nifti_tform = NumpyToNifti(self.data, affine=self.affine, data_types=self.data_types)
         data = nifti_tform(self.data)
+        
+        data['filename_image'] = 'my-image'
+        data['filename_label'] = 'my-label'
 
-        nifti_writer = WriteNiftiToFile(fields=['image', 'label'],
-                                        filename_prefix=os.path.join(
-                                            self.base_path, 'test'),
-                                        data_types=self.data_types)
+        nifti_writer = WriteNiftiToFile(
+            fields=['image', 'label'],
+            filename_prefix=os.path.join(self.base_path, 'test'),
+            name_fields = ['filename_image', 'filename_label']
+        )
 
         nifti_writer(data)
 
-        test_img = nib.load(os.path.join(self.base_path, 'test_image.nii.gz'))
-        assert np.array_equal(
-            np.asanyarray(test_img.dataobj).astype(np.float32), self.np_img)
+        test_img = nib.load(os.path.join(self.base_path, 'test_image_my-image.nii.gz'))
+        assert np.array_equal(np.asanyarray(test_img.dataobj).astype(np.float32), self.np_img)
 
-        test_lbl = nib.load(os.path.join(self.base_path, 'test_label.nii.gz'))
-        assert np.array_equal(
-            np.asanyarray(test_lbl.dataobj).astype(np.uint8), self.np_lbl)
+        test_lbl = nib.load(os.path.join(self.base_path, 'test_label_my-label.nii.gz'))
+        assert np.array_equal(np.asanyarray(test_lbl.dataobj).astype(np.uint8), self.np_lbl)
