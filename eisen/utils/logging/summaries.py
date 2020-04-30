@@ -176,7 +176,7 @@ class TensorboardSummaryHook:
 
                 if message['inputs'][inp].ndim == 1:
                     # in case of binary classification >> PR curve
-                    if np.max(message['inputs'][inp]) <= 1 and np.max(message['inputs'][out]) <= 1:
+                    if np.max(message['inputs'][inp]) <= 1 and np.max(message['outputs'][out]) <= 1:
                         self.write_pr_curve(
                             '{}_Vs_{}/pr_curve'.format(inp, out),
                             message['inputs'][inp],
