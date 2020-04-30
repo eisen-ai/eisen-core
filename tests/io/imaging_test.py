@@ -168,7 +168,7 @@ class TestWriteNiftiToFile:
 
     def setup_class(self):
         self.np_img = np.random.randn(32, 32, 15).astype(np.float32)
-        self.np_lbl = np.random.randn(32, 32, 15).astype(np.float32)
+        self.np_lbl = np.random.randn(32, 32, 15).astype(np.uint8)
         self.data = {'image': self.np_img, 'label': self.np_lbl}
         self.img = nib.Nifti1Image(self.np_img, np.eye(4))
         self.lbl = nib.Nifti1Image(self.np_lbl, np.eye(4))
@@ -198,4 +198,4 @@ class TestWriteNiftiToFile:
 
         test_lbl = nib.load(os.path.join(self.base_path, 'test_label.nii.gz'))
         assert np.array_equal(
-            np.asanyarray(test_lbl.dataobj).astype(np.float32), self.np_lbl)
+            np.asanyarray(test_lbl.dataobj).astype(np.uint8), self.np_lbl)
