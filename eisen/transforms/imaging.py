@@ -1,3 +1,4 @@
+import nibabel as nib
 import numpy as np
 import SimpleITK as sitk
 
@@ -369,6 +370,80 @@ class NiftiToNumpy:
                 entry_t = np.transpose(entry_t, [dims[-1]] + dims[0:-1])  # channel first if image is multichannel
 
             data[field] = entry_t
+
+        return data
+
+
+class NumpyToNifti:
+    """
+    This transform allows a Numpy volume to be converted to Nifti image object (nibabel).
+    This transformation may be useful when writing Numpy array to disk in Nifti format
+    using the WriteNiftiToFilename I/O transform. Note: the transform currently does not
+    explicitly handle multichannel data.
+
+    .. code-block:: python
+
+        from eisen.transforms import NumpyToNifti
+        tform = NumpyToNifti(['image', 'label'])
+        tform = tform(data)
+
+
+    """
+
+    def __init__(self, fields, affine=None, data_types=None):
+        """
+        :param fields: list of names of the fields of data dictionary to convert from Nifti to Numpy
+        :type fields: list of str
+        :param affine: affine transformation matrix (see nibabel) specifying spacing, origin, and orientation
+        :type affine: np.ndarray
+        :data_types: dictionary in which key is the field and value is the output data type
+        :type data_types dict
+        
+        .. code-block:: python
+
+            from eisen.transforms import NumpyToNifti
+            tform = NumpyToNifti(fields=['image', 'label'], affine=np.eye(4),
+                data_types=np.float32)
+            tform = tform(data)
+
+        <json>
+        [
+            {"name": "fields", "type": "list:string", "value": ""},
+            {"name": "multichannel", "type": "bool", "value": "False"}
+            {"name": "data_types", "type": "dict", "value": "None"}
+        ]
+        </json>
+        """
+        self.fields = fields
+        self.affine = affine
+        if data_types is None:
+            self.data_types = dict()
+            for field in fields:
+                self.data_types[field] = np.float32
+        else:
+            self.data_types = data_types
+        assert isinstance(self.data_types, type(dict()))
+
+    def __call__(self, data):
+        """
+        :param data: Data dictionary to be processed by this transform
+        :type data: dict
+        :return: Updated data dictionary
+        :rtype: dict
+        """
+        # Validate that all fields have the same dimensionality, otherwise 'affine' parameter is inconsistent
+        dims = []
+        for field in self.fields:
+            dims.append(data[field].ndim)
+        assert all(i == dims[0] for i in dims)
+
+        for field in self.fields:
+            if self.affine is None:
+                tform_affine = np.eye(data[field].ndim + 1)
+            else:
+                tform_affine = self.affine
+            data[field] = nib.Nifti1Image(
+                data[field].astype(self.data_types[field]), affine=tform_affine)
 
         return data
 

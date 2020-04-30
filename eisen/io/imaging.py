@@ -1,5 +1,6 @@
 import os
 import nibabel as nib
+import numpy as np
 import SimpleITK as sitk
 import pydicom
 import PIL.Image
@@ -232,4 +233,55 @@ class LoadPILImageFromFilename:
 
             data[field] = image
 
+        return data
+
+
+class WriteNiftiToFile:
+    """
+    This transform writes NIFTI data to a file on disk. Although this transform follows the general structure
+    of other transforms, such as those contained in eisen.transforms, it's kept separated from the others as
+    it is responsible for I/O operations interacting with the disk.
+
+    .. code-block:: python
+
+        from eisen.io import WriteNiftiToFile
+        tform = WriteNiftiToFile(['image', 'label'], '/abs/path/to/filename')
+
+    """
+
+    def __init__(self, fields, filename_prefix, data_types=None):
+        """
+        :param fields: list of names of the field of data dictionary to work on. These fields should contain data paths
+        :type fields: list
+        :param filename_prefix: absolute path plus file prefix of output file
+        :type filename_prefix: str
+
+        .. code-block:: python
+
+            from eisen.io import WriteNiftiToFile
+            tform = WriteNiftiToFile(
+                fields=['image', 'label'],
+                filename_prefix='/abs/path/to/dataset'
+            )
+
+        <json>
+        [
+            {"name": "fields", "type": "list:string", "value": ""},
+            {"name": "filename_prefix", "type": "string", "value": ""}
+        ]
+        </json>
+        """
+        self.filename_prefix = filename_prefix
+        self.fields = fields
+
+    def __call__(self, data):
+        """
+        :param data: Data dictionary to be processed by this transform
+        :type data: dict
+        :return: Updated data dictionary
+        :rtype: dict
+        """
+        for field in self.fields:
+            nib.save(data[field], '{}_{}.nii.gz'.format(self.filename_prefix,
+                field))
         return data

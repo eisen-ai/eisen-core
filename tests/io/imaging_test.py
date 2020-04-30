@@ -12,7 +12,9 @@ from eisen.io.imaging import LoadNiftyFromFilename
 from eisen.io.imaging import LoadDICOMFromFilename
 from eisen.io.imaging import LoadITKFromFilename
 from eisen.io.imaging import LoadPILImageFromFilename
+from eisen.io.imaging import WriteNiftiToFile
 
+from eisen.transforms.imaging import NumpyToNifti
 
 class TestLoadNiftyFromFilename:
     def setup_class(self):
@@ -162,7 +164,38 @@ class TestLoadDICOMImageFromFilename:
         assert np.all(self.data == np.asanyarray(data_entry_transformed_with_data_array['dcm'].pixel_array))
 
 
+class TestWriteNiftiToFile:
 
+    def setup_class(self):
+        self.np_img = np.random.randn(32, 32, 15).astype(np.float32)
+        self.np_lbl = np.random.randn(32, 32, 15).astype(np.float32)
+        self.data = {'image': self.np_img, 'label': self.np_lbl}
+        self.img = nib.Nifti1Image(self.np_img, np.eye(4))
+        self.lbl = nib.Nifti1Image(self.np_lbl, np.eye(4))
+        self.data_types = {'image': np.float32, 'label': np.uint8}
+        self.affine = np.array([[1, 0, 0, -100], 
+                                [0, 1, 0, -200],
+                                [0, 0, 2.5, -300],
+                                [0, 0, 0, 1]])
+        self.base_path = tempfile.mkdtemp()
 
+    def test_call(self):
+        nifti_tform = NumpyToNifti(self.data,
+                                   affine=self.affine, 
+                                   data_types=self.data_types)
+        data = nifti_tform(self.data)
 
+        nifti_writer = WriteNiftiToFile(fields=['image', 'label'],
+                                        filename_prefix=os.path.join(
+                                            self.base_path, 'test'),
+                                        data_types=self.data_types)
 
+        nifti_writer(data)
+
+        test_img = nib.load(os.path.join(self.base_path, 'test_image.nii.gz'))
+        assert np.array_equal(
+            np.asanyarray(test_img.dataobj).astype(np.float32), self.np_img)
+
+        test_lbl = nib.load(os.path.join(self.base_path, 'test_label.nii.gz'))
+        assert np.array_equal(
+            np.asanyarray(test_lbl.dataobj).astype(np.float32), self.np_lbl)
