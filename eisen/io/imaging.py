@@ -249,7 +249,7 @@ class WriteNiftiToFile:
 
     """
 
-    def __init__(self, fields, filename_prefix, data_types=None):
+    def __init__(self, fields, name_fields=None, filename_prefix='./'):
         """
         :param fields: list of names of the field of data dictionary to work on. These fields should contain data paths
         :type fields: list
@@ -261,17 +261,20 @@ class WriteNiftiToFile:
             from eisen.io import WriteNiftiToFile
             tform = WriteNiftiToFile(
                 fields=['image', 'label'],
+                name_fields=['image_name', 'label_name'],
                 filename_prefix='/abs/path/to/dataset'
             )
 
         <json>
         [
             {"name": "fields", "type": "list:string", "value": ""},
+            {"name": "name_fields", "type": "list:string", "value": ""},
             {"name": "filename_prefix", "type": "string", "value": ""}
         ]
         </json>
         """
         self.filename_prefix = filename_prefix
+        self.name_fields=name_fields
         self.fields = fields
 
     def __call__(self, data):
@@ -280,8 +283,13 @@ class WriteNiftiToFile:
         :type data: dict
         :return: Updated data dictionary
         :rtype: dict
-        """
-        for field in self.fields:
-            nib.save(data[field], '{}_{}.nii.gz'.format(self.filename_prefix,
-                field))
+        """           
+        for i, field in enumerate(self.fields):
+            if self.name_fields is None:
+                filename = '{}_{}.nii.gz'.format(self.filename_prefix, field)
+            else:
+                filename = '{}_{}.nii.gz'.format(self.filename_prefix, field, data[self.name_fields[i]])
+                
+            nib.save(data[field], filename)
+            
         return data
