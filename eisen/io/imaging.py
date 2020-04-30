@@ -288,7 +288,7 @@ class WriteNiftiToFile:
             if self.name_fields is None:
                 filename = '{}_{}.nii.gz'.format(self.filename_prefix, field)
             else:
-                filename = '{}_{}.nii.gz'.format(self.filename_prefix, field, data[self.name_fields[i]])
+                filename = '{}_{}_{}.nii.gz'.format(self.filename_prefix, field, data[self.name_fields[i]])
                 
             nib.save(data[field], filename)
             
