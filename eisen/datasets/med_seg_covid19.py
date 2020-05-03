@@ -2,6 +2,7 @@ import os
 import torch
 import nibabel as nib
 import numpy as np
+import copy
 
 from torch.utils.data import Dataset
 
@@ -70,7 +71,7 @@ class MedSegCovid19(Dataset):
         img_nii = nib.load(os.path.normpath(image_path))
         img_numpy = np.asanyarray(img_nii.dataobj).astype(np.float32)
 
-        for i in range(img_numpy.shape[0]):
+        for i in range(img_numpy.shape[-1]):
             self.data.append({'image': img_numpy[..., i]})
 
         if mask_file is not None and mask_file is not "":
@@ -78,7 +79,7 @@ class MedSegCovid19(Dataset):
             mask_nii = nib.load(os.path.normpath(mask_path))
             mask_numpy = np.asanyarray(mask_nii.dataobj).astype(np.float32)
 
-            for i in range(img_numpy.shape[0]):
+            for i in range(img_numpy.shape[-1]):
                 self.data[i]['label'] = mask_numpy[..., i]
 
         self.transform = transform
@@ -93,6 +94,6 @@ class MedSegCovid19(Dataset):
         item = self.data[idx]
 
         if self.transform:
-            item = self.transform(item)
+            item = self.transform(copy.deepcopy(item))
 
         return item
