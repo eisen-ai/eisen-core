@@ -36,7 +36,7 @@ class MSDDataset(Dataset):
         :param phase: training or test phase as per MSD dataset convention (look at MSD json file)
         :type phase: string
         :param transform: a transform object (can be the result of a composition of transforms)
-        :type transform: object
+        :type transform: callable
 
         .. code-block:: python
 

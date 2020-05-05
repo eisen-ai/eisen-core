@@ -1,6 +1,5 @@
 import logging
 import torch
-import uuid
 
 from eisen import (
     EISEN_END_EPOCH_EVENT,
@@ -10,6 +9,7 @@ from eisen.utils import merge_two_dicts
 from eisen.utils.workflows.workflows import GenericWorkflow, EpochDataAggregator
 
 from torch import Tensor
+from torch.cuda.amp import GradScaler #, autocast
 
 from pydispatch import dispatcher
 
@@ -142,7 +142,7 @@ class TrainingApexAMP(Training):
     """
     This training workflow is able to take advantage of automatic mixed precision mechanism implemented in APEX
     (https://github.com/NVIDIA/apex). This offers significant training speed up thanks to the utilization of tensor
-    cores on NVIDIA GPUs. When using TrainingAMP, GPU support must be present (GPU computation enabled by default),
+    cores on NVIDIA GPUs. When using TrainingApexAMP, GPU support must be present (GPU computation enabled by default),
     APEX must be installed in the system (APEX is not part of Eisen requirements) and the GPU must be capable of
     mixed precision computation.
     """
@@ -184,7 +184,7 @@ class TrainingApexAMP(Training):
     def get_output_dictionary(self, batch):
         """
         Calls the class on the batch and converts output tuple to an output dictionary.
-        With Automatic Mixed Precision (AMP).
+        With Automatic Mixed Precision (AMP) as implemented by AMP.
 
         :param batch: Data batch to be processed by the
         :type batch: dict
@@ -204,8 +204,7 @@ class TrainingApexAMP(Training):
                 with amp.scale_loss(loss[key], self.optimizer) as scaled_loss:
                     scaled_loss.backward(retain_graph=True)
 
-        if self.optimizer is not None:
-            self.optimizer.step()
+        self.optimizer.step()
 
         metrics = self.compute_metrics(merge_two_dicts(batch, outputs))
 
@@ -219,4 +218,82 @@ class TrainingApexAMP(Training):
         }
 
         return output_dictionary
+
+
+class TrainingAMP(Training):
+    """
+    This training workflow is able to take advantage of automatic mixed precision mechanism implemented natively
+    by PyTorch. This requirese PyTorch >= 1.5.0. AMP offers significant training speed up thanks to the utilization
+    of tensor cores on NVIDIA GPUs. When using TrainingAMP, GPU support must be present
+    (GPU computation enabled by default) and the GPU must be capable of mixed precision computation.
+    """
+    def __init__(
+            self,
+            model,
+            data_loader,
+            losses,
+            optimizer,
+            metrics=None
+    ):
+        """
+        :param model: The model to be used for training. This model instance will be optimized by the Training module.
+        :type model: torch.nn.Module
+        :param data_loader: A DataLoader instance which handles the data loading and batching
+        :type data_loader: torch.utils.data.DataLoader
+        :param losses: A list of losses objects to be optimized
+        :type losses: list of torch.nn.Modules
+        :param optimizer: An optimizer object such as torch.optim.Adam
+        :type optimizer: torch.optim.optimizer
+        :param metrics: A list of metrics objects to be evaluated during training (similar to losses, but not optimized)
+        :type metrics: list
+
+        <json>
+        []
+        </json>
+        """
+        super(TrainingAMP, self).__init__(model, data_loader, losses, optimizer, metrics, gpu=True)
+
+        self.scaler = GradScaler()
+
+    def get_output_dictionary(self, batch):
+        """
+        Calls the class on the batch and converts output tuple to an output dictionary.
+        With Automatic Mixed Precision (AMP) as implemented by PyTorch.
+
+        :param batch: Data batch to be processed by the
+        :type batch: dict
+
+        :return: output_dictionary
+        """
+        model_argument_dict = {key: batch[key] for key in self.model.input_names}
+
+        self.optimizer.zero_grad()
+
+        #with autocast():
+        outputs = self.model(**model_argument_dict)
+        losses = self.compute_losses(merge_two_dicts(batch, outputs))
+
+        for loss in losses:
+            for key in loss.keys():
+                self.scaler.scale(loss[key]).backward(retain_graph=True)
+
+        self.scaler.step(self.optimizer)
+
+        self.scaler.update()
+
+        metrics = self.compute_metrics(merge_two_dicts(batch, outputs))
+
+        output_dictionary = {
+            'inputs': batch,
+            'outputs': outputs,
+            'losses': losses,
+            'metrics': metrics,
+            'epoch': self.epoch,
+            'model': self.model,
+        }
+
+        return output_dictionary
+
+
+
 

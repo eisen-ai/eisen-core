@@ -44,7 +44,7 @@ class MedSegCovid19(Dataset):
         :param mask_file: the name of the nifti file containing the masks (optional)
         :type mask_file: string
         :param transform: a transform object (can be the result of a composition of transforms)
-        :type transform: object
+        :type transform: callable
 
         .. code-block:: python
 

@@ -39,7 +39,7 @@ class PatchCamelyon(Dataset):
         :param mask_h5_file: the relative path of the H5 file containing masks
         :type mask_h5_file: str
         :param transform: a transform object (can be the result of a composition of transforms)
-        :type transform: object
+        :type transform: callable
 
         .. code-block:: python
 

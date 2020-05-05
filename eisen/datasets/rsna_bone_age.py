@@ -59,7 +59,7 @@ class RSNABoneAgeChallenge(Dataset):
         :param training: Boolean indicating whether training or test data should be loaded
         :type training: bool
         :param transform: a transform object (can be the result of a composition of transforms)
-        :type transform: object
+        :type transform: callable
 
         .. code-block:: python
 

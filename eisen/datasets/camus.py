@@ -44,7 +44,7 @@ class CAMUS(Dataset):
         :param with_entire_sequences: whether the entire sequences for 4CH and 2CH data should be included (default False)
         :type with_entire_sequences: bool
         :param transform: a transform object (can be the result of a composition of transforms)
-        :type transform: object
+        :type transform: callable
 
         .. code-block:: python
 

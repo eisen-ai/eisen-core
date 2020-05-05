@@ -4,6 +4,7 @@ import h5py
 import os
 import csv
 import json
+import shutil
 
 from eisen.datasets import PatchCamelyon
 from eisen.datasets import JsonDataset
@@ -11,6 +12,7 @@ from eisen.datasets import MSDDataset
 from eisen.datasets import CAMUS
 from eisen.datasets import RSNABoneAgeChallenge
 from eisen.datasets import RSNAIntracranialHemorrhageDetection
+from eisen.datasets import PANDA
 
 
 def touch(fname, times=None):
@@ -42,6 +44,9 @@ class TestPatchCamelyon:
         h5f_y.create_dataset('y', data=data_y)
 
         self.camelyon_dset = PatchCamelyon(self.base_path, self.file_name_x, self.file_name_y)
+
+    def __del__(self):
+        shutil.rmtree(self.base_path)
 
     def test_getitem(self):
         item = self.camelyon_dset[0]
@@ -83,6 +88,9 @@ class TestCAMUS:
             with_4CH=True,
             with_entire_sequences=True
         )
+
+    def __del__(self):
+        shutil.rmtree(self.base_path)
 
     def test_getitem(self):
         item = self.camus_dataset[0]
@@ -161,6 +169,9 @@ class TestRSNABoneAgeChallenge:
             training=False
         )
 
+    def __del__(self):
+        shutil.rmtree(self.base_path)
+
     def test_getitem(self):
         for item in self.dataset_train:
             assert item['image'] == os.path.join('boneage-training-dataset', 'boneage-training-dataset', '12345.png') or \
@@ -235,6 +246,9 @@ class TestRSNAIntracranialHemorrhageDetection:
             training=False
         )
 
+    def __del__(self):
+        shutil.rmtree(self.base_path)
+
     def test_getitem(self):
         for item in self.dataset_train:
             assert item['image'] == os.path.join('stage_2_train', 'ID_000012eaf.dcm') or \
@@ -268,6 +282,9 @@ class TestJsonDataset:
             json.dump(dataset, outfile)
 
         self.dataset = JsonDataset(self.base_path, 'json_file.json')
+
+    def __del__(self):
+        shutil.rmtree(self.base_path)
 
     def test_getitem(self):
         item = self.dataset[0]
@@ -320,6 +337,9 @@ class TestMSDDataset:
         self.dataset_train = MSDDataset(self.base_path, 'json_file.json', phase='training')
         self.dataset_test = MSDDataset(self.base_path, 'json_file.json', phase='test')
 
+    def __del__(self):
+        shutil.rmtree(self.base_path)
+
     def test_getitem(self):
         item = self.dataset_train[0]
 
@@ -342,3 +362,63 @@ class TestMSDDataset:
     def test_len(self):
         assert len(self.dataset_train) == 2
         assert len(self.dataset_test) == 2
+
+
+class TestPANDA:
+    def setup_class(self):
+        self.base_path = tempfile.mkdtemp()
+
+        self.csv_content = [
+            'image_id,data_provider,isup_grade,gleason_score',
+            '0005f7aaab2800f6170c399693a96917,karolinska,0,0+0',
+            '000920ad0b612851f8e01bcc880d9b3d,karolinska,0,0+0',
+            '0018ae58b01bdadc8e347995b69f99aa,radboud,4,4+4'
+        ]
+
+        with open(os.path.join(self.base_path, 'train.csv'), 'w') as f:
+
+            f.write("%s\n%s\n%s\n%s\n" % (
+                self.csv_content[0],
+                self.csv_content[1],
+                self.csv_content[2],
+                self.csv_content[3]
+            ))
+
+        self.images_path = os.path.join(self.base_path, 'train_images')
+        self.labels_path = os.path.join(self.base_path, 'train_label_masks')
+
+        os.mkdir(self.images_path)
+        os.mkdir(self.labels_path)
+
+        filenames = [
+            os.path.join(self.images_path, '0005f7aaab2800f6170c399693a96917.tiff'),
+            os.path.join(self.images_path, '000920ad0b612851f8e01bcc880d9b3d.tiff'),
+            os.path.join(self.images_path, '0018ae58b01bdadc8e347995b69f99aa.tiff'),
+            os.path.join(self.labels_path, '0005f7aaab2800f6170c399693a96917_mask.tiff'),
+            os.path.join(self.labels_path, '000920ad0b612851f8e01bcc880d9b3d_mask.tiff'),
+            os.path.join(self.labels_path, '0018ae58b01bdadc8e347995b69f99aa_mask.tiff'),
+        ]
+
+        for filename in filenames:
+            with open(filename, 'w') as f:
+                pass
+
+    def __del__(self):
+        shutil.rmtree(self.base_path)
+
+    def test_training_set(self):
+        dataset = PANDA(self.base_path, 'train.csv', True)
+
+        element = dataset[0]
+
+        assert element['image'] == os.path.join(self.images_path, '0005f7aaab2800f6170c399693a96917.tiff')
+        assert element['mask'] == os.path.join(self.labels_path, '0005f7aaab2800f6170c399693a96917_mask.tiff')
+
+        assert element['provider'] == 'karolinska'
+        assert element['isup'] == 0
+        assert element['gleason'] == '0+0'
+
+        assert os.path.exists(element['image'])
+        assert os.path.exists(element['mask'])
+
+        assert len(dataset) == 3

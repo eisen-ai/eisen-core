@@ -33,7 +33,7 @@ class JsonDataset(Dataset):
         :param json_file: the name of the json file containing the data
         :type json_file: str
         :param transform: a transform object (can be the result of a composition of transforms)
-        :type transform: object
+        :type transform: callable
 
         .. code-block:: python
 

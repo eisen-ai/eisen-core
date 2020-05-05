@@ -42,7 +42,7 @@ class UCSDCovid19(Dataset):
         :param negative_dir: relative path of directory containing negative cases
         :type negative_dir: string
         :param transform: a transform object (can be the result of a composition of transforms)
-        :type transform: object
+        :type transform: callable
 
         .. code-block:: python
 

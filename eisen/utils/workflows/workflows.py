@@ -164,7 +164,7 @@ class GenericWorkflow:
 
         Having a data batch in a format compatible with Eisen, in other words as a dictionary containing
         keys that can be matches with model input arguments, a workflow can be called on such dictionary and
-        return results. 
+        return results.
 
         .. code-block:: python
 
