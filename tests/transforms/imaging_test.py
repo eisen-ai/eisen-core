@@ -7,6 +7,7 @@ from eisen.transforms.imaging import RenameFields
 from eisen.transforms.imaging import FilterFields
 from eisen.transforms.imaging import ResampleNiftiVolumes
 from eisen.transforms.imaging import NiftiToNumpy
+from eisen.transforms.imaging import NumpyToNifti
 from eisen.transforms.imaging import CropCenteredSubVolumes
 from eisen.transforms.imaging import MapValues
 
@@ -195,6 +196,33 @@ class TestNiftiToNumpy:
         assert self.data['label'].dtype == np.float32
         assert np.all(self.np_label == self.data['label'].transpose([1, 2, 3, 0]))
         assert self.data['label'].shape[0] == 3
+
+
+class TestNumpyToNifti:
+
+    def setup_class(self):
+        self.np_img = np.random.rand(32, 32, 32).astype(np.float32)
+        self.np_lbl = np.random.rand(32, 32, 32).astype(np.float32)
+        self.img = nib.Nifti1Image(self.np_img, np.eye(4))
+        self.lbl = nib.Nifti1Image(self.np_lbl, np.eye(4))
+
+        self.data = {'image': self.np_img, 'label': self.np_lbl}
+
+        self.tform_one = NumpyToNifti(['image', 'label'])
+
+    def test_call(self):
+        self.data = self.tform_one(self.data)
+
+        assert isinstance(self.data['image'], type(self.img))
+        assert isinstance(self.data['label'], type(self.lbl))
+
+        assert np.array_equal(self.data['image'].affine, np.eye(4))
+        assert np.array_equal(self.data['label'].affine, np.eye(4))
+
+        img = np.asanyarray(self.data['image'].dataobj).astype(np.float32)
+        assert np.array_equal(img, self.np_img)
+        lbl = np.asanyarray(self.data['label'].dataobj).astype(np.float32)
+        assert np.array_equal(lbl, self.np_lbl)
 
 
 class TestCropCenteredSubVolumes:

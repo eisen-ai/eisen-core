@@ -1,5 +1,6 @@
 import os
 import nibabel as nib
+import numpy as np
 import SimpleITK as sitk
 import pydicom
 import PIL.Image
@@ -232,4 +233,63 @@ class LoadPILImageFromFilename:
 
             data[field] = image
 
+        return data
+
+
+class WriteNiftiToFile:
+    """
+    This transform writes NIFTI data to a file on disk. Although this transform follows the general structure
+    of other transforms, such as those contained in eisen.transforms, it's kept separated from the others as
+    it is responsible for I/O operations interacting with the disk.
+
+    .. code-block:: python
+
+        from eisen.io import WriteNiftiToFile
+        tform = WriteNiftiToFile(['image', 'label'], '/abs/path/to/filename')
+
+    """
+
+    def __init__(self, fields, name_fields=None, filename_prefix='./'):
+        """
+        :param fields: list of names of the field of data dictionary to work on. These fields should contain data paths
+        :type fields: list
+        :param filename_prefix: absolute path plus file prefix of output file
+        :type filename_prefix: str
+
+        .. code-block:: python
+
+            from eisen.io import WriteNiftiToFile
+            tform = WriteNiftiToFile(
+                fields=['image', 'label'],
+                name_fields=['image_name', 'label_name'],
+                filename_prefix='/abs/path/to/dataset'
+            )
+
+        <json>
+        [
+            {"name": "fields", "type": "list:string", "value": ""},
+            {"name": "name_fields", "type": "list:string", "value": ""},
+            {"name": "filename_prefix", "type": "string", "value": ""}
+        ]
+        </json>
+        """
+        self.filename_prefix = filename_prefix
+        self.name_fields=name_fields
+        self.fields = fields
+
+    def __call__(self, data):
+        """
+        :param data: Data dictionary to be processed by this transform
+        :type data: dict
+        :return: Updated data dictionary
+        :rtype: dict
+        """           
+        for i, field in enumerate(self.fields):
+            if self.name_fields is None:
+                filename = '{}_{}.nii.gz'.format(self.filename_prefix, field)
+            else:
+                filename = '{}_{}_{}.nii.gz'.format(self.filename_prefix, field, data[self.name_fields[i]])
+                
+            nib.save(data[field], filename)
+            
         return data

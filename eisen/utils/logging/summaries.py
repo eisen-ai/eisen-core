@@ -176,7 +176,7 @@ class TensorboardSummaryHook:
 
                 if message['inputs'][inp].ndim == 1:
                     # in case of binary classification >> PR curve
-                    if np.max(message['inputs'][inp]) <= 1 and np.max(message['inputs'][out]) <= 1:
+                    if np.max(message['inputs'][inp]) <= 1 and np.max(message['outputs'][out]) <= 1:
                         self.write_pr_curve(
                             '{}_Vs_{}/pr_curve'.format(inp, out),
                             message['inputs'][inp],
@@ -219,7 +219,7 @@ class TensorboardSummaryHook:
 
     def write_confusion_matrix(self, name, labels, predictions, global_step):
         cnf_matrix = confusion_matrix(labels, predictions)
-        image = plot_confusion_matrix(cnf_matrix, range(np.max(labels)), normalize=True, title=name)[:, :, 0:3]
+        image = plot_confusion_matrix(cnf_matrix, range(np.max(labels) + 1), normalize=True, title=name)[:, :, 0:3]
         self.writer.add_image(name, image.astype(float)/255.0, global_step=global_step, dataformats='HWC')
 
     def write_class_probabilities(self, name, value, global_step):

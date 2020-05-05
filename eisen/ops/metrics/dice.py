@@ -1,4 +1,5 @@
 from torch import nn
+from eisen import EPS
 
 
 class DiceMetric(nn.Module):
@@ -26,10 +27,10 @@ class DiceMetric(nn.Module):
         """
         super(DiceMetric, self).__init__()
 
-        if dim is None:
-            dim = [1, 2, 3, 4]
+        self.sum_kwargs = {}
 
-        self.dim = dim
+        if dim is not None:
+            self.sum_kwargs['dim'] = dim
 
         self.weight = weight
 
@@ -45,7 +46,10 @@ class DiceMetric(nn.Module):
         """
         predictions = (predictions >= 0.5).float()
 
-        dice = 2.0 * (labels * predictions).sum(dim=self.dim) / (labels ** 2 + predictions ** 2).sum(dim=self.dim)
+        dice = 2.0 * (
+                (labels * predictions).sum(**self.sum_kwargs)
+                / ((labels ** 2 + predictions ** 2).sum(**self.sum_kwargs) + EPS)
+        )
 
         dice_metric = self.weight * dice.mean()
 

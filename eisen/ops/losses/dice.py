@@ -1,4 +1,5 @@
 from torch import nn
+from eisen import EPS
 
 
 class DiceLoss(nn.Module):
@@ -25,10 +26,10 @@ class DiceLoss(nn.Module):
         """
         super(DiceLoss, self).__init__()
 
-        if dim is None:
-            dim = [1, 2, 3, 4]
+        self.sum_kwargs = {}
 
-        self.dim = dim
+        if dim is not None:
+            self.sum_kwargs['dim'] = dim
 
         self.weight = weight
 
@@ -42,8 +43,10 @@ class DiceLoss(nn.Module):
         :type predictions: torch.Tensor
         :return: Dice loss
         """
-        dice_loss = 1.0 - \
-                    2.0 * (labels * predictions).sum(dim=self.dim) / (labels ** 2 + predictions ** 2).sum(dim=self.dim)
+        dice_loss = 1.0 - 2.0 * (
+                (labels * predictions).sum(**self.sum_kwargs)
+                / ((labels ** 2 + predictions ** 2).sum(**self.sum_kwargs) + EPS)
+        )
 
         dice_loss = self.weight * dice_loss.mean()
 
