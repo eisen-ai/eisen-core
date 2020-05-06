@@ -17,6 +17,8 @@ class ABCDataset(Dataset):
     For what concerns labels and data structure refer to:
     https://abcs.mgh.harvard.edu/index.php/data/download/s end/3-data-for-abcs/14-readme
 
+    Get started code can be found here: https://gist.github.com/faustomilletari/af430acfecf0841d71508455cdadcbbf
+
     .. code-block:: python
 
         from eisen.datasets import ABCDataset
