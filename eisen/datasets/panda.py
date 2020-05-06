@@ -24,6 +24,9 @@ class PANDA(Dataset):
             True
         )
 
+    This dataset will return data points in form of a dictionary with fields: 'image', 'provider' and optionally
+    (during training) 'mask', 'isup', 'gleason'.
+
     """
     def __init__(self, data_dir, csv_file, training, transform=None):
         """

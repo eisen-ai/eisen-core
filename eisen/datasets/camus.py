@@ -22,6 +22,9 @@ class CAMUS(Dataset):
 
         dset = CAMUS('/data/root/path')
 
+    This dataset will generate data entries with keys: 'type', 'image_2CH', 'label_2CH', 'sequence_2CH', 'image_4CH',
+    'label_4CH', sequence_4CH depending on the selected input parameter configuration.
+
     """
     def __init__(
             self,

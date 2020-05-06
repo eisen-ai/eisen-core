@@ -23,6 +23,8 @@ class KaggleCovid19(Dataset):
             'metadata.csv',
         )
 
+    This dataset will generate data entries with fields: 'image', 'lung_mask', 'infection_mask', 'lung_infection_mask'
+
     """
     def __init__(self, data_dir, csv_file, training, transform=None):
         """

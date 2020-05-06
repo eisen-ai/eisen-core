@@ -35,6 +35,8 @@ class MedSegCovid19(Dataset):
             transform,
         )
 
+    This dataset will generate data entries with keys: 'image' and (optionally) 'label'.
+
     """
     def __init__(self, data_dir, image_file, mask_file=None, transform=None):
         """
