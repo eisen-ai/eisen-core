@@ -56,7 +56,7 @@ class ABCDataset(Dataset):
         <json>
         [
             {"name": "training", "type": "bool", "value": "True"},
-            {"name": "flat_dir_structure", "type": "bool", "value": False}
+            {"name": "flat_dir_structure", "type": "bool", "value": "False"}
         ]
         </json>
         """
