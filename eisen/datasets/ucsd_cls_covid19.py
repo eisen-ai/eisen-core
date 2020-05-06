@@ -32,6 +32,8 @@ class UCSDCovid19(Dataset):
             transform,
         )
 
+    This dataset will return data entries in form of a dictionary having fields: 'image' and 'label'
+
     """
     def __init__(self, data_dir, positive_dir, negative_dir, transform=None):
         """

@@ -51,6 +51,9 @@ class RSNABoneAgeChallenge(Dataset):
 
         dset = RSNABoneAgeChallenge('/data/root/path', True)
 
+    This dataset will return data points as dictionaries having fields: 'image', 'male' (boolean) and during training
+    'label'.
+
     """
     def __init__(self, data_dir, training, transform=None):
         """

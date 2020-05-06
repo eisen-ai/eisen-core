@@ -25,6 +25,9 @@ class JsonDataset(Dataset):
         from eisen.datasets import JsonDataset
         dset = JsonDataset('/abs/path/to/data', '/abs/path/to/file.json', transform)
 
+    This dataset will generate data entries with fields corresponding to what is stored in each entry of the json
+    dataset list.
+
     """
     def __init__(self, data_dir, json_file, transform=None):
         """

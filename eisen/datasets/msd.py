@@ -26,6 +26,7 @@ class MSDDataset(Dataset):
             transform,
         )
 
+    This dataset will return data items with fields: 'image' and, optionally, 'label'.
     """
     def __init__(self, data_dir, json_file, phase, transform=None):
         """

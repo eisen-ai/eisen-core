@@ -27,6 +27,8 @@ class PatchCamelyon(Dataset):
             'camelyon_patch_level_2_split_train_mask.h5'
         )
 
+    This dataset will generate data entries with keys: 'image', 'label' and optionally 'mask'
+
     """
     def __init__(self, data_dir, x_h5_file, y_h5_file, mask_h5_file=None, transform=None):
         """
