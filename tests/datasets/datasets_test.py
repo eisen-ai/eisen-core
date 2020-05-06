@@ -13,6 +13,7 @@ from eisen.datasets import CAMUS
 from eisen.datasets import RSNABoneAgeChallenge
 from eisen.datasets import RSNAIntracranialHemorrhageDetection
 from eisen.datasets import PANDA
+from eisen.datasets import ABCDataset
 
 
 def touch(fname, times=None):
@@ -422,3 +423,112 @@ class TestPANDA:
         assert os.path.exists(element['mask'])
 
         assert len(dataset) == 3
+
+
+class TestABC:
+    def setup_class(self):
+        self.flat_path = tempfile.mkdtemp()
+        self.structured_path = tempfile.mkdtemp()
+
+        self.part_1_dir = os.path.join(self.structured_path, 'ABCs_training_data_Part1')
+        self.part_2_dir = os.path.join(self.structured_path, 'ABCs_training_data_Part2')
+
+        os.mkdir(self.part_1_dir)
+        os.mkdir(self.part_2_dir)
+
+        flat_path_touch_file = [
+            os.path.join(self.flat_path, '001_ct.mha'),
+            os.path.join(self.flat_path, '001_t1.mha'),
+            os.path.join(self.flat_path, '001_t2.mha'),
+            os.path.join(self.flat_path, '001_labelmap_task2.mha'),
+            os.path.join(self.flat_path, '001_labelmap_task1.mha'),
+            os.path.join(self.flat_path, '021_ct.mha'),
+            os.path.join(self.flat_path, '021_t1.mha'),
+            os.path.join(self.flat_path, '021_t2.mha'),
+            os.path.join(self.flat_path, '021_labelmap_task2.mha'),
+            os.path.join(self.flat_path, '021_labelmap_task1.mha'),
+            os.path.join(self.part_1_dir, '001_ct.mha'),
+            os.path.join(self.part_1_dir, '001_t1.mha'),
+            os.path.join(self.part_1_dir, '001_t2.mha'),
+            os.path.join(self.part_1_dir, '001_labelmap_task2.mha'),
+            os.path.join(self.part_1_dir, '001_labelmap_task1.mha'),
+            os.path.join(self.part_2_dir, '021_ct.mha'),
+            os.path.join(self.part_2_dir, '021_t1.mha'),
+            os.path.join(self.part_2_dir, '021_t2.mha'),
+            os.path.join(self.part_2_dir, '021_labelmap_task2.mha'),
+            os.path.join(self.part_2_dir, '021_labelmap_task1.mha')
+        ]
+
+        for file in flat_path_touch_file:
+            with open(file, 'w') as f:
+                f.write('')
+
+    def __del__(self):
+        shutil.rmtree(self.structured_path)
+        shutil.rmtree(self.flat_path)
+
+    @staticmethod
+    def check_training_content(element):
+        assert 'ct' in element.keys()
+        assert 't1' in element.keys()
+        assert 't2' in element.keys()
+        assert 'label_task1' in element.keys()
+        assert 'label_task2' in element.keys()
+
+        assert os.path.exists(element['ct'])
+        assert os.path.exists(element['t1'])
+        assert os.path.exists(element['t2'])
+        assert os.path.exists(element['label_task1'])
+        assert os.path.exists(element['label_task2'])
+
+    @staticmethod
+    def check_testing_content(element):
+        assert 'ct' in element.keys()
+        assert 't1' in element.keys()
+        assert 't2' in element.keys()
+
+        assert os.path.exists(element['ct'])
+        assert os.path.exists(element['t1'])
+        assert os.path.exists(element['t2'])
+
+    def test_training_structured(self):
+        dataset = ABCDataset(
+            data_dir=self.structured_path,
+            training=True,
+            flat_dir_structure=False,
+            transform=None
+        )
+
+        assert len(dataset) == 2
+
+        for i in range(len(dataset)):
+            element = dataset[i]
+            self.check_training_content(element)
+
+    def test_training_flat(self):
+        dataset = ABCDataset(
+            data_dir=self.flat_path,
+            training=True,
+            flat_dir_structure=True,
+            transform=None
+        )
+
+        assert len(dataset) == 2
+
+        for i in range(len(dataset)):
+            element = dataset[i]
+            self.check_training_content(element)
+
+    def test_testing(self):
+        dataset = ABCDataset(
+            data_dir=self.flat_path,
+            training=True,
+            flat_dir_structure=True,
+            transform=None
+        )
+
+        assert len(dataset) == 2
+
+        for i in range(len(dataset)):
+            element = dataset[i]
+            self.check_testing_content(element)
