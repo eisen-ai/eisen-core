@@ -307,7 +307,7 @@ class ResampleITKVolumes:
             resampler = sitk.ResampleImageFilter()
             resampler.SetReferenceImage(data[field])
             resampler.SetOutputSpacing(resolution)
-            resampler.SetSize(new_size)
+            resampler.SetSize(new_size.tolist())
             resampler.SetInterpolator(interpolator)
 
             data[field] = resampler.Execute(data[field])
@@ -909,7 +909,7 @@ class StackImagesChannelwise:
         for key in self.fields:
             composite_image.append(data[key])
 
-        data[self.dst_field] = np.stack(composite_image, axis=-1)
+        data[self.dst_field] = np.stack(composite_image, axis=0)
 
         return data
 
