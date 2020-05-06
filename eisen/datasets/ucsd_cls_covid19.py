@@ -69,8 +69,8 @@ class UCSDCovid19(Dataset):
         positive_path = os.path.join(data_dir, positive_dir)
         negative_path = os.path.join(data_dir, negative_dir)
 
-        positive_images = [os.path.join(positive_path, img) for img in os.listdir(positive_path) if 'png' in img]
-        negative_images = [os.path.join(negative_path, img) for img in os.listdir(negative_path) if 'png' in img]
+        positive_images = [os.path.join(positive_dir, img) for img in os.listdir(positive_path) if 'png' in img]
+        negative_images = [os.path.join(negative_dir, img) for img in os.listdir(negative_path) if 'png' in img]
 
         for img_path in positive_images:
             self.data.append({'image': img_path, 'label': 1})

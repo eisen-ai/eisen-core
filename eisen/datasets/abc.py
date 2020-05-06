@@ -56,7 +56,7 @@ class ABCDataset(Dataset):
         <json>
         [
             {"name": "training", "type": "bool", "value": "True"},
-            {"name": "flat_dir_structure", "type": "bool", "value": False}
+            {"name": "flat_dir_structure", "type": "bool", "value": "False"}
         ]
         </json>
         """
@@ -68,7 +68,7 @@ class ABCDataset(Dataset):
 
         if self.flat_dir:
             all_images = [
-                os.path.join(self.data_dir, f.split('_')[0]) for f in os.listdir(self.data_dir) if
+                f.split('_')[0] for f in os.listdir(self.data_dir) if
                 ('mha' in f) and
                 ('label' not in f) and
                 ('ct' in f)
@@ -76,7 +76,7 @@ class ABCDataset(Dataset):
 
         else:
             all_subdirs = [
-                os.path.join(self.data_dir, d) for d in os.listdir(self.data_dir) if
+                d for d in os.listdir(self.data_dir) if
                 os.path.isdir(os.path.join(self.data_dir, d))
             ]
 
@@ -84,7 +84,7 @@ class ABCDataset(Dataset):
 
             for d in all_subdirs:
                 all_images += [
-                    os.path.join(d, f.split('_')[0]) for f in os.listdir(d) if
+                    os.path.join(d, f.split('_')[0]) for f in os.listdir(os.path.join(self.data_dir, d)) if
                     ('mha' in f) and
                     ('label' not in f) and
                     ('ct' in f)
