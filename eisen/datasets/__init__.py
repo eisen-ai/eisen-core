@@ -9,3 +9,4 @@ from .ucsd_cls_covid19 import *
 from .panda import *
 from .kaggle_covid import *
 from .abc import *
+from .emidec_challenge import *
