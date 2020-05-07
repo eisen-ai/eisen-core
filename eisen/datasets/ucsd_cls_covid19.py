@@ -21,6 +21,10 @@ class UCSDCovid19(Dataset):
     The `'image'` key stores a path to a png file containing images, you can use `LoadPILImageFromFilename` IO module
     to read it, and the `'label'` key contains an integer that is `0` for healthy scans and `1` for sick individuals.
 
+    .. note::
+
+        This dataset will return data entries in form of a dictionary having fields: 'image' and 'label'
+
     .. code-block:: python
 
         from eisen.datasets import UCSDCovid19
@@ -31,8 +35,6 @@ class UCSDCovid19(Dataset):
             'negative',
             transform,
         )
-
-    This dataset will return data entries in form of a dictionary having fields: 'image' and 'label'
 
     """
     def __init__(self, data_dir, positive_dir, negative_dir, transform=None):

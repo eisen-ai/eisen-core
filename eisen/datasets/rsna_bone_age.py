@@ -45,6 +45,11 @@ class RSNABoneAgeChallenge(Dataset):
     directory and then instantiate an object of type RSNABoneAgeChallenge which will parse said directory and make the
     data available to Eisen.
 
+    .. note::
+
+        This dataset will return data points as dictionaries having fields: 'image', 'male' (boolean)
+        and during training 'label'.
+
     .. code-block:: python
 
         from eisen.datasets import RSNABoneAgeChallenge
