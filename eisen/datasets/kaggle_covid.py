@@ -67,10 +67,10 @@ class KaggleCovid19(Dataset):
                     continue
 
                 entry = {
-                    'image': os.path.join(data_dir, 'ct_scans', os.path.basename(row[0])),
-                    'lung_mask': os.path.join(data_dir, 'lung_mask', os.path.basename(row[1])),
-                    'infection_mask': os.path.join(data_dir, 'infection_mask', os.path.basename(row[2])),
-                    'lung_infection_mask': os.path.join(data_dir, 'lung_and_infection_mask', os.path.basename(row[3])),
+                    'image': os.path.join('ct_scans', os.path.basename(row[0])),
+                    'lung_mask': os.path.join('lung_mask', os.path.basename(row[1])),
+                    'infection_mask': os.path.join('infection_mask', os.path.basename(row[2])),
+                    'lung_infection_mask': os.path.join('lung_and_infection_mask', os.path.basename(row[3])),
                 }
 
                 self.dataset.append(entry)

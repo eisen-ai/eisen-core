@@ -307,7 +307,7 @@ class ResampleITKVolumes:
             resampler = sitk.ResampleImageFilter()
             resampler.SetReferenceImage(data[field])
             resampler.SetOutputSpacing(resolution)
-            resampler.SetSize(new_size)
+            resampler.SetSize(new_size.tolist())
             resampler.SetInterpolator(interpolator)
 
             data[field] = resampler.Execute(data[field])
@@ -876,12 +876,14 @@ class StackImagesChannelwise:
     This example stacks together multiple modalities in one multi-channel tensor.
 
     """
-    def __init__(self, fields, dst_field):
+    def __init__(self, fields, dst_field, create_new_dim=True):
         """
         :param fields: list of fields of the data dictionary that will be stacked together in the output tensor
         :type fields: list of str
         :param dst_field: string representing the destination field of the data dictionary where outputs will be stored.
         :type dst_field: str
+        :param create_new_dim: whether a new dimension should be created as result of concat.
+        :type create_new_dim: bool
 
         .. code-block:: python
 
@@ -889,18 +891,21 @@ class StackImagesChannelwise:
             tform = StackImagesChannelwise(
                 fields=['modality1', 'modality2', 'modality3'],
                 dst_field='allmodalities'
+                create_new_dim=True
             )
             tform = tform(data)
 
         <json>
         [
             {"name": "fields", "type": "list:string", "value": ""},
-            {"name": "dst_field", "type": "string", "value": ""}
+            {"name": "dst_field", "type": "string", "value": ""},
+            {"name": "create_new_dim", "type": "bool", "value": "True"}
         ]
         </json>
         """
         self.fields = fields
         self.dst_field = dst_field
+        self.create_new_dim = create_new_dim
 
     def __call__(self, data):
 
@@ -909,7 +914,10 @@ class StackImagesChannelwise:
         for key in self.fields:
             composite_image.append(data[key])
 
-        data[self.dst_field] = np.stack(composite_image, axis=-1)
+        if self.create_new_dim:
+            data[self.dst_field] = np.stack(composite_image, axis=0)
+        else:
+            data[self.dst_field] = np.concatenate(composite_image, axis=0)
 
         return data
 

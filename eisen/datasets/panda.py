@@ -75,15 +75,15 @@ class PANDA(Dataset):
 
                 if self.training:
                     entry = {
-                        'image': os.path.join(data_dir, 'train_images', row[0] + '.tiff'),
-                        'mask': os.path.join(data_dir, 'train_label_masks', row[0] + '_mask.tiff'),
+                        'image': os.path.join('train_images', row[0] + '.tiff'),
+                        'mask': os.path.join('train_label_masks', row[0] + '_mask.tiff'),
                         'provider': row[1],
                         'isup': int(row[2]),
                         'gleason': row[3]
                     }
                 else:
                     entry = {
-                        'image': os.path.join(data_dir, 'test_images', row[0] + '.tiff'),
+                        'image': os.path.join('test_images', row[0] + '.tiff'),
                         'provider': row[1]
                     }
 
