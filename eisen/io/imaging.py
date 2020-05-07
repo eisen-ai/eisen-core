@@ -274,7 +274,7 @@ class WriteNiftiToFile:
         </json>
         """
         self.filename_prefix = filename_prefix
-        self.name_fields=name_fields
+        self.name_fields = name_fields
         self.fields = fields
 
     def __call__(self, data):

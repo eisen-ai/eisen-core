@@ -412,15 +412,15 @@ class TestPANDA:
 
         element = dataset[0]
 
-        assert element['image'] == os.path.join(self.images_path, '0005f7aaab2800f6170c399693a96917.tiff')
-        assert element['mask'] == os.path.join(self.labels_path, '0005f7aaab2800f6170c399693a96917_mask.tiff')
+        assert element['image'] == os.path.join('train_images', '0005f7aaab2800f6170c399693a96917.tiff')
+        assert element['mask'] == os.path.join('train_label_masks', '0005f7aaab2800f6170c399693a96917_mask.tiff')
 
         assert element['provider'] == 'karolinska'
         assert element['isup'] == 0
         assert element['gleason'] == '0+0'
 
-        assert os.path.exists(element['image'])
-        assert os.path.exists(element['mask'])
+        assert os.path.exists(os.path.join(self.base_path, element['image']))
+        assert os.path.exists(os.path.join(self.base_path, element['mask']))
 
         assert len(dataset) == 3
 
@@ -468,28 +468,28 @@ class TestABC:
         shutil.rmtree(self.flat_path)
 
     @staticmethod
-    def check_training_content(element):
+    def check_training_content(basedir, element):
         assert 'ct' in element.keys()
         assert 't1' in element.keys()
         assert 't2' in element.keys()
         assert 'label_task1' in element.keys()
         assert 'label_task2' in element.keys()
 
-        assert os.path.exists(element['ct'])
-        assert os.path.exists(element['t1'])
-        assert os.path.exists(element['t2'])
-        assert os.path.exists(element['label_task1'])
-        assert os.path.exists(element['label_task2'])
+        assert os.path.exists(os.path.join(basedir, element['ct']))
+        assert os.path.exists(os.path.join(basedir, element['t1']))
+        assert os.path.exists(os.path.join(basedir, element['t2']))
+        assert os.path.exists(os.path.join(basedir, element['label_task1']))
+        assert os.path.exists(os.path.join(basedir, element['label_task2']))
 
     @staticmethod
-    def check_testing_content(element):
+    def check_testing_content(basedir, element):
         assert 'ct' in element.keys()
         assert 't1' in element.keys()
         assert 't2' in element.keys()
 
-        assert os.path.exists(element['ct'])
-        assert os.path.exists(element['t1'])
-        assert os.path.exists(element['t2'])
+        assert os.path.exists(os.path.join(basedir, element['ct']))
+        assert os.path.exists(os.path.join(basedir, element['t1']))
+        assert os.path.exists(os.path.join(basedir, element['t2']))
 
     def test_training_structured(self):
         dataset = ABCDataset(
@@ -503,7 +503,7 @@ class TestABC:
 
         for i in range(len(dataset)):
             element = dataset[i]
-            self.check_training_content(element)
+            self.check_training_content(self.structured_path, element)
 
     def test_training_flat(self):
         dataset = ABCDataset(
@@ -517,7 +517,7 @@ class TestABC:
 
         for i in range(len(dataset)):
             element = dataset[i]
-            self.check_training_content(element)
+            self.check_training_content(self.flat_path, element)
 
     def test_testing(self):
         dataset = ABCDataset(
@@ -531,4 +531,4 @@ class TestABC:
 
         for i in range(len(dataset)):
             element = dataset[i]
-            self.check_testing_content(element)
+            self.check_testing_content(self.flat_path, element)

@@ -17,6 +17,8 @@ class ABCDataset(Dataset):
     For what concerns labels and data structure refer to:
     https://abcs.mgh.harvard.edu/index.php/data/download/s end/3-data-for-abcs/14-readme
 
+    Get started code can be found here: https://gist.github.com/faustomilletari/af430acfecf0841d71508455cdadcbbf
+
     .. code-block:: python
 
         from eisen.datasets import ABCDataset
@@ -68,7 +70,7 @@ class ABCDataset(Dataset):
 
         if self.flat_dir:
             all_images = [
-                os.path.join(self.data_dir, f.split('_')[0]) for f in os.listdir(self.data_dir) if
+                f.split('_')[0] for f in os.listdir(self.data_dir) if
                 ('mha' in f) and
                 ('label' not in f) and
                 ('ct' in f)
@@ -76,7 +78,7 @@ class ABCDataset(Dataset):
 
         else:
             all_subdirs = [
-                os.path.join(self.data_dir, d) for d in os.listdir(self.data_dir) if
+                d for d in os.listdir(self.data_dir) if
                 os.path.isdir(os.path.join(self.data_dir, d))
             ]
 
@@ -84,7 +86,7 @@ class ABCDataset(Dataset):
 
             for d in all_subdirs:
                 all_images += [
-                    os.path.join(d, f.split('_')[0]) for f in os.listdir(d) if
+                    os.path.join(d, f.split('_')[0]) for f in os.listdir(os.path.join(self.data_dir, d)) if
                     ('mha' in f) and
                     ('label' not in f) and
                     ('ct' in f)
