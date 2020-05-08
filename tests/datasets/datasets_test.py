@@ -579,17 +579,30 @@ class TestEMIDEC:
 
         element = dataset[0]
 
-        assert element['image'] == self.paths[0]
-        assert element['label'] == self.paths[1]
+        image_paths = [
+            self.paths[0],
+            self.paths[2]
+        ]
+
+        label_paths = [
+            self.paths[1],
+            self.paths[3]
+        ]
+
+        assert element['image'] in image_paths
+        assert element['label'] in label_paths
 
         assert element['pathological']
 
         assert element['metadata'] == 'dummy'
 
+        image_paths.remove(element['image'])
+        label_paths.remove(element['label'])
+
         element = dataset[1]
 
-        assert element['image'] == self.paths[2]
-        assert element['label'] == self.paths[3]
+        assert element['image'] in image_paths
+        assert element['label'] in label_paths
 
         assert not element['pathological']
 
@@ -604,18 +617,25 @@ class TestEMIDEC:
 
         assert len(dataset) == 2
 
+        image_paths = [
+            self.paths[0],
+            self.paths[2]
+        ]
+
         element = dataset[0]
 
-        assert element['image'] == self.paths[0]
+        assert element['image'] in image_paths
 
         assert 'label' not in element.keys()
         assert 'pathological' not in element.keys()
 
         assert element['metadata'] == 'dummy'
 
+        image_paths.remove(element['image'])
+
         element = dataset[1]
 
-        assert element['image'] == self.paths[2]
+        assert element['image'] in image_paths
 
         assert 'label' not in element.keys()
         assert 'pathological' not in element.keys()
