@@ -17,6 +17,13 @@ class ABCDataset(Dataset):
     For what concerns labels and data structure refer to:
     https://abcs.mgh.harvard.edu/index.php/data/download/s end/3-data-for-abcs/14-readme
 
+    .. note::
+
+        This dataset returns the following fields: 'ct', 't1', 't2' and 'label_task1', 'label_task2' when training.
+        The content of these fields consists of paths relative to data_dir, to ct, MR and labels.
+
+        Get started code can be found here: https://gist.github.com/faustomilletari/af430acfecf0841d71508455cdadcbbf
+
     .. code-block:: python
 
         from eisen.datasets import ABCDataset
@@ -27,8 +34,6 @@ class ABCDataset(Dataset):
             False,
             transform,
         )
-
-    This dataset returns the following fields: 'ct', 't1', 't2' and 'label_task1', 'label_task2' when training.
 
     """
     def __init__(self, data_dir, training, flat_dir_structure=False, transform=None):

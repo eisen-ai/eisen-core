@@ -16,14 +16,17 @@ class CAMUS(Dataset):
     directory and then instantiate an object of type CAMUS which will make use of the data in the directory
     and make it available to Eisen.
 
+    .. note::
+
+        This dataset will generate data entries with keys: 'type', 'image_2CH', 'label_2CH', 'sequence_2CH',
+        'image_4CH', 'label_4CH', sequence_4CH depending on the selected input parameter configuration.
+        The data generated consists of paths to images and type (string).
+
     .. code-block:: python
 
         from eisen.datasets import CAMUS
 
         dset = CAMUS('/data/root/path')
-
-    This dataset will generate data entries with keys: 'type', 'image_2CH', 'label_2CH', 'sequence_2CH', 'image_4CH',
-    'label_4CH', sequence_4CH depending on the selected input parameter configuration.
 
     """
     def __init__(

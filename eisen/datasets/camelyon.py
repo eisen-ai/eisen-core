@@ -16,6 +16,11 @@ class PatchCamelyon(Dataset):
     directory and then instantiate an object of type PatchCamelyon which will make use of the data in the directory as
     well as the h5 files that are part of the dataset and make it available to Eisen.
 
+    .. note::
+
+        This dataset will generate data entries with keys: 'image', 'label' and optionally 'mask'.
+        The generated image and label are tensors.
+
     .. code-block:: python
 
         from eisen.datasets import PatchCamelyon
@@ -27,7 +32,7 @@ class PatchCamelyon(Dataset):
             'camelyon_patch_level_2_split_train_mask.h5'
         )
 
-    This dataset will generate data entries with keys: 'image', 'label' and optionally 'mask'
+
 
     """
     def __init__(self, data_dir, x_h5_file, y_h5_file, mask_h5_file=None, transform=None):

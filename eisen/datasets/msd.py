@@ -15,6 +15,10 @@ class MSDDataset(Dataset):
     directory and then instantiate an object of type MSDDataset which will make use of the directory structure and
     the descriptive json file included in it and make the data available to Eisen.
 
+    .. note::
+
+        This dataset will return data items with fields: 'image' and, optionally, 'label'.
+
     .. code-block:: python
 
         from eisen.datasets import MSDDataset
@@ -26,7 +30,6 @@ class MSDDataset(Dataset):
             transform,
         )
 
-    This dataset will return data items with fields: 'image' and, optionally, 'label'.
     """
     def __init__(self, data_dir, json_file, phase, transform=None):
         """

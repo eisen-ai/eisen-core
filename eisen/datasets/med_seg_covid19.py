@@ -24,6 +24,11 @@ class MedSegCovid19(Dataset):
     (in case both images and labels are loaded) keys. Each key stores a numpy array containing the 2D data relative to
     one image.
 
+    .. note::
+
+        This dataset will generate data entries with keys: 'image' and (optionally) 'label'.
+
+
     .. code-block:: python
 
         from eisen.datasets import MedSegCovid19
@@ -34,8 +39,6 @@ class MedSegCovid19(Dataset):
             'tr_mask.nii',
             transform,
         )
-
-    This dataset will generate data entries with keys: 'image' and (optionally) 'label'.
 
     """
     def __init__(self, data_dir, image_file, mask_file=None, transform=None):

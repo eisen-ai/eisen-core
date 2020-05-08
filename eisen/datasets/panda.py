@@ -14,6 +14,11 @@ class PANDA(Dataset):
     directory and then instantiate an object of type PANDA which will make use of the data in the directory as
     well as the csv file that are part of the dataset and make it available to Eisen.
 
+    .. note::
+
+        This dataset will return data points in form of a dictionary with fields: 'image', 'provider' and optionally
+        (during training) 'mask', 'isup', 'gleason'.
+
     .. code-block:: python
 
         from eisen.datasets import PANDA
@@ -23,9 +28,6 @@ class PANDA(Dataset):
             'train.csv',
             True
         )
-
-    This dataset will return data points in form of a dictionary with fields: 'image', 'provider' and optionally
-    (during training) 'mask', 'isup', 'gleason'.
 
     """
     def __init__(self, data_dir, csv_file, training, transform=None):

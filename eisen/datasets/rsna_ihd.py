@@ -58,14 +58,19 @@ class RSNAIntracranialHemorrhageDetection(Dataset):
     directory and then instantiate an object of type RSNAIntracranialHemorrhageDetection which will parse said
     directory and make the data available to Eisen.
 
+    .. note::
+
+        This dataset will return data points in form of a dictionary having keys: 'image' and during training
+        'label' as well.
+
+
     .. code-block:: python
 
         from eisen.datasets import RSNAIntracranialHemorrhageDetection
 
         dset = RSNAIntracranialHemorrhageDetection('/data/root/path', True)
 
-    This dataset will return data points in form of a dictionary having keys: 'image' and during training
-    'label' as well.
+
 
     """
     def __init__(self, data_dir, training, transform=None):

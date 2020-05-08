@@ -14,6 +14,7 @@ from eisen.datasets import RSNABoneAgeChallenge
 from eisen.datasets import RSNAIntracranialHemorrhageDetection
 from eisen.datasets import PANDA
 from eisen.datasets import ABCDataset
+from eisen.datasets import EMIDEC
 
 
 def touch(fname, times=None):
@@ -532,3 +533,106 @@ class TestABC:
         for i in range(len(dataset)):
             element = dataset[i]
             self.check_testing_content(self.flat_path, element)
+
+class TestEMIDEC:
+    def setup_class(self):
+        self.path = tempfile.mkdtemp()
+
+        os.makedirs(os.path.join(self.path, 'Case_P042', 'Images'))
+        os.makedirs(os.path.join(self.path, 'Case_P042', 'Contours'))
+
+        os.makedirs(os.path.join(self.path, 'Case_N069', 'Images'))
+        os.makedirs(os.path.join(self.path, 'Case_N069', 'Contours'))
+
+        self.paths = [
+            os.path.join('Case_P042', 'Images', 'Case_P042.nii.gz'),
+            os.path.join('Case_P042', 'Contours', 'Case_P042.nii.gz'),
+            os.path.join('Case_N069', 'Images', 'Case_N069.nii.gz'),
+            os.path.join('Case_N069', 'Contours', 'Case_N069.nii.gz'),
+        ]
+
+        touch_file = [
+            os.path.join(self.path, self.paths[0]),
+            os.path.join(self.path, self.paths[1]),
+            os.path.join(self.path, self.paths[2]),
+            os.path.join(self.path, self.paths[3]),
+            os.path.join(self.path, 'Case N069.txt'),
+            os.path.join(self.path, 'Case P042.txt'),
+        ]
+
+        for file in touch_file:
+            with open(file, 'w') as f:
+                f.write('dummy')
+
+    def __del__(self):
+        shutil.rmtree(self.path)
+
+    def test_training_dataset(self):
+        dataset = EMIDEC(
+            data_dir=self.path,
+            training=True,
+            transform=None
+        )
+
+        assert len(dataset) == 2
+
+        element = dataset[0]
+
+        image_paths = [
+            self.paths[0],
+            self.paths[2]
+        ]
+
+        label_paths = [
+            self.paths[1],
+            self.paths[3]
+        ]
+
+        assert element['image'] in image_paths
+        assert element['label'] in label_paths
+
+        assert element['metadata'] == 'dummy'
+
+        image_paths.remove(element['image'])
+        label_paths.remove(element['label'])
+
+        element = dataset[1]
+
+        assert element['image'] in image_paths
+        assert element['label'] in label_paths
+
+        assert element['metadata'] == 'dummy'
+
+    def test_test_dataset(self):
+        dataset = EMIDEC(
+            data_dir=self.path,
+            training=False,
+            transform=None
+        )
+
+        assert len(dataset) == 2
+
+        image_paths = [
+            self.paths[0],
+            self.paths[2]
+        ]
+
+        element = dataset[0]
+
+        assert element['image'] in image_paths
+
+        assert 'label' not in element.keys()
+        assert 'pathological' not in element.keys()
+
+        assert element['metadata'] == 'dummy'
+
+        image_paths.remove(element['image'])
+
+        element = dataset[1]
+
+        assert element['image'] in image_paths
+
+        assert 'label' not in element.keys()
+        assert 'pathological' not in element.keys()
+
+        assert element['metadata'] == 'dummy'

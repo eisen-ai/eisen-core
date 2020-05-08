@@ -14,6 +14,10 @@ class KaggleCovid19(Dataset):
     directory and then instantiate an object of type KaggleCovid19 which will make use of the data in the directory as
     well as the csv file that are part of the dataset and make it available to Eisen.
 
+    .. note::
+        This dataset will generate data entries with fields: 'image', 'lung_mask', 'infection_mask',
+        'lung_infection_mask'. This data is returned in form of relative paths (to data_dir) of image and mask files.
+
     .. code-block:: python
 
         from eisen.datasets import KaggleCovid19
@@ -22,8 +26,6 @@ class KaggleCovid19(Dataset):
             '/data/root/path',
             'metadata.csv',
         )
-
-    This dataset will generate data entries with fields: 'image', 'lung_mask', 'infection_mask', 'lung_infection_mask'
 
     """
     def __init__(self, data_dir, csv_file, transform=None):
