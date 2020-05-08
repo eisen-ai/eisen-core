@@ -577,18 +577,23 @@ class TestEMIDEC:
 
         assert len(dataset) == 2
 
-        for i in range(len(dataset)):
-            element = dataset[i]
+        element = dataset[0]
 
-            assert element['image'] == self.paths[i * 2]
-            assert element['label'] == self.paths[i * 2 + 1]
+        assert element['image'] == self.paths[0]
+        assert element['label'] == self.paths[1]
 
-            if i == 0:
-                assert element['pathological']
-            else:
-                assert not element['pathological']
+        assert element['pathological']
 
-            assert element['metadata'] == 'dummy'
+        assert element['metadata'] == 'dummy'
+
+        element = dataset[1]
+
+        assert element['image'] == self.paths[2]
+        assert element['label'] == self.paths[3]
+
+        assert not element['pathological']
+
+        assert element['metadata'] == 'dummy'
 
     def test_test_dataset(self):
         dataset = EMIDEC(
@@ -599,12 +604,20 @@ class TestEMIDEC:
 
         assert len(dataset) == 2
 
-        for i in range(len(dataset)):
-            element = dataset[i]
+        element = dataset[0]
 
-            assert element['image'] == self.paths[i * 2]
+        assert element['image'] == self.paths[0]
 
-            assert 'label' not in element.keys()
-            assert 'pathological' not in element.keys()
+        assert 'label' not in element.keys()
+        assert 'pathological' not in element.keys()
 
-            assert element['metadata'] == 'dummy'
+        assert element['metadata'] == 'dummy'
+
+        element = dataset[2]
+
+        assert element['image'] == self.paths[2]
+
+        assert 'label' not in element.keys()
+        assert 'pathological' not in element.keys()
+
+        assert element['metadata'] == 'dummy'
