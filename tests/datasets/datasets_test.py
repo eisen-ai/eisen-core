@@ -613,7 +613,7 @@ class TestEMIDEC:
 
         assert element['metadata'] == 'dummy'
 
-        element = dataset[2]
+        element = dataset[1]
 
         assert element['image'] == self.paths[2]
 
