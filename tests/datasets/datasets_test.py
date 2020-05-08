@@ -592,8 +592,6 @@ class TestEMIDEC:
         assert element['image'] in image_paths
         assert element['label'] in label_paths
 
-        assert element['pathological']
-
         assert element['metadata'] == 'dummy'
 
         image_paths.remove(element['image'])
@@ -603,8 +601,6 @@ class TestEMIDEC:
 
         assert element['image'] in image_paths
         assert element['label'] in label_paths
-
-        assert not element['pathological']
 
         assert element['metadata'] == 'dummy'
 
