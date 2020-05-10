@@ -93,6 +93,8 @@ class EpochDataAggregator:
                     pass
 
     def __exit__(self, *args, **kwargs):
+        if any([isinstance(x, Exception) for x in args]):
+            return
         for typ in ['losses', 'metrics']:
             for i in range(len(self.epoch_data[typ])):
                 for key in self.epoch_data[typ][i].keys():
