@@ -8,5 +8,5 @@ from .med_seg_covid19 import *
 from .ucsd_cls_covid19 import *
 from .panda import *
 from .kaggle_covid import *
-from .abc import *
+from .abcs import *
 from .emidec_challenge import *
