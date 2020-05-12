@@ -26,9 +26,9 @@ class ABCsDataset(Dataset):
 
     .. code-block:: python
 
-        from eisen.datasets import ABCDataset
+        from eisen.datasets import ABCsDataset
 
-        dataset = ABCDataset(
+        dataset = ABCsDataset(
             '/abs/path/to/data',
             True,
             False,
@@ -49,9 +49,9 @@ class ABCsDataset(Dataset):
 
         .. code-block:: python
 
-            from eisen.datasets import ABCDataset
+            from eisen.datasets import ABCsDataset
 
-            dataset = ABCDataset(
+            dataset = ABCsDataset(
                 data_dir='/abs/path/to/data',
                 training=True,
                 flat_dir_structure=False,

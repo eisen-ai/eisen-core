@@ -13,7 +13,7 @@ from eisen.datasets import CAMUS
 from eisen.datasets import RSNABoneAgeChallenge
 from eisen.datasets import RSNAIntracranialHemorrhageDetection
 from eisen.datasets import PANDA
-from eisen.datasets import ABCsDataset
+from eisen.datasets import ABCsDataset, ABCDataset
 from eisen.datasets import EMIDEC
 
 
