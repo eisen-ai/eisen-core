@@ -13,7 +13,7 @@ from eisen.datasets import CAMUS
 from eisen.datasets import RSNABoneAgeChallenge
 from eisen.datasets import RSNAIntracranialHemorrhageDetection
 from eisen.datasets import PANDA
-from eisen.datasets import ABCDataset
+from eisen.datasets import ABCsDataset, ABCDataset
 from eisen.datasets import EMIDEC
 
 
@@ -426,7 +426,7 @@ class TestPANDA:
         assert len(dataset) == 3
 
 
-class TestABC:
+class TestABCs:
     def setup_class(self):
         self.flat_path = tempfile.mkdtemp()
         self.structured_path = tempfile.mkdtemp()
@@ -493,7 +493,7 @@ class TestABC:
         assert os.path.exists(os.path.join(basedir, element['t2']))
 
     def test_training_structured(self):
-        dataset = ABCDataset(
+        dataset = ABCsDataset(
             data_dir=self.structured_path,
             training=True,
             flat_dir_structure=False,
@@ -507,7 +507,7 @@ class TestABC:
             self.check_training_content(self.structured_path, element)
 
     def test_training_flat(self):
-        dataset = ABCDataset(
+        dataset = ABCsDataset(
             data_dir=self.flat_path,
             training=True,
             flat_dir_structure=True,
@@ -521,7 +521,7 @@ class TestABC:
             self.check_training_content(self.flat_path, element)
 
     def test_testing(self):
-        dataset = ABCDataset(
+        dataset = ABCsDataset(
             data_dir=self.flat_path,
             training=True,
             flat_dir_structure=True,
