@@ -4,7 +4,7 @@ import torch
 from torch.utils.data import Dataset
 
 
-class ABCDataset(Dataset):
+class ABCsDataset(Dataset):
     """
     This object allows Data from the ABC challenge (2020) data to be easily impoted in Eisen.
     More information about the data and challenge can be found here https://abcs.mgh.harvard.edu
@@ -26,9 +26,9 @@ class ABCDataset(Dataset):
 
     .. code-block:: python
 
-        from eisen.datasets import ABCDataset
+        from eisen.datasets import ABCsDataset
 
-        dataset = ABCDataset(
+        dataset = ABCsDataset(
             '/abs/path/to/data',
             True,
             False,
@@ -49,9 +49,9 @@ class ABCDataset(Dataset):
 
         .. code-block:: python
 
-            from eisen.datasets import ABCDataset
+            from eisen.datasets import ABCsDataset
 
-            dataset = ABCDataset(
+            dataset = ABCsDataset(
                 data_dir='/abs/path/to/data',
                 training=True,
                 flat_dir_structure=False,
@@ -151,3 +151,9 @@ class ABCDataset(Dataset):
             item = self.transform(item)
 
         return item
+
+
+class ABCDataset(ABCsDataset):
+    def __init__(self, *args, **kwargs):
+        print('Warning: ABCDataset is the old name for ABCsDataset and is deprecated. Use ABCsDataset instead')
+        super(ABCDataset, self).__init__(*args, **kwargs)
