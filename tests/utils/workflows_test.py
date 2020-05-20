@@ -281,3 +281,39 @@ class TestWorkflowTesting:
 
     def test_run(self):
         self.testing_workflow.run()
+
+
+class TestDataParallelTraining(TestWorkflowTraining):
+    def setup_class(self):
+        self.batch = {
+            'x': torch.rand((2, 1, 8, 8)),  # batch size 2, 1 input channel, 8x8 pixels
+            'y': torch.LongTensor([0, 1])  # class for those two images (0 and 1 respectively)
+        }
+
+        self.data_loader = DataLoader(
+            DummyDataset(),
+            batch_size=1,
+            shuffle=False,
+            num_workers=4
+        )
+
+        data_parallel_net = torch.nn.DataParallel(Net())
+
+        self.module = EisenModuleWrapper(data_parallel_net, input_names=['x'], output_names=['pred'])
+
+        self.optimizer = Adam(self.module.parameters(), 0.001)
+
+        self.loss = EisenModuleWrapper(module=CrossEntropyLoss(), input_names=['pred', 'y'], output_names=['loss'])
+
+        self.metric = EisenModuleWrapper(module=CrossEntropyLoss(), input_names=['pred', 'y'], output_names=['metric'])
+
+        self.training_workflow = WorkflowTraining(
+            self.module,
+            self.data_loader,
+            [self.loss],
+            self.optimizer,
+            [self.metric],
+            gpu=False
+        )
+
+        assert isinstance(self.training_workflow, WorkflowTraining)
