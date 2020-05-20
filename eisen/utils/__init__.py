@@ -157,9 +157,9 @@ class EisenModuleWrapper(Module):
         """
         :param module: This is a Module instance
         :type module: torch.nn.Module
-        :param input_names: list of strings corresponding to batch keys, to be supplied to the module positionally
+        :param input_names: list of names for positional arguments of module. Must match field names in data batches
         :type input_names: list of str
-        :param output_names: list of strings corresponding to output dictionary keys to hold module outputs
+        :param output_names: list of names for the outputs of the module
         :type output_names: list of str
         """
         super(EisenModuleWrapper, self).__init__()
@@ -169,19 +169,15 @@ class EisenModuleWrapper(Module):
 
         self.module = module
 
-        module_argument_list = inspect.getfullargspec(self.module.forward)[0]
+    def forward(self, *args, **kwargs):
+        input_list = list(args)
+        n_args = len(input_list)
 
-        module_argument_list.remove('self')
+        for key in kwargs.keys():
+            if key in self.input_names[n_args:]:
+                input_list.append(kwargs[key])
 
-        self.module_argument_list = module_argument_list
-
-    def forward(self, **kwargs):
-        input_dict = {}
-
-        for dst_arg, src_arg in zip(self.module_argument_list, self.input_names):
-            input_dict[dst_arg] = kwargs[src_arg]
-
-        outputs = self.module(**input_dict)
+        outputs = self.module(*input_list)
 
         if not isinstance(outputs, (list, tuple)):
             outputs = (outputs,)

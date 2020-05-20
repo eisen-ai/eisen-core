@@ -534,7 +534,6 @@ class TestABCs:
             element = dataset[i]
             self.check_testing_content(self.flat_path, element)
 
-
 class TestEMIDEC:
     def setup_class(self):
         self.path = tempfile.mkdtemp()
