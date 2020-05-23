@@ -59,17 +59,17 @@ class LoadITKFromFilename:
         return data
 
 
-class LoadNiftyFromFilename:
+class LoadNiftiFromFilename:
     """
-    This transform loads Nifty data from filenames contained in a specific field of the data dictionary.
+    This transform loads Nifti data from filenames contained in a specific field of the data dictionary.
     Although this transform follows the general structure of other transforms, such as those contained in
     eisen.transforms, it's kept separated from the others as it is responsible for I/O operations interacting
     with the disk
 
     .. code-block:: python
 
-        from eisen.io import LoadNiftyFromFilename
-        tform = LoadNiftyFromFilename(['image', 'label'], '/abs/path/to/dataset')
+        from eisen.io import LoadNiftiFromFilename
+        tform = LoadNiftiFromFilename(['image', 'label'], '/abs/path/to/dataset')
 
     """
     def __init__(self, fields, data_dir, canonical=False):
@@ -83,8 +83,8 @@ class LoadNiftyFromFilename:
 
         .. code-block:: python
 
-            from eisen.io import LoadNiftyFromFilename
-            tform = LoadNiftyFromFilename(
+            from eisen.io import LoadNiftiFromFilename
+            tform = LoadNiftiFromFilename(
                 fields=['image', 'label'],
                 data_dir='/abs/path/to/dataset'
                 canonical=False
@@ -119,6 +119,12 @@ class LoadNiftyFromFilename:
             data[field + '_orientations'] = nib.aff2axcodes(img.affine)
 
         return data
+
+
+class LoadNiftyFromFilename(LoadNiftiFromFilename):
+    def __init__(self, *args, **kwargs):
+        print('LoadNiftyFromFilename has been renamed LoadNiftiFromFilename. The older class is deprecated')
+        super(LoadNiftyFromFilename, self).__init__(*args, **kwargs)
 
 
 class LoadDICOMFromFilename:

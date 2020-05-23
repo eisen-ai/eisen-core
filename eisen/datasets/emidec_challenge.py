@@ -69,7 +69,10 @@ class EMIDEC(Dataset):
         for directory in directories:
             image_rel_path = os.path.join(directory, 'Images', directory + '.nii.gz')
 
-            with open(os.path.join(data_dir, directory.replace('_', ' ') + '.txt'), 'r') as file:
+            with open(
+                    os.path.join(data_dir, directory.replace('_', ' ') + '.txt'), 'r',
+                    encoding='utf-8', errors='ignore'
+            ) as file:
                 metadata = file.read().replace('\n', '')
 
             entry = {

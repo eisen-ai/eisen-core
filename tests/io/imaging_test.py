@@ -8,7 +8,7 @@ import PIL
 
 from pydicom.dataset import FileDataset
 
-from eisen.io.imaging import LoadNiftyFromFilename
+from eisen.io.imaging import LoadNiftiFromFilename, LoadNiftyFromFilename
 from eisen.io.imaging import LoadDICOMFromFilename
 from eisen.io.imaging import LoadITKFromFilename
 from eisen.io.imaging import LoadPILImageFromFilename
@@ -16,7 +16,8 @@ from eisen.io.imaging import WriteNiftiToFile
 
 from eisen.transforms.imaging import NumpyToNifti
 
-class TestLoadNiftyFromFilename:
+
+class TestLoadNiftiFromFilename:
     def setup_class(self):
         self.data = np.random.randn(32, 32, 15, 100).astype(np.float32)
 
@@ -36,9 +37,9 @@ class TestLoadNiftyFromFilename:
             'nii_gz': self.nii_gz_name
         }
 
-        self.nii_loader = LoadNiftyFromFilename(['nii'], self.base_path)
-        self.nii_gz_loader = LoadNiftyFromFilename(['nii_gz'], self.base_path)
-        self.all_loader = LoadNiftyFromFilename(['nii', 'nii_gz'], self.base_path)
+        self.nii_loader = LoadNiftiFromFilename(['nii'], self.base_path)
+        self.nii_gz_loader = LoadNiftiFromFilename(['nii_gz'], self.base_path)
+        self.all_loader = LoadNiftiFromFilename(['nii', 'nii_gz'], self.base_path)
 
     def test_call(self):
         self.dset_nii = self.nii_loader(copy.deepcopy(self.dset))
