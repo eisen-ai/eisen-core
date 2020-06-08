@@ -31,9 +31,6 @@ class PatchCamelyon(Dataset):
             'camelyon_patch_level_2_split_train_y.h5',
             'camelyon_patch_level_2_split_train_mask.h5'
         )
-
-
-
     """
     def __init__(self, data_dir, x_h5_file, y_h5_file, mask_h5_file=None, transform=None):
         """

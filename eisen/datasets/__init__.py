@@ -10,3 +10,4 @@ from .panda import *
 from .kaggle_covid import *
 from .abcs import *
 from .emidec_challenge import *
+from .Brats import *

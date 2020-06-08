@@ -15,6 +15,7 @@ from eisen.datasets import RSNAIntracranialHemorrhageDetection
 from eisen.datasets import PANDA
 from eisen.datasets import ABCsDataset, ABCDataset
 from eisen.datasets import EMIDEC
+from eisen.datasets import Brats2020
 
 
 def touch(fname, times=None):
@@ -636,3 +637,87 @@ class TestEMIDEC:
         assert 'pathological' not in element.keys()
 
         assert element['metadata'] == 'dummy'
+
+
+class TestBrats2020:
+    def setup_class(self):
+        self.path = tempfile.mkdtemp()
+
+        patient_dir = os.path.join(self.path, 'BraTS20_Training_001')
+
+        os.makedirs(patient_dir)
+
+        with open(os.path.join(patient_dir, 'BraTS20_Training_001_t1.nii.gz'), 'w') as f:
+            f.write('')
+
+        with open(os.path.join(patient_dir, 'BraTS20_Training_001_t2.nii.gz'), 'w') as f:
+            f.write('')
+
+        with open(os.path.join(patient_dir, 'BraTS20_Training_001_flair.nii.gz'), 'w') as f:
+            f.write('')
+
+        with open(os.path.join(patient_dir, 'BraTS20_Training_001_t1ce.nii.gz'), 'w') as f:
+            f.write('')
+
+        with open(os.path.join(patient_dir, 'BraTS20_Training_001_seg.nii.gz'), 'w') as f:
+            f.write('')
+
+        with open(os.path.join(self.path, 'name_mapping.csv'), 'w') as f:
+            f.write(
+                'Grade,BraTS_2017_subject_ID,BraTS_2018_subject_ID,'
+                'TCGA_TCIA_subject_ID,BraTS_2019_subject_ID,BraTS_2020_subject_ID\n'
+            )
+            f.write('XXXX,XXXX,XXXX,XXXX,XXXX,BraTS20_Training_001')
+
+        with open(os.path.join(self.path, 'survival_info.csv'), 'w') as f:
+            f.write('Brats20ID,Age,Survival_days,Extent_of_Resection\n')
+            f.write('BraTS20_Training_001,1111.1111,22222,XXXX')
+
+        self.expected_keys_training = ['t1', 't2', 't1ce', 'flair', 'label', 'name_mapping', 'survival_info']
+
+        self.expected_keys_testing = ['t1', 't2', 't1ce', 'flair', 'name_mapping']
+
+        self.expected_namemapping_keys = [
+            'Grade',
+            'BraTS_2017_subject_ID',
+            'BraTS_2018_subject_ID',
+            'TCGA_TCIA_subject_ID',
+            'BraTS_2019_subject_ID',
+            'BraTS_2020_subject_ID'
+        ]
+
+        self.expected_survivalinfo_keys = ['Brats20ID', 'Age', 'Survival_days', 'Extent_of_Resection']
+
+    def __del__(self):
+        shutil.rmtree(self.path)
+
+    def test_training_dataset(self):
+        dataset = Brats2020(data_dir=self.path, training=True, transform=None)
+
+        assert len(dataset) == 1
+
+        assert all(r in dataset[0].keys() for r in self.expected_keys_training)
+
+        assert os.path.exists(os.path.join(self.path, dataset[0]['t1']))
+        assert os.path.exists(os.path.join(self.path, dataset[0]['t2']))
+        assert os.path.exists(os.path.join(self.path, dataset[0]['t1ce']))
+        assert os.path.exists(os.path.join(self.path, dataset[0]['flair']))
+        assert os.path.exists(os.path.join(self.path, dataset[0]['label']))
+
+        assert all(r in dataset[0]['survival_info'].keys() for r in self.expected_survivalinfo_keys)
+        assert all(r in dataset[0]['name_mapping'].keys() for r in self.expected_namemapping_keys)
+
+    def test_testing_dataset(self):
+        dataset = Brats2020(data_dir=self.path, training=False, transform=None)
+
+        assert len(dataset) == 1
+
+        assert all(r in dataset[0].keys() for r in self.expected_keys_testing)
+
+        assert 'survival_info' not in dataset[0].keys()
+        assert 'label' not in dataset[0].keys()
+
+        assert os.path.exists(os.path.join(self.path, dataset[0]['t1']))
+        assert os.path.exists(os.path.join(self.path, dataset[0]['t2']))
+        assert os.path.exists(os.path.join(self.path, dataset[0]['t1ce']))
+        assert os.path.exists(os.path.join(self.path, dataset[0]['flair']))
