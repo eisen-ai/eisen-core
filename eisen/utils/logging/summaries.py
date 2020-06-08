@@ -120,7 +120,7 @@ class TensorboardSummaryHook:
         <json>
         [
             {"name": "comparison_pairs", "type": "list:list:string", "value": ""},
-            {"name": "show_all_axes", "type": bool, "value": "false"}
+            {"name": "show_all_axes", "type": "bool", "value": "false"}
         ]
         </json>
         """
