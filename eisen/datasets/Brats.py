@@ -59,7 +59,7 @@ class Brats2020:
 
         <json>
         [
-            {"name": "training", "type": "bool", "value": ""},
+            {"name": "training", "type": "bool", "value": ""}
         ]
         </json>
         """
