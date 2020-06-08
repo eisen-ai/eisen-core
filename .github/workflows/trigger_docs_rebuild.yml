@@ -13,5 +13,5 @@ jobs:
         run: |
           curl -X POST https://api.github.com/repos/eisen-ai/eisen-docs/dispatches \
           -H 'Accept: application/vnd.github.everest-preview+json' \
-          -u ${{ secrets.GITHUB_TKN }} \
+          -u ${{ secrets.GH_TOKEN }} \
           --data '{"event_type": "push", "client_payload": { "repository": "Eisen-docs" }}'
