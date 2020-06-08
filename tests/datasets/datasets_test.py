@@ -675,7 +675,7 @@ class TestBrats2020:
 
         self.expected_keys_training = ['t1', 't2', 't1ce', 'flair', 'label', 'name_mapping', 'survival_info']
 
-        self.expected_keys_testing = ['t1', 't2', 't1ce', 'flair']
+        self.expected_keys_testing = ['t1', 't2', 't1ce', 'flair', 'name_mapping']
 
         self.expected_namemapping_keys = [
             'Grade',
@@ -715,7 +715,6 @@ class TestBrats2020:
         assert all(r in dataset[0].keys() for r in self.expected_keys_testing)
 
         assert 'survival_info' not in dataset[0].keys()
-        assert 'name_mapping' not in dataset[0].keys()
         assert 'label' not in dataset[0].keys()
 
         assert os.path.exists(os.path.join(self.path, dataset[0]['t1']))
