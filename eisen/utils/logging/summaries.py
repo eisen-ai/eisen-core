@@ -83,7 +83,7 @@ class TensorboardSummaryHook:
 
             logger = TensorboardSummaryHook(workflow.id, 'Training', '/artifacts/dir')
     """
-    def __init__(self, workflow_id, phase, artifacts_dir, comparison_pairs=None):
+    def __init__(self, workflow_id, phase, artifacts_dir, comparison_pairs=None, show_all_axes=False):
         """
         This method instantiates an object of type TensorboardSummaryHook. The signature of this method is similar to
         that of every other hook. There is one additional parameter called `comparison_pairs` which is meant to
@@ -114,10 +114,13 @@ class TensorboardSummaryHook:
         :type artifacts_dir: bool
         :param comparison_pairs: list of lists of pairs, which are names of inputs and outputs to be compared directly
         :type comparison_pairs: list of lists of strings
+        :param show_all_axes: whether any volumetric data should be shown as axial + sagittal + coronal
+        :type show_all_axes: bool
 
         <json>
         [
-            {"name": "comparison_pairs", "type": "list:list:string", "value": ""}
+            {"name": "comparison_pairs", "type": "list:list:string", "value": ""},
+            {"name": "show_all_axes", "type": bool, "value": "false"}
         ]
         </json>
         """
@@ -125,6 +128,7 @@ class TensorboardSummaryHook:
         self.phase = phase
 
         self.comparison_pairs = comparison_pairs
+        self.show_all_axes = show_all_axes
 
         if not os.path.exists(artifacts_dir):
             raise ValueError('The directory specified to save artifacts does not exist!')
@@ -193,17 +197,37 @@ class TensorboardSummaryHook:
                     )
 
     def write_volumetric_image(self, name, value, global_step):
-        value = np.transpose(value, [0, 2, 1, 3, 4])
-
-        if value.shape[2] != 3 and value.shape[2] != 1:
-            value = np.sum(value, axis=2, keepdims=True)
-
-        torch_value = torch.tensor(value).float()
-
-        self.writer.add_video(name, torch_value, fps=10, global_step=global_step)
         self.writer.add_scalar(name + '/mean', np.mean(value), global_step=global_step)
         self.writer.add_scalar(name + '/std', np.std(value), global_step=global_step)
         self.writer.add_histogram(name + '/histogram', value.flatten(), global_step=global_step)
+
+        v = np.transpose(value, [0, 2, 1, 3, 4])
+
+        if v.shape[2] != 3 and v.shape[2] != 1:
+            v = np.average(v, axis=2, weights=np.arange(0, 1, 1 / v.shape[2]))[:, :, np.newaxis]
+
+        torch_value = torch.tensor(v).float()
+
+        self.writer.add_video(name + '_axis_1', torch_value, fps=10, global_step=global_step)
+
+        if self.show_all_axes:
+            v = np.transpose(value, [0, 3, 1, 2, 4])
+
+            if v.shape[2] != 3 and v.shape[2] != 1:
+                v = np.average(v, axis=2, weights=np.arange(0, 1, 1 / v.shape[2]))[:, :, np.newaxis]
+
+            torch_value = torch.tensor(v).float()
+
+            self.writer.add_video(name + '_axis_2', torch_value, fps=10, global_step=global_step)
+
+            v = np.transpose(value, [0, 4, 1, 2, 3])
+
+            if v.shape[2] != 3 and v.shape[2] != 1:
+                v = np.average(v, axis=2, weights=np.arange(0, 1, 1 / v.shape[2]))[:, :, np.newaxis]
+
+            torch_value = torch.tensor(v).float()
+
+            self.writer.add_video(name + '_axis_3', torch_value, fps=10, global_step=global_step)
 
     def write_image(self, name, value, global_step):
         self.writer.add_scalar(name + '/mean', np.mean(value), global_step=global_step)
