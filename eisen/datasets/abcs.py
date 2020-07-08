@@ -36,6 +36,7 @@ class ABCsDataset(Dataset):
         )
 
     """
+
     def __init__(self, data_dir, training, flat_dir_structure=False, transform=None):
         """
         :param data_dir: the base directory where the data is located (dataset location after unzipping)
@@ -73,26 +74,21 @@ class ABCsDataset(Dataset):
 
         if self.flat_dir:
             all_images = [
-                f.split('_')[0] for f in os.listdir(self.data_dir) if
-                ('mha' in f) and
-                ('label' not in f) and
-                ('ct' in f)
+                f.split("_")[0]
+                for f in os.listdir(self.data_dir)
+                if ("mha" in f) and ("label" not in f) and ("ct" in f)
             ]
 
         else:
-            all_subdirs = [
-                d for d in os.listdir(self.data_dir) if
-                os.path.isdir(os.path.join(self.data_dir, d))
-            ]
+            all_subdirs = [d for d in os.listdir(self.data_dir) if os.path.isdir(os.path.join(self.data_dir, d))]
 
             all_images = []
 
             for d in all_subdirs:
                 all_images += [
-                    os.path.join(d, f.split('_')[0]) for f in os.listdir(os.path.join(self.data_dir, d)) if
-                    ('mha' in f) and
-                    ('label' not in f) and
-                    ('ct' in f)
+                    os.path.join(d, f.split("_")[0])
+                    for f in os.listdir(os.path.join(self.data_dir, d))
+                    if ("mha" in f) and ("label" not in f) and ("ct" in f)
                 ]
 
         if self.training:
@@ -103,21 +99,17 @@ class ABCsDataset(Dataset):
             t2_images = []
 
             for image in all_images:
-                all_task1_labels.append(image + '_labelmap_task1.mha')
-                all_task2_labels.append(image + '_labelmap_task2.mha')
+                all_task1_labels.append(image + "_labelmap_task1.mha")
+                all_task2_labels.append(image + "_labelmap_task2.mha")
 
-                ct_images.append(image + '_ct.mha')
-                t1_images.append(image + '_t1.mha')
-                t2_images.append(image + '_t2.mha')
+                ct_images.append(image + "_ct.mha")
+                t1_images.append(image + "_t1.mha")
+                t2_images.append(image + "_t2.mha")
 
             for tsk1, tsk2, ct, t1, t2 in zip(all_task1_labels, all_task2_labels, ct_images, t1_images, t2_images):
-                self.dataset.append({
-                    'ct': ct,
-                    't1': t1,
-                    't2': t2,
-                    'label_task1': tsk1,
-                    'label_task2': tsk2
-                })
+                self.dataset.append(
+                    {"ct": ct, "t1": t1, "t2": t2, "label_task1": tsk1, "label_task2": tsk2,}
+                )
 
         else:
             ct_images = []
@@ -125,16 +117,12 @@ class ABCsDataset(Dataset):
             t2_images = []
 
             for image in all_images:
-                ct_images.append(image + '_ct.mha')
-                t1_images.append(image + '_t1.mha')
-                t2_images.append(image + '_t2.mha')
+                ct_images.append(image + "_ct.mha")
+                t1_images.append(image + "_t1.mha")
+                t2_images.append(image + "_t2.mha")
 
             for ct, t1, t2 in zip(ct_images, t1_images, t2_images):
-                self.dataset.append({
-                    'ct': ct,
-                    't1': t1,
-                    't2': t2
-                })
+                self.dataset.append({"ct": ct, "t1": t1, "t2": t2})
 
         self.transform = transform
 
@@ -155,5 +143,5 @@ class ABCsDataset(Dataset):
 
 class ABCDataset(ABCsDataset):
     def __init__(self, *args, **kwargs):
-        print('Warning: ABCDataset is the old name for ABCsDataset and is deprecated. Use ABCsDataset instead')
+        print("Warning: ABCDataset is the old name for ABCsDataset and is deprecated. Use ABCsDataset instead")
         super(ABCDataset, self).__init__(*args, **kwargs)

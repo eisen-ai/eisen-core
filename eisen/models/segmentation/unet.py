@@ -9,6 +9,7 @@ import torch.nn.functional as F
 # WARNING: The code contained in this file is licensed under the GNU General Public License v3.0
 # which you can find here https://github.com/milesial/Pytorch-UNet/blob/master/LICENSE
 
+
 class DoubleConv(nn.Module):
     """(convolution => [BN] => ReLU) * 2"""
 
@@ -20,7 +21,7 @@ class DoubleConv(nn.Module):
             nn.ReLU(inplace=True),
             nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1),
             normalization_fn(out_channels),
-            nn.ReLU(inplace=True)
+            nn.ReLU(inplace=True),
         )
 
     def forward(self, x):
@@ -32,10 +33,7 @@ class Down(nn.Module):
 
     def __init__(self, in_channels, out_channels, normalization_fn):
         super().__init__()
-        self.maxpool_conv = nn.Sequential(
-            nn.MaxPool2d(2),
-            DoubleConv(in_channels, out_channels, normalization_fn)
-        )
+        self.maxpool_conv = nn.Sequential(nn.MaxPool2d(2), DoubleConv(in_channels, out_channels, normalization_fn))
 
     def forward(self, x):
         return self.maxpool_conv(x)
@@ -49,7 +47,7 @@ class Up(nn.Module):
 
         # if bilinear, use the normal convolutions to reduce the number of channels
         if bilinear:
-            self.up = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
+            self.up = nn.Upsample(scale_factor=2, mode="bilinear", align_corners=True)
         else:
             self.up = nn.ConvTranspose2d(in_channels // 2, in_channels // 2, kernel_size=2, stride=2)
 
@@ -85,13 +83,13 @@ class GroupNorm(nn.GroupNorm):
 
 class UNet(nn.Module):
     def __init__(
-            self,
-            input_channels,
-            output_channels,
-            n_filters=64,
-            bilinear=False,
-            outputs_activation='sigmoid',
-            normalization='groupnorm'
+        self,
+        input_channels,
+        output_channels,
+        n_filters=64,
+        bilinear=False,
+        outputs_activation="sigmoid",
+        normalization="groupnorm",
     ):
         """
         :param input_channels: number of input channels
@@ -124,9 +122,9 @@ class UNet(nn.Module):
         self.bilinear = bilinear
         self.n_filters = n_filters
 
-        if normalization == 'groupnorm':
+        if normalization == "groupnorm":
             normalization_fn = GroupNorm
-        elif normalization == 'batchnorm':
+        elif normalization == "batchnorm":
             normalization_fn = nn.BatchNorm2d
         else:
             normalization_fn = nn.Identity
@@ -145,11 +143,11 @@ class UNet(nn.Module):
         self.outputs_activation = outputs_activation
         self.normalization = normalization
 
-        if self.outputs_activation == 'sigmoid':
+        if self.outputs_activation == "sigmoid":
             self.outputs_activation_fn = nn.Sigmoid()
-        elif outputs_activation == 'softmax':
+        elif outputs_activation == "softmax":
             self.outputs_activation_fn = nn.Softmax()
-        elif outputs_activation == 'none':
+        elif outputs_activation == "none":
             self.outputs_activation_fn = nn.Identity()
 
     def forward(self, x):

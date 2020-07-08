@@ -11,6 +11,7 @@ class GetShape:
 
     Prints the shape of the numpy arrays stored in the data dictionary.
     """
+
     def __init__(self, fields):
         """
         :param fields: A list of data dictionary field names which need to be investigated (print shape)
@@ -27,9 +28,6 @@ class GetShape:
 
     def __call__(self, data):
         for field in self.fields:
-            print('Data stored in data dictionary at field {} has shape {}'.format(
-                field,
-                data[field].shape
-            ))
+            print("Data stored in data dictionary at field {} has shape {}".format(field, data[field].shape))
 
         return data

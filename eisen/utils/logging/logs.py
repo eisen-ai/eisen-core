@@ -1,8 +1,6 @@
 import numpy as np
 
-from eisen import (
-    EISEN_END_EPOCH_EVENT,
-)
+from eisen import EISEN_END_EPOCH_EVENT
 
 from pydispatch import dispatcher
 from prettytable import PrettyTable
@@ -26,6 +24,7 @@ class LoggingHook:
             logger = LoggingHook(workflow.id, 'Training', '/artifacts/dir')
 
     """
+
     def __init__(self, workflow_id, phase, artifacts_dir):
         """
         :param workflow_id: string containing the workflow id of the workflow being monitored (workflow_instance.id)
@@ -62,27 +61,26 @@ class LoggingHook:
     def end_epoch(self, message):
         all_losses = []
         all_losses_names = []
-        for dct in message['losses']:
+        for dct in message["losses"]:
             for key in dct.keys():
                 all_losses_names.append(key)
                 all_losses.append(np.mean(dct[key]))
 
         all_metrics = []
         all_metrics_names = []
-        for dct in message['metrics']:
+        for dct in message["metrics"]:
             for key in dct.keys():
                 all_metrics_names.append(key)
                 all_metrics.append(np.mean(dct[key]))
 
-        self.table.field_names = \
-            ["Phase"] + \
-            [str(k) + ' (L)' for k in all_losses_names] + \
-            [str(k) + ' (M)' for k in all_metrics_names]
+        self.table.field_names = (
+            ["Phase"] + [str(k) + " (L)" for k in all_losses_names] + [str(k) + " (M)" for k in all_metrics_names]
+        )
 
         self.table.add_row(
-            ["{} - Epoch {}".format(self.phase, message['epoch'])] +
-            [str(loss) for loss in all_losses] +
-            [str(metric) for metric in all_metrics]
+            ["{} - Epoch {}".format(self.phase, message["epoch"])]
+            + [str(loss) for loss in all_losses]
+            + [str(metric) for metric in all_metrics]
         )
 
         print(self.table)

@@ -31,6 +31,7 @@ class JsonDataset(Dataset):
         dset = JsonDataset('/abs/path/to/data', '/abs/path/to/file.json', transform)
 
     """
+
     def __init__(self, data_dir, json_file, transform=None):
         """
         :param data_dir: the base directory where the data is located

@@ -19,13 +19,15 @@ class GroupNorm3D(nn.Module):
         mean = x.mean(-1, keepdim=True)
         var = x.var(-1, keepdim=True)
 
-        x = (x-mean) / (var+self.eps).sqrt()
+        x = (x - mean) / (var + self.eps).sqrt()
         x = x.view(N, C, H, W, D)
         return x * self.weight + self.bias
 
 
 class ResidualConvBlock(nn.Module):
-    def __init__(self, n_stages, n_filters_in, n_filters_out, normalization='none', expand_chan=False):
+    def __init__(
+        self, n_stages, n_filters_in, n_filters_out, normalization="none", expand_chan=False,
+    ):
         super(ResidualConvBlock, self).__init__()
 
         self.expand_chan = expand_chan
@@ -34,9 +36,9 @@ class ResidualConvBlock(nn.Module):
 
             ops.append(nn.Conv3d(n_filters_in, n_filters_out, 1))
 
-            if normalization == 'batchnorm':
+            if normalization == "batchnorm":
                 ops.append(nn.BatchNorm3d(n_filters_out))
-            if normalization == 'groupnorm':
+            if normalization == "groupnorm":
                 ops.append(GroupNorm3D(n_filters_out))
 
             ops.append(nn.ReLU(inplace=True))
@@ -45,11 +47,11 @@ class ResidualConvBlock(nn.Module):
 
         ops = []
         for i in range(n_stages):
-            if normalization != 'none':
+            if normalization != "none":
                 ops.append(nn.Conv3d(n_filters_in, n_filters_out, 3, padding=1))
-                if normalization == 'batchnorm':
+                if normalization == "batchnorm":
                     ops.append(nn.BatchNorm3d(n_filters_out))
-                if normalization == 'groupnorm':
+                if normalization == "groupnorm":
                     ops.append(GroupNorm3D(n_filters_out))
             else:
                 ops.append(nn.Conv3d(n_filters_in, n_filters_out, 3, padding=1))
@@ -62,21 +64,21 @@ class ResidualConvBlock(nn.Module):
         if self.expand_chan:
             x = self.conv(x) + self.conv_expan(x)
         else:
-            x = (self.conv(x) + x)
+            x = self.conv(x) + x
 
         return x
 
 
 class DownsamplingConvBlock(nn.Module):
-    def __init__(self, n_filters_in, n_filters_out, stride=2, normalization='none'):
+    def __init__(self, n_filters_in, n_filters_out, stride=2, normalization="none"):
         super(DownsamplingConvBlock, self).__init__()
 
         ops = []
-        if normalization != 'none':
+        if normalization != "none":
             ops.append(nn.Conv3d(n_filters_in, n_filters_out, stride, padding=0, stride=stride))
-            if normalization == 'batchnorm':
+            if normalization == "batchnorm":
                 ops.append(nn.BatchNorm3d(n_filters_out))
-            if normalization == 'groupnorm':
+            if normalization == "groupnorm":
                 ops.append(GroupNorm3D(n_filters_out))
         else:
             ops.append(nn.Conv3d(n_filters_in, n_filters_out, stride, padding=0, stride=stride))
@@ -91,15 +93,15 @@ class DownsamplingConvBlock(nn.Module):
 
 
 class UpsamplingDeconvBlock(nn.Module):
-    def __init__(self, n_filters_in, n_filters_out, stride=2, normalization='none'):
+    def __init__(self, n_filters_in, n_filters_out, stride=2, normalization="none"):
         super(UpsamplingDeconvBlock, self).__init__()
 
         ops = []
-        if normalization != 'none':
+        if normalization != "none":
             ops.append(nn.ConvTranspose3d(n_filters_in, n_filters_out, stride, padding=0, stride=stride))
-            if normalization == 'batchnorm':
+            if normalization == "batchnorm":
                 ops.append(nn.BatchNorm3d(n_filters_out))
-            if normalization == 'groupnorm':
+            if normalization == "groupnorm":
                 ops.append(GroupNorm3D(n_filters_out))
         else:
             ops.append(nn.ConvTranspose3d(n_filters_in, n_filters_out, stride, padding=0, stride=stride))
@@ -115,13 +117,13 @@ class UpsamplingDeconvBlock(nn.Module):
 
 class VNet(nn.Module):
     def __init__(
-            self,
-            input_channels,
-            output_channels,
-            n_filters=16,
-            filter_size=3,
-            outputs_activation='sigmoid',
-            normalization='groupnorm'
+        self,
+        input_channels,
+        output_channels,
+        n_filters=16,
+        filter_size=3,
+        outputs_activation="sigmoid",
+        normalization="groupnorm",
     ):
         """
         :param input_channels: number of input channels
@@ -154,7 +156,9 @@ class VNet(nn.Module):
         super(VNet, self).__init__()
 
         if input_channels > 1:
-            self.block_one = ResidualConvBlock(1, input_channels, n_filters, normalization=normalization, expand_chan=True)
+            self.block_one = ResidualConvBlock(
+                1, input_channels, n_filters, normalization=normalization, expand_chan=True,
+            )
         else:
             self.block_one = ResidualConvBlock(1, input_channels, n_filters, normalization=normalization)
 
@@ -185,13 +189,12 @@ class VNet(nn.Module):
 
         self.out_conv = nn.Conv3d(n_filters, output_channels, 1, padding=0)
 
-        if outputs_activation == 'sigmoid':
+        if outputs_activation == "sigmoid":
             self.outputs_activation_fn = nn.Sigmoid()
-        elif outputs_activation == 'softmax':
+        elif outputs_activation == "softmax":
             self.outputs_activation_fn = nn.Softmax()
-        elif outputs_activation == 'none':
+        elif outputs_activation == "none":
             self.outputs_activation_fn = nn.Identity()
-
 
     def forward(self, images):
         """

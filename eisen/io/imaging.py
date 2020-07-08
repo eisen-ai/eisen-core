@@ -19,6 +19,7 @@ class LoadITKFromFilename:
         tform = LoadITKFromFilename(['image', 'label'], '/abs/path/to/dataset')
 
     """
+
     def __init__(self, fields, data_dir):
         """
         LoadITKFromFilename loads ITK compatible files. The data is always read as float32.
@@ -72,6 +73,7 @@ class LoadNiftiFromFilename:
         tform = LoadNiftiFromFilename(['image', 'label'], '/abs/path/to/dataset')
 
     """
+
     def __init__(self, fields, data_dir, canonical=False):
         """
         :param fields: list of names of the field of data dictionary to work on. These fields should contain data paths
@@ -115,15 +117,15 @@ class LoadNiftiFromFilename:
                 img = nib.as_closest_canonical(img)
 
             data[field] = img
-            data[field + '_affines'] = img.affine
-            data[field + '_orientations'] = nib.aff2axcodes(img.affine)
+            data[field + "_affines"] = img.affine
+            data[field + "_orientations"] = nib.aff2axcodes(img.affine)
 
         return data
 
 
 class LoadNiftyFromFilename(LoadNiftiFromFilename):
     def __init__(self, *args, **kwargs):
-        print('LoadNiftyFromFilename has been renamed LoadNiftiFromFilename. The older class is deprecated')
+        print("LoadNiftyFromFilename has been renamed LoadNiftiFromFilename. The older class is deprecated")
         super(LoadNiftyFromFilename, self).__init__(*args, **kwargs)
 
 
@@ -140,6 +142,7 @@ class LoadDICOMFromFilename:
         tform = LoadDICOMFromFilename(['image', 'label'], '/abs/path/to/dataset')
 
     """
+
     def __init__(self, fields, data_dir, store_data_array=True):
         """
         :param fields: list of names of the field of data dictionary to work on. These fields should contain data paths
@@ -182,7 +185,7 @@ class LoadDICOMFromFilename:
             if self.store_data_array:
                 img = dataset.pixel_array
 
-                data[field + '_pixel_array'] = img
+                data[field + "_pixel_array"] = img
 
             data[field] = dataset
 
@@ -203,6 +206,7 @@ class LoadPILImageFromFilename:
         tform = LoadPILImageFromFilename(['image', 'label'], '/abs/path/to/dataset')
 
     """
+
     def __init__(self, fields, data_dir):
         """
         :param fields: list of names of the field of data dictionary to work on. These fields should contain data paths
@@ -255,7 +259,7 @@ class WriteNiftiToFile:
 
     """
 
-    def __init__(self, fields, name_fields=None, filename_prefix='./'):
+    def __init__(self, fields, name_fields=None, filename_prefix="./"):
         """
         :param fields: list of names of the field of data dictionary to work on. These fields should contain data paths
         :type fields: list
@@ -289,13 +293,13 @@ class WriteNiftiToFile:
         :type data: dict
         :return: Updated data dictionary
         :rtype: dict
-        """           
+        """
         for i, field in enumerate(self.fields):
             if self.name_fields is None:
-                filename = '{}_{}.nii.gz'.format(self.filename_prefix, field)
+                filename = "{}_{}.nii.gz".format(self.filename_prefix, field)
             else:
-                filename = '{}_{}_{}.nii.gz'.format(self.filename_prefix, field, data[self.name_fields[i]])
-                
+                filename = "{}_{}_{}.nii.gz".format(self.filename_prefix, field, data[self.name_fields[i]])
+
             nib.save(data[field], filename)
-            
+
         return data

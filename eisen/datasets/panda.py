@@ -30,6 +30,7 @@ class PANDA(Dataset):
         )
 
     """
+
     def __init__(self, data_dir, csv_file, training, transform=None):
         """
         :param data_dir: the base directory where the data is located
@@ -66,7 +67,7 @@ class PANDA(Dataset):
 
         self.dataset = []
 
-        with open(os.path.join(self.data_dir, self.csv_file), 'r') as f:
+        with open(os.path.join(self.data_dir, self.csv_file), "r") as f:
             reader = csv.reader(f)
 
             for i, row in enumerate(reader):
@@ -75,16 +76,16 @@ class PANDA(Dataset):
 
                 if self.training:
                     entry = {
-                        'image': os.path.join('train_images', row[0] + '.tiff'),
-                        'mask': os.path.join('train_label_masks', row[0] + '_mask.tiff'),
-                        'provider': row[1],
-                        'isup': int(row[2]),
-                        'gleason': row[3]
+                        "image": os.path.join("train_images", row[0] + ".tiff"),
+                        "mask": os.path.join("train_label_masks", row[0] + "_mask.tiff"),
+                        "provider": row[1],
+                        "isup": int(row[2]),
+                        "gleason": row[3],
                     }
                 else:
                     entry = {
-                        'image': os.path.join('test_images', row[0] + '.tiff'),
-                        'provider': row[1]
+                        "image": os.path.join("test_images", row[0] + ".tiff"),
+                        "provider": row[1],
                     }
 
                 self.dataset.append(entry)

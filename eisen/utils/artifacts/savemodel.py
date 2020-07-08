@@ -25,6 +25,7 @@ class SaveTorchModel:
         saver(my_model)
 
     """
+
     def __init__(self, artifacts_dir):
         """
         Initializes a SaveTorchModel object.
@@ -35,9 +36,9 @@ class SaveTorchModel:
         self.artifacts_dir = artifacts_dir
 
         if not os.path.exists(self.artifacts_dir):
-            raise ValueError('The artifacts directory passed as parameter to the SaveTorchModel object does not exist')
+            raise ValueError("The artifacts directory passed as parameter to the SaveTorchModel object does not exist")
 
-    def __call__(self, model, filename='model.pt'):
+    def __call__(self, model, filename="model.pt"):
         """
         Saves a model passed as argument. The model will be saved in Torch (statedict) format.
 
@@ -70,6 +71,7 @@ class SaveONNXModel:
         saver(my_model)
 
     """
+
     def __init__(self, artifacts_dir, input_size):
         """
         Initializes a SaveONNXModel object.
@@ -84,9 +86,9 @@ class SaveONNXModel:
         self.input_size = input_size
 
         if not os.path.exists(self.artifacts_dir):
-            raise ValueError('The artifacts directory passed as parameter to the SaveTorchModel object does not exist')
+            raise ValueError("The artifacts directory passed as parameter to the SaveTorchModel object does not exist")
 
-    def __call__(self, model, filename='model.onnx'):
+    def __call__(self, model, filename="model.onnx"):
         """
         Saves a model passed as argument. The model will be saved in ONNX format.
 
@@ -106,9 +108,9 @@ class SaveONNXModel:
             export_params=True,
             opset_version=10,
             verbose=False,
-            input_names=['input'],
-            output_names=['output'],
-            dynamic_axes={'input': {0: 'batch_size'}, 'output': {0: 'batch_size'}}
+            input_names=["input"],
+            output_names=["output"],
+            dynamic_axes={"input": {0: "batch_size"}, "output": {0: "batch_size"}},
         )
 
 
@@ -126,7 +128,10 @@ class SaveTorchModelHook:
 
         saver = SaveTorchModelHook(workflow.id, 'Validation', '/my/artifacts')
     """
-    def __init__(self, workflow_id, phase, artifacts_dir, select_best_loss=True, save_history=False):
+
+    def __init__(
+        self, workflow_id, phase, artifacts_dir, select_best_loss=True, save_history=False,
+    ):
         """
         :param workflow_id: the ID of the workflow that should be tracked by this hook
         :type workflow_id: UUID
@@ -168,9 +173,9 @@ class SaveTorchModelHook:
             dispatcher.connect(self.save_model, signal=EISEN_BEST_MODEL_METRIC, sender=workflow_id)
 
         if not os.path.exists(artifacts_dir):
-            raise ValueError('The directory specified to save artifacts does not exist!')
+            raise ValueError("The directory specified to save artifacts does not exist!")
 
-        self.artifacts_dir = os.path.join(artifacts_dir, 'models')
+        self.artifacts_dir = os.path.join(artifacts_dir, "models")
 
         self.save_history = save_history
 
@@ -181,13 +186,13 @@ class SaveTorchModelHook:
 
     def save_model(self, message):
         # we save an unwrapped version of the model!! (see eisen.utils.EisenModuleWrapper)
-        self.saver(message['model'].module, 'model.pt')
+        self.saver(message["model"].module, "model.pt")
 
         if self.save_history:
             timestr = time.strftime("%Y%m%d-%H%M%S")
 
             # we save an unwrapped version of the model!! (see eisen.utils.EisenModuleWrapper)
-            self.saver(message['model'].module, 'model_{}.pt'.format(timestr))
+            self.saver(message["model"].module, "model_{}.pt".format(timestr))
 
 
 class SaveONNXModelHook:
@@ -205,7 +210,10 @@ class SaveONNXModelHook:
         saver = SaveONNXModelHook(workflow.id, 'Validation', '/my/artifacts', [1, 3, 224, 224])
 
     """
-    def __init__(self, workflow_id, phase, artifacts_dir, input_size, select_best_loss=True, save_history=False):
+
+    def __init__(
+        self, workflow_id, phase, artifacts_dir, input_size, select_best_loss=True, save_history=False,
+    ):
         """
         :param workflow_id: the ID of the workflow that should be tracked by this hook
         :type workflow_id: UUID
@@ -250,9 +258,9 @@ class SaveONNXModelHook:
             dispatcher.connect(self.save_model, signal=EISEN_BEST_MODEL_METRIC, sender=workflow_id)
 
         if not os.path.exists(artifacts_dir):
-            raise ValueError('The directory specified to save artifacts does not exist!')
+            raise ValueError("The directory specified to save artifacts does not exist!")
 
-        self.artifacts_dir = os.path.join(artifacts_dir, 'onnx_models')
+        self.artifacts_dir = os.path.join(artifacts_dir, "onnx_models")
 
         self.save_history = save_history
 
@@ -265,10 +273,10 @@ class SaveONNXModelHook:
 
     def save_model(self, message):
         # we save an unwrapped version of the model!! (see eisen.utils.EisenModuleWrapper)
-        self.saver(message['model'].module, 'model.onnx')
+        self.saver(message["model"].module, "model.onnx")
 
         if self.save_history:
             timestr = time.strftime("%Y%m%d-%H%M%S")
 
             # we save an unwrapped version of the model!! (see eisen.utils.EisenModuleWrapper)
-            self.saver(message['model'].module, 'model_{}.onnx'.format(timestr))
+            self.saver(message["model"].module, "model_{}.onnx".format(timestr))

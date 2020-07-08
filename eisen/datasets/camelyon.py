@@ -32,6 +32,7 @@ class PatchCamelyon(Dataset):
             'camelyon_patch_level_2_split_train_mask.h5'
         )
     """
+
     def __init__(self, data_dir, x_h5_file, y_h5_file, mask_h5_file=None, transform=None):
         """
         :param data_dir: the base directory where the data is located
@@ -66,13 +67,13 @@ class PatchCamelyon(Dataset):
         </json>
         """
 
-        self.x = h5py.File(os.path.join(data_dir, x_h5_file), 'r')['x']
-        self.y = h5py.File(os.path.join(data_dir, y_h5_file), 'r')['y']
+        self.x = h5py.File(os.path.join(data_dir, x_h5_file), "r")["x"]
+        self.y = h5py.File(os.path.join(data_dir, y_h5_file), "r")["y"]
 
         assert len(self.x) == len(self.y)
 
         if mask_h5_file:
-            self.mask = h5py.File(os.path.join(data_dir, mask_h5_file), 'r')['mask']
+            self.mask = h5py.File(os.path.join(data_dir, mask_h5_file), "r")["mask"]
 
             assert len(self.x) == len(self.mask)
 
@@ -89,12 +90,12 @@ class PatchCamelyon(Dataset):
             idx = idx.tolist()
 
         item = {
-            'image': self.x[idx].transpose([2, 0, 1]).astype(np.float32),
-            'label': np.squeeze(self.y[idx].astype(np.float32))[np.newaxis]
+            "image": self.x[idx].transpose([2, 0, 1]).astype(np.float32),
+            "label": np.squeeze(self.y[idx].astype(np.float32))[np.newaxis],
         }
 
         if self.mask:
-            item['mask'] = self.mask[idx]
+            item["mask"] = self.mask[idx]
 
         if self.transform:
             item = self.transform(item)
