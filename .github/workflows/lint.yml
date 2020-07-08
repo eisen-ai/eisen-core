@@ -1,0 +1,41 @@
+name: Lint
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build:
+
+    runs-on: ubuntu-18.04
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        persist-credentials: false
+        fetch-depth: 0
+
+    - uses: actions/setup-python@v2
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y git
+        pip install git+https://github.com/psf/black.git
+
+    - name: Lint with black
+      run: |
+        black --config pyproject.toml ./
+
+    - name: Commit files
+      run: |
+        git config --local user.email "eisen.python@gmail.com"
+        git config --local user.name "Eisen-AI"
+        git commit -m "Automated code styling with Black" -a || echo "No changes ==> no commit"
+
+    - name: Push changes
+      uses: ad-m/github-push-action@master
+      with:
+        github_token: ${{ secrets.GH_TOKEN }}
+        branch: master
