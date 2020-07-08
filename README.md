@@ -4,7 +4,6 @@
 
 ![PyTest](https://github.com/eisen-ai/eisen-core/workflows/PyTest/badge.svg?branch=master)
 ![Eisen Docker](https://github.com/eisen-ai/eisen/workflows/Docker/badge.svg?branch=master)
-![Eisen-Core Docker](https://github.com/eisen-ai/eisen-core/workflows/Docker/badge.svg)
 ![Auto Docs](https://github.com/eisen-ai/eisen-docs/workflows/Publish%20Docs/badge.svg)
 
 ## Description
