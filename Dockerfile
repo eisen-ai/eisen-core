@@ -4,4 +4,3 @@ RUN apt-get update
 RUN apt-get install -y git
 
 RUN pip install --upgrade git+https://github.com/eisen-ai/eisen-core.git
-RUN pip install --upgrade git+https://github.com/eisen-ai/eisen-cli.git

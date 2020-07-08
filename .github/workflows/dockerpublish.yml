@@ -11,7 +11,7 @@ on:
       - v*
 
 env:
-  IMAGE_NAME: eisenai/eisen
+  IMAGE_NAME: eisenai/eisen-core
 
 jobs:
   push:
