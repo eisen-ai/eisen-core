@@ -46,33 +46,34 @@ class GroupNorm3D(nn.Module):
         if C % G != 0:
             while C % G != 0 and G > 0:
                 G -= 1
-            print('Warning: a GroupNorm3D operation was requested num_groups {} but had to use {} instead'.format(
-                self.num_groups,
-                G
-            ))
+            print(
+                "Warning: a GroupNorm3D operation was requested num_groups {} but had to use {} instead".format(
+                    self.num_groups, G
+                )
+            )
             self.num_groups = G
 
         x = x.view(N, G, -1)
         mean = x.mean(-1, keepdim=True)
         var = x.var(-1, keepdim=True)
 
-        x = (x-mean) / (var+self.eps).sqrt()
+        x = (x - mean) / (var + self.eps).sqrt()
         x = x.view(N, C, H, W, D)
         return x * self.weight + self.bias
 
 
 def conv_block_3d(in_dim, out_dim, activation, normalization):
     return nn.Sequential(
-        nn.Conv3d(in_dim, out_dim, kernel_size=3, stride=1, padding=1),
-        normalization(out_dim),
-        activation, )
+        nn.Conv3d(in_dim, out_dim, kernel_size=3, stride=1, padding=1), normalization(out_dim), activation,
+    )
 
 
 def conv_trans_block_3d(in_dim, out_dim, activation, normalization):
     return nn.Sequential(
         nn.ConvTranspose3d(in_dim, out_dim, kernel_size=3, stride=2, padding=1, output_padding=1),
         normalization(out_dim),
-        activation, )
+        activation,
+    )
 
 
 def max_pooling_3d():
@@ -83,17 +84,13 @@ def conv_block_2_3d(in_dim, out_dim, activation, normalization):
     return nn.Sequential(
         conv_block_3d(in_dim, out_dim, activation, normalization),
         nn.Conv3d(out_dim, out_dim, kernel_size=3, stride=1, padding=1),
-        normalization(out_dim), )
+        normalization(out_dim),
+    )
 
 
 class UNet3D(nn.Module):
     def __init__(
-            self,
-            input_channels,
-            output_channels,
-            n_filters=16,
-            outputs_activation='sigmoid',
-            normalization='groupnorm'
+        self, input_channels, output_channels, n_filters=16, outputs_activation="sigmoid", normalization="groupnorm",
     ):
         """
         :param input_channels: number of input channels
@@ -125,9 +122,9 @@ class UNet3D(nn.Module):
         self.out_dim = output_channels
         self.num_filters = n_filters
 
-        if normalization == 'groupnorm':
+        if normalization == "groupnorm":
             normalization = GroupNorm3D
-        elif normalization == 'batchnorm':
+        elif normalization == "batchnorm":
             normalization = nn.BatchNorm3d
         else:
             normalization = nn.Identity
@@ -164,9 +161,9 @@ class UNet3D(nn.Module):
         # Output
         self.out = conv_block_3d(self.num_filters, self.out_dim, activation, nn.Identity)
 
-        if outputs_activation == 'sigmoid':
+        if outputs_activation == "sigmoid":
             self.outputs_activation_fn = nn.Sigmoid()
-        elif outputs_activation == 'softmax':
+        elif outputs_activation == "softmax":
             self.outputs_activation_fn = nn.Softmax()
         else:
             self.outputs_activation_fn = nn.Identity()

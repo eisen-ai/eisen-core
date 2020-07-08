@@ -31,9 +31,9 @@ SOFTWARE.
 """
 
 PADDING_MODES = {
-    'reflect': 'Reflection',
-    'replicate': 'Replication',
-    'constant': 'Zero',
+    "reflect": "Reflection",
+    "replicate": "Replication",
+    "constant": "Zero",
 }
 
 BATCH_DIM = 0
@@ -42,26 +42,26 @@ CHANNELS_DIM = 1
 
 class ResidualBlock(nn.Module):
     def __init__(
-            self,
-            in_channels,
-            out_channels,
-            num_layers,
-            dilation,
-            dimensions,
-            batch_norm=True,
-            instance_norm=False,
-            residual=True,
-            residual_type='pad',
-            padding_mode='constant',
-            ):
-        assert residual_type in ('pad', 'project')
+        self,
+        in_channels,
+        out_channels,
+        num_layers,
+        dilation,
+        dimensions,
+        batch_norm=True,
+        instance_norm=False,
+        residual=True,
+        residual_type="pad",
+        padding_mode="constant",
+    ):
+        assert residual_type in ("pad", "project")
         super().__init__()
         self.residual = residual
         self.change_dimension = in_channels != out_channels
         self.residual_type = residual_type
         self.dimensions = dimensions
         if self.change_dimension:
-            if residual_type == 'project':
+            if residual_type == "project":
                 conv_class = nn.Conv2d if dimensions == 2 else nn.Conv3d
                 self.change_dim_layer = conv_class(
                     in_channels,
@@ -101,43 +101,41 @@ class ResidualBlock(nn.Module):
         out = self.residual_block(x)
         if self.residual:
             if self.change_dimension:
-                if self.residual_type == 'project':
+                if self.residual_type == "project":
                     x = self.change_dim_layer(x)
-                elif self.residual_type == 'pad':
+                elif self.residual_type == "pad":
                     batch_size = x.shape[BATCH_DIM]
                     x_channels = x.shape[CHANNELS_DIM]
                     out_channels = out.shape[CHANNELS_DIM]
                     spatial_dims = x.shape[2:]
                     diff_channels = out_channels - x_channels
-                    zeros_half = x.new_zeros(
-                        batch_size, diff_channels // 2, *spatial_dims)
-                    x = torch.cat((zeros_half, x, zeros_half),
-                                  dim=CHANNELS_DIM)
+                    zeros_half = x.new_zeros(batch_size, diff_channels // 2, *spatial_dims)
+                    x = torch.cat((zeros_half, x, zeros_half), dim=CHANNELS_DIM)
             out = x + out
         return out
 
 
 class ConvolutionalBlock(nn.Module):
     def __init__(
-            self,
-            in_channels,
-            out_channels,
-            dilation,
-            dimensions,
-            batch_norm=True,
-            instance_norm=False,
-            padding_mode='constant',
-            preactivation=True,
-            kernel_size=3,
-            activation=True,
-            ):
+        self,
+        in_channels,
+        out_channels,
+        dilation,
+        dimensions,
+        batch_norm=True,
+        instance_norm=False,
+        padding_mode="constant",
+        preactivation=True,
+        kernel_size=3,
+        activation=True,
+    ):
         assert padding_mode in PADDING_MODES.keys()
         assert not (batch_norm and instance_norm)
         super().__init__()
 
         if dimensions == 2:
             # pylint: disable=not-callable
-            class_name = '{}Pad2d'.format(PADDING_MODES[padding_mode])
+            class_name = "{}Pad2d".format(PADDING_MODES[padding_mode])
             padding_class = getattr(nn, class_name)
             padding_instance = padding_class(dilation)
         elif dimensions == 3:
@@ -161,13 +159,7 @@ class ConvolutionalBlock(nn.Module):
             layers.append(padding_instance)
 
         use_bias = not (instance_norm or batch_norm)
-        conv_layer = conv_class(
-            in_channels,
-            out_channels,
-            kernel_size=kernel_size,
-            dilation=dilation,
-            bias=use_bias,
-        )
+        conv_layer = conv_class(in_channels, out_channels, kernel_size=kernel_size, dilation=dilation, bias=use_bias,)
         layers.append(conv_layer)
 
         if not preactivation:
@@ -195,18 +187,18 @@ class Pad3d(nn.Module):
 
 class DilationBlock(nn.Module):
     def __init__(
-            self,
-            in_channels,
-            out_channels,
-            dilation,
-            dimensions,
-            layers_per_block=2,
-            num_residual_blocks=3,
-            batch_norm=True,
-            instance_norm=False,
-            residual=True,
-            padding_mode='constant',
-            ):
+        self,
+        in_channels,
+        out_channels,
+        dilation,
+        dimensions,
+        layers_per_block=2,
+        num_residual_blocks=3,
+        batch_norm=True,
+        instance_norm=False,
+        residual=True,
+        padding_mode="constant",
+    ):
         super().__init__()
         self.in_channels = in_channels
         self.out_channels = out_channels
@@ -233,21 +225,21 @@ class DilationBlock(nn.Module):
 
 class HighResNet(nn.Module):
     def __init__(
-            self,
-            input_channels,
-            output_channels,
-            initial_out_channels_power=4,
-            outputs_activation='sigmoid',
-            dimensions=None,
-            layers_per_residual_block=2,
-            residual_blocks_per_dilation=3,
-            dilations=3,
-            batch_norm=True,
-            instance_norm=False,
-            residual=True,
-            padding_mode='constant',
-            add_dropout_layer=False,
-            ):
+        self,
+        input_channels,
+        output_channels,
+        initial_out_channels_power=4,
+        outputs_activation="sigmoid",
+        dimensions=None,
+        layers_per_residual_block=2,
+        residual_blocks_per_dilation=3,
+        dilations=3,
+        batch_norm=True,
+        instance_norm=False,
+        residual=True,
+        padding_mode="constant",
+        add_dropout_layer=False,
+    ):
         assert dimensions in (2, 3)
         super().__init__()
         self.in_channels = input_channels
@@ -329,11 +321,11 @@ class HighResNet(nn.Module):
 
         blocks.append(classifier)
 
-        if outputs_activation == 'sigmoid':
+        if outputs_activation == "sigmoid":
             self.outputs_activation = nn.Sigmoid()
-        elif outputs_activation == 'softmax':
+        elif outputs_activation == "softmax":
             self.outputs_activation = nn.Softmax()
-        elif outputs_activation == 'none':
+        elif outputs_activation == "none":
             self.outputs_activation = nn.Identity()
 
         self.block = nn.Sequential(*blocks)
@@ -373,14 +365,15 @@ class HighResNet(nn.Module):
 
 
 class HighRes2DNet(HighResNet):
-    def __init__(self,
-                 input_channels,
-                 output_channels,
-                 initial_out_channels_power=4,
-                 outputs_activation='sigmoid',
-                 *args,
-                 **kwargs
-                 ):
+    def __init__(
+        self,
+        input_channels,
+        output_channels,
+        initial_out_channels_power=4,
+        outputs_activation="sigmoid",
+        *args,
+        **kwargs,
+    ):
         """
         :param input_channels: number of input channels
         :type input_channels: int
@@ -401,7 +394,7 @@ class HighRes2DNet(HighResNet):
             {"name": "outputs_activation", "type": "string", "value": ["sigmoid", "softmax", "none"]}
         ]
         </json>
-       """
+        """
         super().__init__(
             input_channels,
             output_channels,
@@ -409,19 +402,20 @@ class HighRes2DNet(HighResNet):
             outputs_activation,
             dimensions=2,
             *args,
-            **kwargs
+            **kwargs,
         )
 
 
 class HighRes3DNet(HighResNet):
-    def __init__(self,
-                 input_channels,
-                 output_channels,
-                 initial_out_channels_power=4,
-                 outputs_activation='sigmoid',
-                 *args,
-                 **kwargs
-                 ):
+    def __init__(
+        self,
+        input_channels,
+        output_channels,
+        initial_out_channels_power=4,
+        outputs_activation="sigmoid",
+        *args,
+        **kwargs,
+    ):
         """
         :param input_channels: number of input channels
         :type input_channels: int
@@ -442,7 +436,7 @@ class HighRes3DNet(HighResNet):
             {"name": "outputs_activation", "type": "string", "value": ["sigmoid", "softmax", "none"]}
         ]
         </json>
-       """
+        """
         super().__init__(
             input_channels,
             output_channels,
@@ -450,5 +444,5 @@ class HighRes3DNet(HighResNet):
             outputs_activation,
             dimensions=3,
             *args,
-            **kwargs
+            **kwargs,
         )

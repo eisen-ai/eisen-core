@@ -41,6 +41,7 @@ class MedSegCovid19(Dataset):
         )
 
     """
+
     def __init__(self, data_dir, image_file, mask_file=None, transform=None):
         """
         :param data_dir: the base directory where the data is located (results of download)
@@ -77,7 +78,7 @@ class MedSegCovid19(Dataset):
         img_numpy = np.asanyarray(img_nii.dataobj).astype(np.float32)
 
         for i in range(img_numpy.shape[-1]):
-            self.data.append({'image': img_numpy[..., i]})
+            self.data.append({"image": img_numpy[..., i]})
 
         if mask_file is not None and mask_file is not "":
             mask_path = os.path.join(data_dir, mask_file)
@@ -85,7 +86,7 @@ class MedSegCovid19(Dataset):
             mask_numpy = np.asanyarray(mask_nii.dataobj).astype(np.float32)
 
             for i in range(img_numpy.shape[-1]):
-                self.data[i]['label'] = mask_numpy[..., i]
+                self.data[i]["label"] = mask_numpy[..., i]
 
         self.transform = transform
 

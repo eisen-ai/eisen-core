@@ -10,6 +10,7 @@ class DiceLoss(nn.Module):
 
     This version of the Dice loss supports multi-class segmentation (although in a naive manner).
     """
+
     def __init__(self, weight=1.0, dim=None):
         """
         :param weight: absolute weight of this loss
@@ -29,7 +30,7 @@ class DiceLoss(nn.Module):
         self.sum_kwargs = {}
 
         if dim is not None:
-            self.sum_kwargs['dim'] = dim
+            self.sum_kwargs["dim"] = dim
 
         self.weight = weight
 
@@ -44,8 +45,8 @@ class DiceLoss(nn.Module):
         :return: Dice loss
         """
         dice_loss = 1.0 - 2.0 * (
-                (labels * predictions).sum(**self.sum_kwargs)
-                / ((labels ** 2 + predictions ** 2).sum(**self.sum_kwargs) + EPS)
+            (labels * predictions).sum(**self.sum_kwargs)
+            / ((labels ** 2 + predictions ** 2).sum(**self.sum_kwargs) + EPS)
         )
 
         dice_loss = self.weight * dice_loss.mean()

@@ -39,16 +39,10 @@ class PatienceHook:
 
         """
         if select_best_loss:
-            dispatcher.connect(
-                self._reset_on_best, signal=EISEN_BEST_MODEL_LOSS, sender=workflow_id
-            )
+            dispatcher.connect(self._reset_on_best, signal=EISEN_BEST_MODEL_LOSS, sender=workflow_id)
         else:
-            dispatcher.connect(
-                self._reset_on_best, signal=EISEN_BEST_MODEL_METRIC, sender=workflow_id
-            )
-        dispatcher.connect(
-            self.increment_patience, signal=EISEN_END_EPOCH_EVENT, sender=workflow_id
-        )
+            dispatcher.connect(self._reset_on_best, signal=EISEN_BEST_MODEL_METRIC, sender=workflow_id)
+        dispatcher.connect(self.increment_patience, signal=EISEN_END_EPOCH_EVENT, sender=workflow_id)
 
         self.patience = patience
 

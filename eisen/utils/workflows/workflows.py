@@ -8,7 +8,7 @@ from pydispatch import dispatcher
 
 
 def convert_output_dict_to_cpu(output_dict):
-    for typ in ['losses', 'metrics']:
+    for typ in ["losses", "metrics"]:
         for i in range(len(output_dict[typ])):
             for key in list(output_dict[typ][i].keys()):
                 if isinstance(output_dict[typ][i][key], torch.Tensor):
@@ -18,7 +18,7 @@ def convert_output_dict_to_cpu(output_dict):
                 else:
                     output_dict[typ][i].pop(key, None)
 
-    for typ in ['inputs', 'outputs']:
+    for typ in ["inputs", "outputs"]:
         for key in list(output_dict[typ].keys()):
             if isinstance(output_dict[typ][key], torch.Tensor):
                 output_dict[typ][key] = output_dict[typ][key].cpu().data.numpy()
@@ -33,7 +33,7 @@ def convert_output_dict_to_cpu(output_dict):
 class EpochDataAggregator:
     def __init__(self, workflow_id):
         self.best_avg_loss = 10 ** 10
-        self.best_avg_metric = -10 ** 10
+        self.best_avg_metric = -(10 ** 10)
         self.workflow_id = workflow_id
 
     def __enter__(self):
@@ -44,10 +44,10 @@ class EpochDataAggregator:
     def __call__(self, output_dictionary):
         output_dictionary = convert_output_dict_to_cpu(output_dictionary)
 
-        self.epoch_data['epoch'] = output_dictionary['epoch']
-        self.epoch_data['model'] = output_dictionary['model']
+        self.epoch_data["epoch"] = output_dictionary["epoch"]
+        self.epoch_data["model"] = output_dictionary["model"]
 
-        for typ in ['losses', 'metrics']:
+        for typ in ["losses", "metrics"]:
             if typ not in self.epoch_data.keys():
                 self.epoch_data[typ] = [{}] * len(output_dictionary[typ])
 
@@ -63,7 +63,7 @@ class EpochDataAggregator:
                     except KeyError:
                         pass
 
-        for typ in ['inputs', 'outputs']:
+        for typ in ["inputs", "outputs"]:
             if typ not in self.epoch_data.keys():
                 self.epoch_data[typ] = {}
 
@@ -83,8 +83,9 @@ class EpochDataAggregator:
                                 output_dictionary[typ][key] = output_dictionary[typ][key][np.newaxis]
 
                             if output_dictionary[typ][key].ndim == 1:
-                                self.epoch_data[typ][key] = \
-                                    np.concatenate([self.epoch_data[typ][key], output_dictionary[typ][key]], axis=0)
+                                self.epoch_data[typ][key] = np.concatenate(
+                                    [self.epoch_data[typ][key], output_dictionary[typ][key],], axis=0,
+                                )
                             else:
                                 # we do not save high dimensional data throughout the epoch, we just save the last batch
                                 # the behaviour in this case is to save images and volumes only for the last batch of the epoch
@@ -95,13 +96,13 @@ class EpochDataAggregator:
     def __exit__(self, *args, **kwargs):
         if any([isinstance(x, Exception) for x in args]):
             return
-        for typ in ['losses', 'metrics']:
+        for typ in ["losses", "metrics"]:
             for i in range(len(self.epoch_data[typ])):
                 for key in self.epoch_data[typ][i].keys():
                     self.epoch_data[typ][i][key] = np.asarray(self.epoch_data[typ][i][key])
 
         all_losses = []
-        for dct in self.epoch_data['losses']:
+        for dct in self.epoch_data["losses"]:
             for key in dct.keys():
                 all_losses.append(np.mean(dct[key]))
 
@@ -110,10 +111,12 @@ class EpochDataAggregator:
 
             if avg_all_losses <= self.best_avg_loss:
                 self.best_avg_loss = avg_all_losses
-                dispatcher.send(message=self.epoch_data, signal=EISEN_BEST_MODEL_LOSS, sender=self.workflow_id)
+                dispatcher.send(
+                    message=self.epoch_data, signal=EISEN_BEST_MODEL_LOSS, sender=self.workflow_id,
+                )
 
         all_metrics = []
-        for dct in self.epoch_data['metrics']:
+        for dct in self.epoch_data["metrics"]:
             for key in dct.keys():
                 all_metrics.append(np.mean(dct[key]))
 
@@ -122,7 +125,9 @@ class EpochDataAggregator:
 
             if avg_all_metrics >= self.best_avg_metric:
                 self.best_avg_metric = avg_all_metrics
-                dispatcher.send(message=self.epoch_data, signal=EISEN_BEST_MODEL_METRIC, sender=self.workflow_id)
+                dispatcher.send(
+                    message=self.epoch_data, signal=EISEN_BEST_MODEL_METRIC, sender=self.workflow_id,
+                )
 
 
 class GenericWorkflow:
@@ -130,6 +135,7 @@ class GenericWorkflow:
     The generic workflow implements basic workflow functionality and serves as base class for more specific workflow
     such as those used for training, testing and validation.
     """
+
     def __init__(self, model, gpu=True):
         """
         A generic workflow is usually employed as base class for other workflow classes. Of course it can also be used

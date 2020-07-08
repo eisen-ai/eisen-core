@@ -6,11 +6,11 @@ from eisen import EPS
 from nilearn.image import resample_img
 
 
-def pad_to_minimal_size(image, size, pad_mode='constant'):
+def pad_to_minimal_size(image, size, pad_mode="constant"):
     pad = size - np.asarray(image.shape[-3:]) + 1
     pad[pad < 0] = 0
 
-    pad_before = np.floor(pad / 2.).astype(int)
+    pad_before = np.floor(pad / 2.0).astype(int)
     pad_after = (pad - pad_before).astype(int)
 
     pad_vector = []
@@ -38,6 +38,7 @@ class CreateConstantFlags:
         tform = tform(data)
 
     """
+
     def __init__(self, fields, values):
         """
         :param fields: names of the fields of data dictionary to work on
@@ -91,6 +92,7 @@ class RenameFields:
         tform = tform(data)
 
     """
+
     def __init__(self, fields, new_fields):
         """
         :param fields: list of names of the fields of data dictionary to rename
@@ -138,6 +140,7 @@ class FilterFields:
 
     The resulting data dictionary will only have 'field1' and 'field2' as keys.
     """
+
     def __init__(self, fields):
         """
         :param fields: list of fields to KEEP after the transform
@@ -178,7 +181,8 @@ class ResampleNiftiVolumes:
         tform = tform(data)
 
     """
-    def __init__(self, fields, resolution, interpolation='linear'):
+
+    def __init__(self, fields, resolution, interpolation="linear"):
         """
         :param fields: list of names of the fields of data dictionary to work on
         :type fields: list of str
@@ -227,16 +231,16 @@ class ResampleNiftiVolumes:
             image_t = resample_img(
                 img=data[field],
                 target_affine=np.diag([self.resolution[0], self.resolution[1], self.resolution[2]]),
-                interpolation=self.interpolation
+                interpolation=self.interpolation,
             )
 
             data[field] = image_t
-            data[field + '_original_spacing'] = original_spacing
-            data[field + '_original_shape'] = original_shape
+            data[field + "_original_spacing"] = original_spacing
+            data[field + "_original_shape"] = original_shape
 
         return data
-    
-    
+
+
 class ResampleITKVolumes:
     """
     Transform resampling ITK volumes to a new resolution (expressed in millimeters).
@@ -249,7 +253,8 @@ class ResampleITKVolumes:
         tform = tform(data)
 
     """
-    def __init__(self, fields, resolution, interpolation='linear'):
+
+    def __init__(self, fields, resolution, interpolation="linear"):
         """
         :param fields: list of names of the fields of data dictionary to work on
         :type fields: list of str
@@ -299,7 +304,7 @@ class ResampleITKVolumes:
             factor = original_spacing / resolution
             new_size = np.asarray(original_shape * factor, dtype=int)
 
-            if self.interpolation == 'nearest':
+            if self.interpolation == "nearest":
                 interpolator = sitk.sitkNearestNeighbor
             else:
                 interpolator = sitk.sitkLinear
@@ -312,8 +317,8 @@ class ResampleITKVolumes:
 
             data[field] = resampler.Execute(data[field])
 
-            data[field + '_original_spacing'] = original_spacing
-            data[field + '_original_shape'] = original_shape
+            data[field + "_original_spacing"] = original_spacing
+            data[field + "_original_shape"] = original_shape
 
         return data
 
@@ -332,6 +337,7 @@ class NiftiToNumpy:
 
 
     """
+
     def __init__(self, fields, multichannel=False):
         """
         :param fields: list of names of the fields of data dictionary to convert from Nifti to Numpy
@@ -398,7 +404,7 @@ class NumpyToNifti:
         :type affine: np.ndarray
         :data_types: dictionary in which key is the field and value is the output data type
         :type data_types dict
-        
+
         .. code-block:: python
 
             from eisen.transforms import NumpyToNifti
@@ -442,8 +448,7 @@ class NumpyToNifti:
                 tform_affine = np.eye(data[field].ndim + 1)
             else:
                 tform_affine = self.affine
-            data[field] = nib.Nifti1Image(
-                data[field].astype(self.data_types[field]), affine=tform_affine)
+            data[field] = nib.Nifti1Image(data[field].astype(self.data_types[field]), affine=tform_affine)
 
         return data
 
@@ -461,6 +466,7 @@ class ITKToNumpy:
         tform = tform(data)
 
     """
+
     def __init__(self, fields, multichannel=False):
         """
         :param fields: list of names of the fields of data dictionary to convert from ITK to Numpy
@@ -511,6 +517,7 @@ class PilToNumpy:
 
 
     """
+
     def __init__(self, fields, multichannel=False):
         """
         :param fields: list of names of the fields of data dictionary to convert from PIL to Numpy
@@ -567,6 +574,7 @@ class CropCenteredSubVolumes:
     Will crop the content of the data dictionary at keys 'image' and 'label' (which need to be 3+D numpy volumes) to
     a size of 128 cubic pixels.
     """
+
     def __init__(self, fields, size):
         """
         :param fields: field of the data dictionary to modify and replace with cropped volumes
@@ -595,10 +603,10 @@ class CropCenteredSubVolumes:
 
     def __call__(self, data):
         for field in self.fields:
-            image_entry, pad_before, pad_after = pad_to_minimal_size(data[field], self.size, pad_mode='constant')
+            image_entry, pad_before, pad_after = pad_to_minimal_size(data[field], self.size, pad_mode="constant")
 
-            h_size = np.floor(np.asarray(self.size) / 2.).astype(int)
-            centr_pix = np.floor(np.asarray(image_entry.shape[-3:]) / 2.).astype(int)
+            h_size = np.floor(np.asarray(self.size) / 2.0).astype(int)
+            centr_pix = np.floor(np.asarray(image_entry.shape[-3:]) / 2.0).astype(int)
 
             start_px = (centr_pix - h_size).astype(int)
 
@@ -607,7 +615,7 @@ class CropCenteredSubVolumes:
             assert np.all(end_px <= np.asarray(image_entry.shape[-3:]))
             assert np.all(start_px >= 0)
 
-            image_patch = image_entry[..., start_px[0]:end_px[0], start_px[1]:end_px[1], start_px[2]:end_px[2]]
+            image_patch = image_entry[..., start_px[0] : end_px[0], start_px[1] : end_px[1], start_px[2] : end_px[2]]
 
             crop_before = start_px
             crop_after = image_entry.shape[-3:] - end_px - 1
@@ -616,9 +624,9 @@ class CropCenteredSubVolumes:
 
             data[field] = image_patch
 
-            data[field + '_start_px'] = (crop_before - pad_before).tolist()
+            data[field + "_start_px"] = (crop_before - pad_before).tolist()
 
-            data[field + '_end_px'] = (crop_after - pad_after).tolist()
+            data[field + "_end_px"] = (crop_after - pad_after).tolist()
 
         return data
 
@@ -637,6 +645,7 @@ class MapValues:
 
     Is an usage examples where data is normalized to fit the range [0, 10].
     """
+
     def __init__(self, fields, min_value=0, max_value=1, channelwise=False):
         """
         :param fields: list of fields of the data dictionary that will be affected by this transform
@@ -677,15 +686,13 @@ class MapValues:
         for field in self.fields:
             if self.channelwise:
                 for i in range(data[field].shape[0]):
-                    data[field][i] = \
-                        (data[field][i] - np.min(data[field][i])) / \
-                        (np.max(data[field][i]) - np.min(data[field][i]) + EPS)
+                    data[field][i] = (data[field][i] - np.min(data[field][i])) / (
+                        np.max(data[field][i]) - np.min(data[field][i]) + EPS
+                    )
             else:
-                data[field] = \
-                    (data[field] - np.min(data[field])) / \
-                    (np.max(data[field]) - np.min(data[field]) + EPS)
+                data[field] = (data[field] - np.min(data[field])) / (np.max(data[field]) - np.min(data[field]) + EPS)
 
-            data[field] *= (self.max_value - self.min_value)
+            data[field] *= self.max_value - self.min_value
             data[field] += self.min_value
 
         return data
@@ -706,7 +713,8 @@ class ThresholdValues:
     This example thresholds the values of the tensor stored in correspondence of the key 'label' such that
     those below 0.5 are set to zero and those above 0.5 are set to one.
     """
-    def __init__(self, fields, threshold, direction='greater'):
+
+    def __init__(self, fields, threshold, direction="greater"):
         """
         :param fields: list of fields of the data dictionary that will be affected by this transform
         :type fields: list of str
@@ -747,16 +755,16 @@ class ThresholdValues:
 
     def __call__(self, data):
         for field in self.fields:
-            if self.direction == 'greater':
+            if self.direction == "greater":
                 data[field] = (data[field] > self.threshold).astype(dtype=data[field].dtype)
-            elif self.direction == 'smaller':
+            elif self.direction == "smaller":
                 data[field] = (data[field] < self.threshold).astype(dtype=data[field].dtype)
-            elif self.direction == 'greater/equal':
+            elif self.direction == "greater/equal":
                 data[field] = (data[field] >= self.threshold).astype(dtype=data[field].dtype)
-            elif self.direction == 'smaller/equal':
+            elif self.direction == "smaller/equal":
                 data[field] = (data[field] <= self.threshold).astype(dtype=data[field].dtype)
             else:
-                raise ValueError('the direction of inequality {} is not supported'.format(self.direction))
+                raise ValueError("the direction of inequality {} is not supported".format(self.direction))
 
         return data
 
@@ -775,6 +783,7 @@ class AddChannelDimension:
 
     Adds a singleton dimension to the data stored in correspondence of the keys 'image' and 'label' of data dictionary.
     """
+
     def __init__(self, fields):
         """
         :param fields: list of fields of the data dictionary that will be affected by this transform
@@ -818,6 +827,7 @@ class LabelMapToOneHot:
     This example converts the single channel data['label'] tensor to a 4-channel tensor where each entry
     represents the corresponding entry of the original tensor in one-hot encoding.
     """
+
     def __init__(self, fields, classes):
         """
         :param fields: list of fields of the data dictionary that will be affected by this transform
@@ -876,6 +886,7 @@ class StackImagesChannelwise:
     This example stacks together multiple modalities in one multi-channel tensor.
 
     """
+
     def __init__(self, fields, dst_field, create_new_dim=True):
         """
         :param fields: list of fields of the data dictionary that will be stacked together in the output tensor

@@ -19,17 +19,12 @@ def read_bone_age_kaggle_label_csv(file, training):
                 male = row[2]
                 bone_age = row[1]
 
-                data[image_id] = {
-                    'male': male == 'True',
-                    'label': int(bone_age)
-                }
+                data[image_id] = {"male": male == "True", "label": int(bone_age)}
 
             else:
                 male = row[1]
 
-                data[image_id] = {
-                    'male': male == 'M'
-                }
+                data[image_id] = {"male": male == "M"}
 
     return data
 
@@ -60,6 +55,7 @@ class RSNABoneAgeChallenge(Dataset):
     'label'.
 
     """
+
     def __init__(self, data_dir, training, transform=None):
         """
         :param data_dir: The dataset root path directory where the challenge dataset is stored
@@ -91,32 +87,32 @@ class RSNABoneAgeChallenge(Dataset):
         self.data = []
 
         if self.training:
-            train_dir = os.path.join(self.data_dir, 'boneage-training-dataset', 'boneage-training-dataset')
-            labels = read_bone_age_kaggle_label_csv(os.path.join(data_dir, 'boneage-training-dataset.csv'), True)
-            images = [o for o in os.listdir(train_dir) if 'png' in o]
+            train_dir = os.path.join(self.data_dir, "boneage-training-dataset", "boneage-training-dataset")
+            labels = read_bone_age_kaggle_label_csv(os.path.join(data_dir, "boneage-training-dataset.csv"), True)
+            images = [o for o in os.listdir(train_dir) if "png" in o]
 
             for image in images:
                 image_id = os.path.splitext(image)[0]
 
                 item = {
-                    'image': os.path.join('boneage-training-dataset', 'boneage-training-dataset', image),
-                    'label': labels[image_id]['label'],
-                    'male': labels[image_id]['male']
+                    "image": os.path.join("boneage-training-dataset", "boneage-training-dataset", image),
+                    "label": labels[image_id]["label"],
+                    "male": labels[image_id]["male"],
                 }
 
                 self.data.append(item)
 
         else:
-            test_dir = os.path.join(self.data_dir, 'boneage-test-dataset', 'boneage-test-dataset')
-            metadata = read_bone_age_kaggle_label_csv(os.path.join(data_dir, 'boneage-test-dataset.csv'), False)
-            images = [o for o in os.listdir(test_dir) if 'png' in o]
+            test_dir = os.path.join(self.data_dir, "boneage-test-dataset", "boneage-test-dataset")
+            metadata = read_bone_age_kaggle_label_csv(os.path.join(data_dir, "boneage-test-dataset.csv"), False)
+            images = [o for o in os.listdir(test_dir) if "png" in o]
 
             for image in images:
                 image_id = os.path.splitext(image)[0]
 
                 item = {
-                    'image': os.path.join('boneage-test-dataset', 'boneage-test-dataset', image),
-                    'male': metadata[image_id]['male']
+                    "image": os.path.join("boneage-test-dataset", "boneage-test-dataset", image),
+                    "male": metadata[image_id]["male"],
                 }
 
                 self.data.append(item)

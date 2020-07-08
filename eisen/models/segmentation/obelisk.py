@@ -31,8 +31,9 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
+
 class ObeliskMIDL(nn.Module):
-    def __init__(self, num_labels, full_res, outputs_activation='sigmoid'):
+    def __init__(self, num_labels, full_res, outputs_activation="sigmoid"):
         """
         :param num_labels: number of output channels
         :type num_labels: int
@@ -77,8 +78,7 @@ class ObeliskMIDL(nn.Module):
         # offsets:     1 x #offsets x     1    x 1 x 3
 
         self.sample_grid1 = F.affine_grid(
-            torch.eye(3, 4).unsqueeze(0),
-            torch.Size((1, 1, full_res[0], full_res[1], full_res[2]))
+            torch.eye(3, 4).unsqueeze(0), torch.Size((1, 1, full_res[0], full_res[1], full_res[2])),
         )
 
         self.sample_grid1.requires_grad = False
@@ -103,11 +103,11 @@ class ObeliskMIDL(nn.Module):
 
         self.LIN4 = nn.Conv3d(256, num_labels, 1)
 
-        if outputs_activation == 'sigmoid':
+        if outputs_activation == "sigmoid":
             self.outputs_activation = nn.Sigmoid()
-        elif outputs_activation == 'softmax':
+        elif outputs_activation == "softmax":
             self.outputs_activation = nn.Softmax()
-        elif outputs_activation == 'none':
+        elif outputs_activation == "none":
             self.outputs_activation = nn.Identity()
 
     def forward(self, images, sample_grid=None):
@@ -122,7 +122,7 @@ class ObeliskMIDL(nn.Module):
         """
         B, C, D, H, W = images.size()
 
-        if (sample_grid is None):
+        if sample_grid is None:
             sample_grid = self.sample_grid1
 
         sample_grid = sample_grid.to(images.device)
@@ -132,13 +132,11 @@ class ObeliskMIDL(nn.Module):
         _, D_grid, H_grid, W_grid, _ = sample_grid.size()
 
         factor1 = F.grid_sample(
-            images,
-            (sample_grid.view(1, 1, -1, 1, 3).repeat(B, 1, 1, 1, 1) + self.offset1[:, :, :, :, :])
+            images, (sample_grid.view(1, 1, -1, 1, 3).repeat(B, 1, 1, 1, 1) + self.offset1[:, :, :, :, :]),
         ).view(B, -1, D_grid, H_grid, W_grid)
 
         factor2 = F.grid_sample(
-            images,
-            (sample_grid.view(1, 1, -1, 1, 3).repeat(B, 1, 1, 1, 1) + self.offset1[:, :, :, 1:2, :])
+            images, (sample_grid.view(1, 1, -1, 1, 3).repeat(B, 1, 1, 1, 1) + self.offset1[:, :, :, 1:2, :]),
         ).view(B, -1, D_grid, H_grid, W_grid)
 
         input = factor1 - factor2
@@ -157,10 +155,7 @@ class ObeliskMIDL(nn.Module):
         out = self.outputs_activation(x4)
 
         pred = F.interpolate(
-            out,
-            size=[self.full_res[0], self.full_res[1], self.full_res[2]],
-            mode='trilinear',
-            align_corners=False
+            out, size=[self.full_res[0], self.full_res[1], self.full_res[2]], mode="trilinear", align_corners=False,
         )
 
         return pred

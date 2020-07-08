@@ -32,6 +32,7 @@ class EMIDEC(Dataset):
         )
 
     """
+
     def __init__(self, data_dir, training, transform=None):
         """
         :param data_dir: the base directory where the data is located (dataset location after unzipping)
@@ -64,30 +65,29 @@ class EMIDEC(Dataset):
 
         self.dataset = []
 
-        directories = [d for d in os.listdir(data_dir) if os.path.isdir(os.path.join(data_dir, d)) and ('.' not in d)]
+        directories = [d for d in os.listdir(data_dir) if os.path.isdir(os.path.join(data_dir, d)) and ("." not in d)]
 
         for directory in directories:
-            image_rel_path = os.path.join(directory, 'Images', directory + '.nii.gz')
+            image_rel_path = os.path.join(directory, "Images", directory + ".nii.gz")
 
             with open(
-                    os.path.join(data_dir, directory.replace('_', ' ') + '.txt'), 'r',
-                    encoding='utf-8', errors='ignore'
+                os.path.join(data_dir, directory.replace("_", " ") + ".txt"), "r", encoding="utf-8", errors="ignore",
             ) as file:
-                metadata = file.read().replace('\n', '')
+                metadata = file.read().replace("\n", "")
 
             entry = {
-                'image': image_rel_path,
-                'metadata': metadata,
+                "image": image_rel_path,
+                "metadata": metadata,
             }
 
             if self.training:
-                label_rel_path = os.path.join(directory, 'Contours', directory + '.nii.gz')
-                entry['label'] = label_rel_path
+                label_rel_path = os.path.join(directory, "Contours", directory + ".nii.gz")
+                entry["label"] = label_rel_path
 
-                if 'P' in directory:
-                    entry['pathological'] = True
+                if "P" in directory:
+                    entry["pathological"] = True
                 else:
-                    entry['pathological'] = False
+                    entry["pathological"] = False
 
             self.dataset.append(entry)
 

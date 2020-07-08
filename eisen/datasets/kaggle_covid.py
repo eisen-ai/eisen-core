@@ -28,6 +28,7 @@ class KaggleCovid19(Dataset):
         )
 
     """
+
     def __init__(self, data_dir, csv_file, transform=None):
         """
         :param data_dir: the base directory where the data is located
@@ -59,7 +60,7 @@ class KaggleCovid19(Dataset):
 
         self.dataset = []
 
-        with open(os.path.join(self.data_dir, self.csv_file), 'r') as f:
+        with open(os.path.join(self.data_dir, self.csv_file), "r") as f:
             reader = csv.reader(f)
 
             for i, row in enumerate(reader):
@@ -67,10 +68,10 @@ class KaggleCovid19(Dataset):
                     continue
 
                 entry = {
-                    'image': os.path.join('ct_scans', os.path.basename(row[0])),
-                    'lung_mask': os.path.join('lung_mask', os.path.basename(row[1])),
-                    'infection_mask': os.path.join('infection_mask', os.path.basename(row[2])),
-                    'lung_infection_mask': os.path.join('lung_and_infection_mask', os.path.basename(row[3])),
+                    "image": os.path.join("ct_scans", os.path.basename(row[0])),
+                    "lung_mask": os.path.join("lung_mask", os.path.basename(row[1])),
+                    "infection_mask": os.path.join("infection_mask", os.path.basename(row[2])),
+                    "lung_infection_mask": os.path.join("lung_and_infection_mask", os.path.basename(row[3])),
                 }
 
                 self.dataset.append(entry)

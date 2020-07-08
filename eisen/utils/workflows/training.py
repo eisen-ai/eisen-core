@@ -1,22 +1,19 @@
 import logging
 import torch
 
-from eisen import (
-    EISEN_END_EPOCH_EVENT,
-    EISEN_END_BATCH_EVENT
-)
+from eisen import EISEN_END_EPOCH_EVENT, EISEN_END_BATCH_EVENT
 from eisen.utils import merge_two_dicts
 from eisen.utils.workflows.workflows import GenericWorkflow, EpochDataAggregator
 
 from torch import Tensor
-from torch.cuda.amp import GradScaler #, autocast
+from torch.cuda.amp import GradScaler  # , autocast
 
 from pydispatch import dispatcher
 
 try:
     from apex import amp
 except ImportError:
-    logging.info('Eisen could benefit from NVIDIA Apex (https://github.com/NVIDIA/apex), which is not installed.')
+    logging.info("Eisen could benefit from NVIDIA Apex (https://github.com/NVIDIA/apex), which is not installed.")
 
 
 class Training(GenericWorkflow):
@@ -27,6 +24,7 @@ class Training(GenericWorkflow):
     data parallelism, it is implemented using torch.nn.DataParallel which might not be the most efficient solution
     but it is definitely the easiest solution to use and implement.
     """
+
     def __init__(self, model, data_loader, losses, optimizer, metrics=None, gpu=True):
         """
         A training workflow is usually employed to train models. Takes as input, in addition to a model, instance of
@@ -87,12 +85,12 @@ class Training(GenericWorkflow):
         outputs, losses, metrics = super(Training, self).__call__(batch)
 
         output_dictionary = {
-            'inputs': batch,
-            'outputs': outputs,
-            'losses': losses,
-            'metrics': metrics,
-            'epoch': self.epoch,
-            'model': self.model,
+            "inputs": batch,
+            "outputs": outputs,
+            "losses": losses,
+            "metrics": metrics,
+            "epoch": self.epoch,
+            "model": self.model,
         }
 
         return output_dictionary
@@ -106,7 +104,7 @@ class Training(GenericWorkflow):
 
         :return: None
         """
-        logging.info('INFO: Training epoch {}'.format(self.epoch))
+        logging.info("INFO: Training epoch {}".format(self.epoch))
 
         self.model.train()
 
@@ -117,23 +115,17 @@ class Training(GenericWorkflow):
                         if isinstance(batch[key], Tensor):
                             batch[key] = batch[key].cuda()
 
-                logging.debug('DEBUG: Training epoch {}, batch {}'.format(self.epoch, i))
+                logging.debug("DEBUG: Training epoch {}, batch {}".format(self.epoch, i))
 
                 output_dictionary = self.get_output_dictionary(batch)
 
                 dispatcher.send(
-                    message=output_dictionary,
-                    signal=EISEN_END_BATCH_EVENT,
-                    sender=self.id
+                    message=output_dictionary, signal=EISEN_END_BATCH_EVENT, sender=self.id,
                 )
 
                 ea(output_dictionary)
 
-        dispatcher.send(
-            message=ea.epoch_data,
-            signal=EISEN_END_EPOCH_EVENT,
-            sender=self.id
-        )
+        dispatcher.send(message=ea.epoch_data, signal=EISEN_END_EPOCH_EVENT, sender=self.id)
 
         self.epoch += 1
 
@@ -146,15 +138,8 @@ class TrainingApexAMP(Training):
     APEX must be installed in the system (APEX is not part of Eisen requirements) and the GPU must be capable of
     mixed precision computation.
     """
-    def __init__(
-            self,
-            model,
-            data_loader,
-            losses,
-            optimizer,
-            metrics=None,
-            opt_level='O1'
-    ):
+
+    def __init__(self, model, data_loader, losses, optimizer, metrics=None, opt_level="O1"):
         """
         :param model: The model to be used for training. This model instance will be optimized by the Training module.
         :type model: torch.nn.Module
@@ -209,12 +194,12 @@ class TrainingApexAMP(Training):
         metrics = self.compute_metrics(merge_two_dicts(batch, outputs))
 
         output_dictionary = {
-            'inputs': batch,
-            'outputs': outputs,
-            'losses': losses,
-            'metrics': metrics,
-            'epoch': self.epoch,
-            'model': self.model,
+            "inputs": batch,
+            "outputs": outputs,
+            "losses": losses,
+            "metrics": metrics,
+            "epoch": self.epoch,
+            "model": self.model,
         }
 
         return output_dictionary
@@ -227,14 +212,8 @@ class TrainingAMP(Training):
     of tensor cores on NVIDIA GPUs. When using TrainingAMP, GPU support must be present
     (GPU computation enabled by default) and the GPU must be capable of mixed precision computation.
     """
-    def __init__(
-            self,
-            model,
-            data_loader,
-            losses,
-            optimizer,
-            metrics=None
-    ):
+
+    def __init__(self, model, data_loader, losses, optimizer, metrics=None):
         """
         :param model: The model to be used for training. This model instance will be optimized by the Training module.
         :type model: torch.nn.Module
@@ -269,7 +248,7 @@ class TrainingAMP(Training):
 
         self.optimizer.zero_grad()
 
-        #with autocast():
+        # with autocast():
         outputs = self.model(**model_argument_dict)
         losses = self.compute_losses(merge_two_dicts(batch, outputs))
 
@@ -284,16 +263,12 @@ class TrainingAMP(Training):
         metrics = self.compute_metrics(merge_two_dicts(batch, outputs))
 
         output_dictionary = {
-            'inputs': batch,
-            'outputs': outputs,
-            'losses': losses,
-            'metrics': metrics,
-            'epoch': self.epoch,
-            'model': self.model,
+            "inputs": batch,
+            "outputs": outputs,
+            "losses": losses,
+            "metrics": metrics,
+            "epoch": self.epoch,
+            "model": self.model,
         }
 
         return output_dictionary
-
-
-
-
