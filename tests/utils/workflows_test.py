@@ -50,11 +50,15 @@ class Net(nn.Module):
 class TestGenericWorkflow:
     def setup_class(self):
         self.batch = {
-            'x': torch.rand((2, 1, 8, 8)),  # batch size 2, 1 input channel, 8x8 pixels
-            'y': torch.LongTensor([0, 1])  # class for those two images (0 and 1 respectively)
+            "x": torch.rand((2, 1, 8, 8)),  # batch size 2, 1 input channel, 8x8 pixels
+            "y": torch.LongTensor(
+                [0, 1]
+            ),  # class for those two images (0 and 1 respectively)
         }
 
-        self.module = EisenModuleWrapper(Net(), input_names=['x'], output_names=['pred'])
+        self.module = EisenModuleWrapper(
+            Net(), input_names=["x"], output_names=["pred"]
+        )
 
         self.generic_module = GenericWorkflow(self.module, gpu=False)
 
@@ -71,7 +75,7 @@ class TestGenericWorkflow:
 
         assert isinstance(output, dict)
 
-        pred = output['pred']
+        pred = output["pred"]
 
         assert isinstance(pred, torch.Tensor)
 
@@ -83,13 +87,10 @@ class DummyDataset(Dataset):
     def __init__(self):
         self.dataset = [
             {
-                'x': torch.rand((1, 8, 8)),  # batch size 2, 1 input channel, 8x8 pixels
-                'y': 0  # class for those two images (0 and 1 respectively)
+                "x": torch.rand((1, 8, 8)),  # batch size 2, 1 input channel, 8x8 pixels
+                "y": 0,  # class for those two images (0 and 1 respectively)
             },
-            {
-                'x': torch.rand((1, 8, 8)),
-                'y': 1
-            },
+            {"x": torch.rand((1, 8, 8)), "y": 1},
         ]
 
     def __len__(self):
@@ -102,24 +103,31 @@ class DummyDataset(Dataset):
 class TestWorkflowTraining:
     def setup_class(self):
         self.batch = {
-            'x': torch.rand((2, 1, 8, 8)),  # batch size 2, 1 input channel, 8x8 pixels
-            'y': torch.LongTensor([0, 1])  # class for those two images (0 and 1 respectively)
+            "x": torch.rand((2, 1, 8, 8)),  # batch size 2, 1 input channel, 8x8 pixels
+            "y": torch.LongTensor(
+                [0, 1]
+            ),  # class for those two images (0 and 1 respectively)
         }
 
         self.data_loader = DataLoader(
-            DummyDataset(),
-            batch_size=1,
-            shuffle=False,
-            num_workers=4
+            DummyDataset(), batch_size=1, shuffle=False, num_workers=4
         )
 
-        self.module = EisenModuleWrapper(Net(), input_names=['x'], output_names=['pred'])
+        self.module = EisenModuleWrapper(
+            Net(), input_names=["x"], output_names=["pred"]
+        )
 
         self.optimizer = Adam(self.module.parameters(), 0.001)
 
-        self.loss = EisenModuleWrapper(module=CrossEntropyLoss(), input_names=['pred', 'y'], output_names=['loss'])
+        self.loss = EisenModuleWrapper(
+            module=CrossEntropyLoss(), input_names=["pred", "y"], output_names=["loss"]
+        )
 
-        self.metric = EisenModuleWrapper(module=CrossEntropyLoss(), input_names=['pred', 'y'], output_names=['metric'])
+        self.metric = EisenModuleWrapper(
+            module=CrossEntropyLoss(),
+            input_names=["pred", "y"],
+            output_names=["metric"],
+        )
 
         self.training_workflow = WorkflowTraining(
             self.module,
@@ -127,7 +135,7 @@ class TestWorkflowTraining:
             [self.loss],
             self.optimizer,
             [self.metric],
-            gpu=False
+            gpu=False,
         )
 
         assert isinstance(self.training_workflow, WorkflowTraining)
@@ -138,16 +146,16 @@ class TestWorkflowTraining:
         assert isinstance(losses, list)
         assert len(losses) == 1
         assert isinstance(losses[0], dict)
-        assert isinstance(losses[0]['loss'], torch.Tensor)
+        assert isinstance(losses[0]["loss"], torch.Tensor)
 
         assert isinstance(metrics, list)
         assert len(metrics) == 1
         assert isinstance(metrics[0], dict)
-        assert isinstance(metrics[0]['metric'], torch.Tensor)
+        assert isinstance(metrics[0]["metric"], torch.Tensor)
 
         assert isinstance(output, dict)
 
-        pred = output['pred']
+        pred = output["pred"]
 
         assert isinstance(pred, torch.Tensor)
 
@@ -167,31 +175,34 @@ class TestWorkflowTraining:
 class TestWorkflowValidation:
     def setup_class(self):
         self.batch = {
-            'x': torch.rand((2, 1, 8, 8)),  # batch size 2, 1 input channel, 8x8 pixels
-            'y': torch.LongTensor([0, 1])  # class for those two images (0 and 1 respectively)
+            "x": torch.rand((2, 1, 8, 8)),  # batch size 2, 1 input channel, 8x8 pixels
+            "y": torch.LongTensor(
+                [0, 1]
+            ),  # class for those two images (0 and 1 respectively)
         }
 
         self.data_loader = DataLoader(
-            DummyDataset(),
-            batch_size=1,
-            shuffle=False,
-            num_workers=4
+            DummyDataset(), batch_size=1, shuffle=False, num_workers=4
         )
 
-        self.module = EisenModuleWrapper(Net(), input_names=['x'], output_names=['pred'])
+        self.module = EisenModuleWrapper(
+            Net(), input_names=["x"], output_names=["pred"]
+        )
 
         self.optimizer = Adam(self.module.parameters(), 0.001)
 
-        self.loss = EisenModuleWrapper(module=CrossEntropyLoss(), input_names=['pred', 'y'], output_names=['loss'])
+        self.loss = EisenModuleWrapper(
+            module=CrossEntropyLoss(), input_names=["pred", "y"], output_names=["loss"]
+        )
 
-        self.metric = EisenModuleWrapper(module=CrossEntropyLoss(), input_names=['pred', 'y'], output_names=['metric'])
+        self.metric = EisenModuleWrapper(
+            module=CrossEntropyLoss(),
+            input_names=["pred", "y"],
+            output_names=["metric"],
+        )
 
         self.validation_workflow = WorkflowValidation(
-            self.module,
-            self.data_loader,
-            [self.loss],
-            [self.metric],
-            gpu=False
+            self.module, self.data_loader, [self.loss], [self.metric], gpu=False
         )
 
         assert isinstance(self.validation_workflow, WorkflowValidation)
@@ -202,16 +213,16 @@ class TestWorkflowValidation:
         assert isinstance(losses, list)
         assert len(losses) == 1
         assert isinstance(losses[0], dict)
-        assert isinstance(losses[0]['loss'], torch.Tensor)
+        assert isinstance(losses[0]["loss"], torch.Tensor)
 
         assert isinstance(metrics, list)
         assert len(metrics) == 1
         assert isinstance(metrics[0], dict)
-        assert isinstance(metrics[0]['metric'], torch.Tensor)
+        assert isinstance(metrics[0]["metric"], torch.Tensor)
 
         assert isinstance(output, dict)
 
-        pred = output['pred']
+        pred = output["pred"]
 
         assert isinstance(pred, torch.Tensor)
 
@@ -231,30 +242,34 @@ class TestWorkflowValidation:
 class TestWorkflowTesting:
     def setup_class(self):
         self.batch = {
-            'x': torch.rand((2, 1, 8, 8)),  # batch size 2, 1 input channel, 8x8 pixels
-            'y': torch.LongTensor([0, 1])  # class for those two images (0 and 1 respectively)
+            "x": torch.rand((2, 1, 8, 8)),  # batch size 2, 1 input channel, 8x8 pixels
+            "y": torch.LongTensor(
+                [0, 1]
+            ),  # class for those two images (0 and 1 respectively)
         }
 
         self.data_loader = DataLoader(
-            DummyDataset(),
-            batch_size=1,
-            shuffle=False,
-            num_workers=4
+            DummyDataset(), batch_size=1, shuffle=False, num_workers=4
         )
 
-        self.module = EisenModuleWrapper(Net(), input_names=['x'], output_names=['pred'])
+        self.module = EisenModuleWrapper(
+            Net(), input_names=["x"], output_names=["pred"]
+        )
 
         self.optimizer = Adam(self.module.parameters(), 0.001)
 
-        self.loss = EisenModuleWrapper(module=CrossEntropyLoss(), input_names=['pred', 'y'], output_names=['loss'])
+        self.loss = EisenModuleWrapper(
+            module=CrossEntropyLoss(), input_names=["pred", "y"], output_names=["loss"]
+        )
 
-        self.metric = EisenModuleWrapper(module=CrossEntropyLoss(), input_names=['pred', 'y'], output_names=['metric'])
+        self.metric = EisenModuleWrapper(
+            module=CrossEntropyLoss(),
+            input_names=["pred", "y"],
+            output_names=["metric"],
+        )
 
         self.testing_workflow = WorkflowTesting(
-            self.module,
-            self.data_loader,
-            [self.metric],
-            gpu=False
+            self.module, self.data_loader, [self.metric], gpu=False
         )
 
         assert isinstance(self.testing_workflow, WorkflowTesting)
@@ -268,11 +283,11 @@ class TestWorkflowTesting:
         assert isinstance(metrics, list)
         assert len(metrics) == 1
         assert isinstance(metrics[0], dict)
-        assert isinstance(metrics[0]['metric'], torch.Tensor)
+        assert isinstance(metrics[0]["metric"], torch.Tensor)
 
         assert isinstance(output, dict)
 
-        pred = output['pred']
+        pred = output["pred"]
 
         assert isinstance(pred, torch.Tensor)
 
@@ -286,26 +301,33 @@ class TestWorkflowTesting:
 class TestDataParallelTraining(TestWorkflowTraining):
     def setup_class(self):
         self.batch = {
-            'x': torch.rand((2, 1, 8, 8)),  # batch size 2, 1 input channel, 8x8 pixels
-            'y': torch.LongTensor([0, 1])  # class for those two images (0 and 1 respectively)
+            "x": torch.rand((2, 1, 8, 8)),  # batch size 2, 1 input channel, 8x8 pixels
+            "y": torch.LongTensor(
+                [0, 1]
+            ),  # class for those two images (0 and 1 respectively)
         }
 
         self.data_loader = DataLoader(
-            DummyDataset(),
-            batch_size=1,
-            shuffle=False,
-            num_workers=4
+            DummyDataset(), batch_size=1, shuffle=False, num_workers=4
         )
 
         data_parallel_net = torch.nn.DataParallel(Net())
 
-        self.module = EisenModuleWrapper(data_parallel_net, input_names=['x'], output_names=['pred'])
+        self.module = EisenModuleWrapper(
+            data_parallel_net, input_names=["x"], output_names=["pred"]
+        )
 
         self.optimizer = Adam(self.module.parameters(), 0.001)
 
-        self.loss = EisenModuleWrapper(module=CrossEntropyLoss(), input_names=['pred', 'y'], output_names=['loss'])
+        self.loss = EisenModuleWrapper(
+            module=CrossEntropyLoss(), input_names=["pred", "y"], output_names=["loss"]
+        )
 
-        self.metric = EisenModuleWrapper(module=CrossEntropyLoss(), input_names=['pred', 'y'], output_names=['metric'])
+        self.metric = EisenModuleWrapper(
+            module=CrossEntropyLoss(),
+            input_names=["pred", "y"],
+            output_names=["metric"],
+        )
 
         self.training_workflow = WorkflowTraining(
             self.module,
@@ -313,7 +335,7 @@ class TestDataParallelTraining(TestWorkflowTraining):
             [self.loss],
             self.optimizer,
             [self.metric],
-            gpu=False
+            gpu=False,
         )
 
         assert isinstance(self.training_workflow, WorkflowTraining)

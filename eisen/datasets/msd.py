@@ -31,6 +31,7 @@ class MSDDataset(Dataset):
         )
 
     """
+
     def __init__(self, data_dir, json_file, phase, transform=None):
         """
         :param data_dir: the base directory where the data is located (dataset location after unzipping)
@@ -66,14 +67,14 @@ class MSDDataset(Dataset):
 
         self.json_dataset = msd_dataset[phase]
 
-        msd_dataset.pop('training', None)
-        msd_dataset.pop('test', None)
+        msd_dataset.pop("training", None)
+        msd_dataset.pop("test", None)
 
-        if phase == 'test':
+        if phase == "test":
             # test images are stored as list of filenames instead of dictionaries. Need to convert that.
             dset = []
             for elem in self.json_dataset:
-                dset.append({'image': elem})
+                dset.append({"image": elem})
 
             self.json_dataset = dset
 

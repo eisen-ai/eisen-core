@@ -19,7 +19,7 @@ def merge_two_dicts(x, y):
 
 def read_json_from_file(json_file):
     if not os.path.exists(json_file):
-        raise FileNotFoundError('The JSON file {} cannot be read'.format(json_file))
+        raise FileNotFoundError("The JSON file {} cannot be read".format(json_file))
 
     with open(json_file) as json_file:
         dictionary = json.load(json_file)
@@ -82,11 +82,16 @@ def _partition_idx_weight_list(weights, idx=None):
     if idx is None:
         return [np.asarray(range(0, i, 1)), np.asarray(range(i, len(weights), 1))]
     else:
-        return [np.asarray(idx[range(0, i, 1)]), np.asarray(idx[range(i, len(weights), 1)])]
+        return [
+            np.asarray(idx[range(0, i, 1)]),
+            np.asarray(idx[range(i, len(weights), 1)]),
+        ]
 
 
 def _get_n_idx_partitions(weights, n):
-    assert n > 1 and ((n & (n - 1)) == 0), "the parameters n has to be power of 2. you supplied {}".format(n)
+    assert n > 1 and (
+        (n & (n - 1)) == 0
+    ), "the parameters n has to be power of 2. you supplied {}".format(n)
 
     weights = np.asarray(weights)
 
@@ -95,7 +100,9 @@ def _get_n_idx_partitions(weights, n):
     while len(partitioning) is not n:
         result = []
         for entry in partitioning:
-            result = result + list(_partition_idx_weight_list(weights[entry], idx=entry))
+            result = result + list(
+                _partition_idx_weight_list(weights[entry], idx=entry)
+            )
 
         partitioning = result
 
@@ -153,6 +160,7 @@ class EisenModuleWrapper(Module):
         adapted_module = EisenModuleWrapper(module, ['image'], ['prediction'])
 
     """
+
     def __init__(self, module, input_names, output_names):
         """
         :param module: This is a Module instance
@@ -215,6 +223,7 @@ class EisenTransformWrapper:
         adapted_transform = EisenTransformWrapper(transform, ['image'])
 
     """
+
     def __init__(self, transform, fields):
         super(EisenTransformWrapper, self).__init__()
         self.fields = fields
@@ -223,7 +232,7 @@ class EisenTransformWrapper:
 
     def __call__(self, data):
         for field in self.fields:
-           data[field] = self.transform(data[field])
+            data[field] = self.transform(data[field])
 
         return data
 
@@ -282,13 +291,13 @@ class EisenDatasetWrapper(Dataset):
 
 class EisenDatasetSplitter:
     def __init__(
-            self,
-            fraction_train,
-            fraction_valid=None,
-            fraction_test=None,
-            transform_train=None,
-            transform_valid=None,
-            transform_test=None
+        self,
+        fraction_train,
+        fraction_valid=None,
+        fraction_test=None,
+        transform_train=None,
+        transform_valid=None,
+        transform_test=None,
     ):
         if fraction_train <= 1.0 and fraction_valid is None and fraction_test is None:
             self.fraction_train = fraction_train
@@ -328,7 +337,7 @@ class EisenDatasetSplitter:
         else:
             data_test = None
 
-        list_valid = perm[limit_test: limit_validation].tolist()
+        list_valid = perm[limit_test:limit_validation].tolist()
 
         if len(list_valid) > 0:
             data_validation = [data[k] for k in list_valid]
@@ -377,6 +386,7 @@ class PipelineExecutionStreamer(torch.nn.Module):
     More details about this idea can be found here:
     https://pytorch.org/tutorials/intermediate/model_parallel_tutorial.html#speed-up-by-pipelining-inputs
     """
+
     def __init__(self, operations_sequence, split_size):
         """
         :param operations_sequence: A list containing operations that should be done in sequence
@@ -389,7 +399,10 @@ class PipelineExecutionStreamer(torch.nn.Module):
         self.split_size = split_size
 
     def forward(self, x):
-        splits = iter(list(x.split(self.split_size, dim=0)) + [None] * (len(self.operations_sequence) - 1))
+        splits = iter(
+            list(x.split(self.split_size, dim=0))
+            + [None] * (len(self.operations_sequence) - 1)
+        )
 
         pipeline = [None] * (len(self.operations_sequence) - 1)
 
@@ -457,7 +470,8 @@ class ModelParallel(Module):
 
         # model is ModelParallel and will execute on multiple GPUs
 
-        """
+    """
+
     def __init__(self, module, split_size, device_ids=None, output_device=None):
         """
         This method instantiates a ModelParallel Module from a module instance passed by the user. The
@@ -494,7 +508,9 @@ class ModelParallel(Module):
         module_argument_list = inspect.getfullargspec(module.forward)[0]
 
         if len(module_argument_list) > 2:
-            raise NotImplementedError('Support for modules with more than one input is not yet implemented.')
+            raise NotImplementedError(
+                "Support for modules with more than one input is not yet implemented."
+            )
 
         self.first_run = True
         self.split_size = split_size
@@ -542,7 +558,9 @@ class ModelParallel(Module):
             partitions_idx = _get_n_idx_partitions(children_size, len(self.device_ids))
 
             for curr_gpu, indices in enumerate(partitions_idx):
-                curr_gpu_name = torch.device("cuda:{}".format(self.device_ids[curr_gpu]))
+                curr_gpu_name = torch.device(
+                    "cuda:{}".format(self.device_ids[curr_gpu])
+                )
 
                 seq_list = []
 
@@ -553,15 +571,18 @@ class ModelParallel(Module):
 
                 sequential_block = torch.nn.Sequential(*seq_list)
 
-                argument_placement_changer = InputArgumentPlacementChanger(curr_gpu_name)
+                argument_placement_changer = InputArgumentPlacementChanger(
+                    curr_gpu_name
+                )
 
                 sequential_block.register_forward_pre_hook(argument_placement_changer)
 
                 execution_list.append(sequential_block)
 
-                self.module = PipelineExecutionStreamer(execution_list, split_size=self.split_size)
+                self.module = PipelineExecutionStreamer(
+                    execution_list, split_size=self.split_size
+                )
 
         outputs = self.module(x).to(self.output_device)
 
         return outputs
-

@@ -20,6 +20,7 @@ class Testing(GenericWorkflow):
     forward pass of the model. The user is allowed to specify model, data loader and metrics to use for evaluation.
     This workflow supports GPUs and data parallelism across multiple processors.
     """
+
     def __init__(self, model, data_loader, metrics, gpu=False):
         """
         :param model: The model to be used for testing. This model instance will be used only for forward passes.
@@ -59,18 +60,18 @@ class Testing(GenericWorkflow):
         outputs, losses, metrics = super(Testing, self).__call__(batch)
 
         output_dictionary = {
-            'inputs': batch,
-            'losses': losses,
-            'outputs': outputs,
-            'metrics': metrics,
-            'model': self.model,
-            'epoch': 0,
+            "inputs": batch,
+            "losses": losses,
+            "outputs": outputs,
+            "metrics": metrics,
+            "model": self.model,
+            "epoch": 0,
         }
 
         return output_dictionary
 
     def run(self):
-        logging.info('INFO: Running Testing')
+        logging.info("INFO: Running Testing")
 
         self.model.eval()
 
@@ -82,16 +83,18 @@ class Testing(GenericWorkflow):
                             if isinstance(batch[key], Tensor):
                                 batch[key] = batch[key].cuda()
 
-                    logging.debug('DEBUG: Testing epoch batch {}'.format(i))
+                    logging.debug("DEBUG: Testing epoch batch {}".format(i))
 
                     output_dictionary = self.get_output_dictionary(batch)
 
                     dispatcher.send(
                         message=output_dictionary,
                         signal=EISEN_END_BATCH_EVENT,
-                        sender=self.id
+                        sender=self.id,
                     )
 
                     ea(output_dictionary)
 
-        dispatcher.send(message=ea.epoch_data, signal=EISEN_END_EPOCH_EVENT, sender=self.id)
+        dispatcher.send(
+            message=ea.epoch_data, signal=EISEN_END_EPOCH_EVENT, sender=self.id
+        )

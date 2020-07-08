@@ -29,14 +29,15 @@ class CAMUS(Dataset):
         dset = CAMUS('/data/root/path')
 
     """
+
     def __init__(
-            self,
-            data_dir,
-            with_ground_truth,
-            with_2CH=True,
-            with_4CH=True,
-            with_entire_sequences=False,
-            transform=None
+        self,
+        data_dir,
+        with_ground_truth,
+        with_2CH=True,
+        with_4CH=True,
+        with_entire_sequences=False,
+        transform=None,
     ):
         """
         :param data_dir: the base directory where the data is located
@@ -83,38 +84,54 @@ class CAMUS(Dataset):
 
         self.data = []
 
-        all_subdirs = [o for o in os.listdir(self.data_dir) if os.path.isdir(os.path.join(self.data_dir, o))]
+        all_subdirs = [
+            o
+            for o in os.listdir(self.data_dir)
+            if os.path.isdir(os.path.join(self.data_dir, o))
+        ]
 
         for dir_name in all_subdirs:
 
             dir = os.path.join(self.data_dir, dir_name)
 
             if len(os.listdir(dir)) == 0:
-                print('WARNING: dataset directory {} appears empty'.format(dir))
+                print("WARNING: dataset directory {} appears empty".format(dir))
                 continue
 
-            for typ in ['ED', 'ES']:
+            for typ in ["ED", "ES"]:
                 item = dict()
 
-                item['type'] = typ
+                item["type"] = typ
 
                 if self.with_2CH:
-                    item['image_2CH'] = os.path.join(dir_name, '{}_2CH_{}.mhd'.format(dir_name, typ))
+                    item["image_2CH"] = os.path.join(
+                        dir_name, "{}_2CH_{}.mhd".format(dir_name, typ)
+                    )
 
                     if self.with_ground_truth:
-                        item['label_2CH'] = os.path.join(dir_name, '{}_2CH_{}_gt.mhd'.format(dir_name, typ))
+                        item["label_2CH"] = os.path.join(
+                            dir_name, "{}_2CH_{}_gt.mhd".format(dir_name, typ)
+                        )
 
                     if self.with_entire_sequences:
-                        item['sequence_2CH'] = os.path.join(dir_name, '{}_2CH_sequence.mhd'.format(dir_name))
+                        item["sequence_2CH"] = os.path.join(
+                            dir_name, "{}_2CH_sequence.mhd".format(dir_name)
+                        )
 
                 if self.with_4CH:
-                    item['image_4CH'] = os.path.join(dir_name, '{}_4CH_{}.mhd'.format(dir_name, typ))
+                    item["image_4CH"] = os.path.join(
+                        dir_name, "{}_4CH_{}.mhd".format(dir_name, typ)
+                    )
 
                     if self.with_ground_truth:
-                        item['label_4CH'] = os.path.join(dir_name, '{}_4CH_{}_gt.mhd'.format(dir_name, typ))
+                        item["label_4CH"] = os.path.join(
+                            dir_name, "{}_4CH_{}_gt.mhd".format(dir_name, typ)
+                        )
 
                     if self.with_entire_sequences:
-                        item['sequence_4CH'] = os.path.join(dir_name, '{}_4CH_sequence.mhd'.format(dir_name))
+                        item["sequence_4CH"] = os.path.join(
+                            dir_name, "{}_4CH_sequence.mhd".format(dir_name)
+                        )
 
                 self.data.append(item)
 

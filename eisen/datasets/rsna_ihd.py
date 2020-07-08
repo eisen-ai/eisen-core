@@ -8,12 +8,12 @@ from torch.utils.data import Dataset
 
 
 CLASSES = [
-    'epidural',
-    'intraparenchymal',
-    'intraventricular',
-    'subarachnoid',
-    'subdural',
-    'any'
+    "epidural",
+    "intraparenchymal",
+    "intraventricular",
+    "subarachnoid",
+    "subdural",
+    "any",
 ]
 
 
@@ -24,8 +24,8 @@ def read_rsna_kaggle_label_csv(file):
         reader = csv.reader(f)
         next(reader)  # skip header
         for row in reader:
-            field = row[0].split('_')
-            image_id = field[0] + '_' + field[1]
+            field = row[0].split("_")
+            image_id = field[0] + "_" + field[1]
             cls = field[2]
 
             proba = float(row[1])
@@ -73,6 +73,7 @@ class RSNAIntracranialHemorrhageDetection(Dataset):
 
 
     """
+
     def __init__(self, data_dir, training, transform=None):
         """
         :param data_dir: The dataset root path directory where the challenge dataset is stored
@@ -104,9 +105,11 @@ class RSNAIntracranialHemorrhageDetection(Dataset):
         self.data = []
 
         if self.training:
-            train_dir = os.path.join(self.data_dir, 'stage_2_train')
-            labels = read_rsna_kaggle_label_csv(os.path.join(data_dir, 'stage_2_train.csv'))
-            images = [o for o in os.listdir(train_dir) if 'dcm' in o]
+            train_dir = os.path.join(self.data_dir, "stage_2_train")
+            labels = read_rsna_kaggle_label_csv(
+                os.path.join(data_dir, "stage_2_train.csv")
+            )
+            images = [o for o in os.listdir(train_dir) if "dcm" in o]
 
             for image in images:
                 image_id = os.path.splitext(image)[0]
@@ -114,19 +117,19 @@ class RSNAIntracranialHemorrhageDetection(Dataset):
                 label_array = label_dict_to_array(labels[image_id])
 
                 item = {
-                    'image': os.path.join('stage_2_train', image),
-                    'label': label_array
+                    "image": os.path.join("stage_2_train", image),
+                    "label": label_array,
                 }
 
                 self.data.append(item)
 
         else:
-            test_dir = os.path.join(self.data_dir, 'stage_2_test')
-            images = [o for o in os.listdir(test_dir) if 'dcm' in o]
+            test_dir = os.path.join(self.data_dir, "stage_2_test")
+            images = [o for o in os.listdir(test_dir) if "dcm" in o]
 
             for image in images:
                 item = {
-                    'image': os.path.join('stage_2_test', image),
+                    "image": os.path.join("stage_2_test", image),
                 }
 
                 self.data.append(item)

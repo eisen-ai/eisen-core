@@ -20,6 +20,7 @@ class Validation(GenericWorkflow):
     specific dataset (passed as argument to init). This Validation workflow can take advantage of GPUs and implements
     data parallelism which allows workload to be distributed across multiple processors (CPU/GPU).
     """
+
     def __init__(self, model, data_loader, losses, metrics=None, gpu=True):
         """
         :param model: The model to be used for validation. This model instance will be used only for forward passes.
@@ -64,18 +65,18 @@ class Validation(GenericWorkflow):
         outputs, losses, metrics = super(Validation, self).__call__(batch)
 
         output_dictionary = {
-            'inputs': batch,
-            'outputs': outputs,
-            'losses': losses,
-            'metrics': metrics,
-            'model': self.model,
-            'epoch': self.epoch,
+            "inputs": batch,
+            "outputs": outputs,
+            "losses": losses,
+            "metrics": metrics,
+            "model": self.model,
+            "epoch": self.epoch,
         }
 
         return output_dictionary
 
     def run(self):
-        logging.info('INFO: Validation epoch {}'.format(self.epoch))
+        logging.info("INFO: Validation epoch {}".format(self.epoch))
 
         self.model.eval()
 
@@ -87,18 +88,22 @@ class Validation(GenericWorkflow):
                             if isinstance(batch[key], Tensor):
                                 batch[key] = batch[key].cuda()
 
-                    logging.debug('DEBUG: Validation epoch {}, batch {}'.format(self.epoch, i))
+                    logging.debug(
+                        "DEBUG: Validation epoch {}, batch {}".format(self.epoch, i)
+                    )
 
                     output_dictionary = self.get_output_dictionary(batch)
 
                     dispatcher.send(
                         message=output_dictionary,
                         signal=EISEN_END_BATCH_EVENT,
-                        sender=self.id
+                        sender=self.id,
                     )
 
                     ea(output_dictionary)
 
-        dispatcher.send(message=ea.epoch_data, signal=EISEN_END_EPOCH_EVENT, sender=self.id)
+        dispatcher.send(
+            message=ea.epoch_data, signal=EISEN_END_EPOCH_EVENT, sender=self.id
+        )
 
         self.epoch += 1

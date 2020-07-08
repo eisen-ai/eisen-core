@@ -8,21 +8,17 @@ from sklearn.metrics import confusion_matrix
 from torch.utils.tensorboard.writer import SummaryWriter
 from pydispatch import dispatcher
 
-from eisen import (
-    EISEN_END_EPOCH_EVENT
-)
+from eisen import EISEN_END_EPOCH_EVENT
 
 
-def plot_confusion_matrix(cm,
-                          classes,
-                          normalize=False,
-                          title='Confusion matrix',
-                          cmap=plt.cm.Blues):
+def plot_confusion_matrix(
+    cm, classes, normalize=False, title="Confusion matrix", cmap=plt.cm.Blues
+):
     """
     This function prints and plots the confusion matrix.
     Normalization can be applied by setting `normalize=True`.
     """
-    plt.imshow(cm, interpolation='nearest', cmap=cmap)
+    plt.imshow(cm, interpolation="nearest", cmap=cmap)
     plt.title(title)
     plt.colorbar()
     tick_marks = np.arange(len(classes))
@@ -30,20 +26,22 @@ def plot_confusion_matrix(cm,
     plt.yticks(tick_marks, classes)
 
     if normalize:
-        cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+        cm = cm.astype("float") / cm.sum(axis=1)[:, np.newaxis]
 
-    thresh = cm.max() / 2.
+    thresh = cm.max() / 2.0
     for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
         plt.text(
-            j, i, np.around(cm[i, j], decimals=2),
+            j,
+            i,
+            np.around(cm[i, j], decimals=2),
             horizontalalignment="center",
             color="white" if cm[i, j] > thresh else "black",
-            fontsize=15
+            fontsize=15,
         )
 
     plt.tight_layout()
-    plt.ylabel('True label')
-    plt.xlabel('Predicted label')
+    plt.ylabel("True label")
+    plt.xlabel("Predicted label")
 
     fig = plt.gcf()
 
@@ -83,7 +81,15 @@ class TensorboardSummaryHook:
 
             logger = TensorboardSummaryHook(workflow.id, 'Training', '/artifacts/dir')
     """
-    def __init__(self, workflow_id, phase, artifacts_dir, comparison_pairs=None, show_all_axes=False):
+
+    def __init__(
+        self,
+        workflow_id,
+        phase,
+        artifacts_dir,
+        comparison_pairs=None,
+        show_all_axes=False,
+    ):
         """
         This method instantiates an object of type TensorboardSummaryHook. The signature of this method is similar to
         that of every other hook. There is one additional parameter called `comparison_pairs` which is meant to
@@ -131,11 +137,15 @@ class TensorboardSummaryHook:
         self.show_all_axes = show_all_axes
 
         if not os.path.exists(artifacts_dir):
-            raise ValueError('The directory specified to save artifacts does not exist!')
+            raise ValueError(
+                "The directory specified to save artifacts does not exist!"
+            )
 
-        dispatcher.connect(self.end_epoch, signal=EISEN_END_EPOCH_EVENT, sender=workflow_id)
+        dispatcher.connect(
+            self.end_epoch, signal=EISEN_END_EPOCH_EVENT, sender=workflow_id
+        )
 
-        self.artifacts_dir = os.path.join(artifacts_dir, 'summaries', phase)
+        self.artifacts_dir = os.path.join(artifacts_dir, "summaries", phase)
 
         if not os.path.exists(self.artifacts_dir):
             os.makedirs(self.artifacts_dir)
@@ -143,117 +153,151 @@ class TensorboardSummaryHook:
         self.writer = SummaryWriter(log_dir=self.artifacts_dir)
 
     def end_epoch(self, message):
-        epoch = message['epoch']
+        epoch = message["epoch"]
 
         # if epoch == 0:
         #     self.writer.add_graph(message['model'], ...)
 
-        for typ in ['losses', 'metrics']:
+        for typ in ["losses", "metrics"]:
             for dct in message[typ]:
                 for key in dct.keys():
-                    self.write_vector(typ + '/{}'.format(key), dct[key], epoch)
+                    self.write_vector(typ + "/{}".format(key), dct[key], epoch)
 
-        for typ in ['inputs', 'outputs']:
+        for typ in ["inputs", "outputs"]:
             for key in message[typ].keys():
                 if message[typ][key].ndim == 5:
                     # Volumetric image (N, C, W, H, D)
-                    self.write_volumetric_image(typ + '/{}'.format(key), message[typ][key], epoch)
+                    self.write_volumetric_image(
+                        typ + "/{}".format(key), message[typ][key], epoch
+                    )
 
                 if message[typ][key].ndim == 4:
-                    self.write_image(typ + '/{}'.format(key), message[typ][key], epoch)
+                    self.write_image(typ + "/{}".format(key), message[typ][key], epoch)
 
                 if message[typ][key].ndim == 3:
-                    self.write_embedding(typ + '/{}'.format(key), message[typ][key], epoch)
+                    self.write_embedding(
+                        typ + "/{}".format(key), message[typ][key], epoch
+                    )
 
                 if message[typ][key].ndim == 2:
-                    self.write_class_probabilities(typ + '/{}'.format(key), message[typ][key], epoch)
+                    self.write_class_probabilities(
+                        typ + "/{}".format(key), message[typ][key], epoch
+                    )
 
                 if message[typ][key].ndim == 1:
-                    self.write_vector(typ + '/{}'.format(key), message[typ][key], epoch)
+                    self.write_vector(typ + "/{}".format(key), message[typ][key], epoch)
 
                 if message[typ][key].ndim == 0:
-                    self.write_scalar(typ + '/{}'.format(key), message[typ][key], epoch)
+                    self.write_scalar(typ + "/{}".format(key), message[typ][key], epoch)
 
         if self.comparison_pairs:
             for inp, out in self.comparison_pairs:
-                assert message['inputs'][inp].ndim == message['outputs'][out].ndim
+                assert message["inputs"][inp].ndim == message["outputs"][out].ndim
 
-                if message['inputs'][inp].ndim == 1:
+                if message["inputs"][inp].ndim == 1:
                     # in case of binary classification >> PR curve
-                    if np.max(message['inputs'][inp]) <= 1 and np.max(message['outputs'][out]) <= 1:
+                    if (
+                        np.max(message["inputs"][inp]) <= 1
+                        and np.max(message["outputs"][out]) <= 1
+                    ):
                         self.write_pr_curve(
-                            '{}_Vs_{}/pr_curve'.format(inp, out),
-                            message['inputs'][inp],
-                            message['outputs'][out],
-                            epoch
+                            "{}_Vs_{}/pr_curve".format(inp, out),
+                            message["inputs"][inp],
+                            message["outputs"][out],
+                            epoch,
                         )
 
                     # in any case for classification >> Confusion Matrix
                     self.write_confusion_matrix(
-                        '{}_Vs_{}/confusion_matrix'.format(inp, out),
-                        message['inputs'][inp],
-                        message['outputs'][out],
-                        epoch
+                        "{}_Vs_{}/confusion_matrix".format(inp, out),
+                        message["inputs"][inp],
+                        message["outputs"][out],
+                        epoch,
                     )
 
     def write_volumetric_image(self, name, value, global_step):
-        self.writer.add_scalar(name + '/mean', np.mean(value), global_step=global_step)
-        self.writer.add_scalar(name + '/std', np.std(value), global_step=global_step)
-        self.writer.add_histogram(name + '/histogram', value.flatten(), global_step=global_step)
+        self.writer.add_scalar(name + "/mean", np.mean(value), global_step=global_step)
+        self.writer.add_scalar(name + "/std", np.std(value), global_step=global_step)
+        self.writer.add_histogram(
+            name + "/histogram", value.flatten(), global_step=global_step
+        )
 
         v = np.transpose(value, [0, 2, 1, 3, 4])
 
         if v.shape[2] != 3 and v.shape[2] != 1:
-            v = np.average(v, axis=2, weights=np.arange(0, 1, 1 / v.shape[2]))[:, :, np.newaxis]
+            v = np.average(v, axis=2, weights=np.arange(0, 1, 1 / v.shape[2]))[
+                :, :, np.newaxis
+            ]
 
         torch_value = torch.tensor(v).float()
 
-        self.writer.add_video(name + '_axis_1', torch_value, fps=10, global_step=global_step)
+        self.writer.add_video(
+            name + "_axis_1", torch_value, fps=10, global_step=global_step
+        )
 
         if self.show_all_axes:
             v = np.transpose(value, [0, 3, 1, 2, 4])
 
             if v.shape[2] != 3 and v.shape[2] != 1:
-                v = np.average(v, axis=2, weights=np.arange(0, 1, 1 / v.shape[2]))[:, :, np.newaxis]
+                v = np.average(v, axis=2, weights=np.arange(0, 1, 1 / v.shape[2]))[
+                    :, :, np.newaxis
+                ]
 
             torch_value = torch.tensor(v).float()
 
-            self.writer.add_video(name + '_axis_2', torch_value, fps=10, global_step=global_step)
+            self.writer.add_video(
+                name + "_axis_2", torch_value, fps=10, global_step=global_step
+            )
 
             v = np.transpose(value, [0, 4, 1, 2, 3])
 
             if v.shape[2] != 3 and v.shape[2] != 1:
-                v = np.average(v, axis=2, weights=np.arange(0, 1, 1 / v.shape[2]))[:, :, np.newaxis]
+                v = np.average(v, axis=2, weights=np.arange(0, 1, 1 / v.shape[2]))[
+                    :, :, np.newaxis
+                ]
 
             torch_value = torch.tensor(v).float()
 
-            self.writer.add_video(name + '_axis_3', torch_value, fps=10, global_step=global_step)
+            self.writer.add_video(
+                name + "_axis_3", torch_value, fps=10, global_step=global_step
+            )
 
     def write_image(self, name, value, global_step):
-        self.writer.add_scalar(name + '/mean', np.mean(value), global_step=global_step)
-        self.writer.add_scalar(name + '/std', np.std(value), global_step=global_step)
-        self.writer.add_histogram(name + '/histogram', value.flatten(), global_step=global_step)
-        self.writer.add_images(name, value, global_step=global_step, dataformats='NCHW')
+        self.writer.add_scalar(name + "/mean", np.mean(value), global_step=global_step)
+        self.writer.add_scalar(name + "/std", np.std(value), global_step=global_step)
+        self.writer.add_histogram(
+            name + "/histogram", value.flatten(), global_step=global_step
+        )
+        self.writer.add_images(name, value, global_step=global_step, dataformats="NCHW")
 
     def write_embedding(self, name, value, global_step):
         pass
 
     def write_pr_curve(self, name, labels, predictions, global_step):
-        self.writer.add_pr_curve(name + '/pr_curve', labels, predictions, global_step)
+        self.writer.add_pr_curve(name + "/pr_curve", labels, predictions, global_step)
 
     def write_confusion_matrix(self, name, labels, predictions, global_step):
         cnf_matrix = confusion_matrix(labels, predictions)
-        image = plot_confusion_matrix(cnf_matrix, range(np.max(labels) + 1), normalize=True, title=name)[:, :, 0:3]
-        self.writer.add_image(name, image.astype(float)/255.0, global_step=global_step, dataformats='HWC')
+        image = plot_confusion_matrix(
+            cnf_matrix, range(np.max(labels) + 1), normalize=True, title=name
+        )[:, :, 0:3]
+        self.writer.add_image(
+            name,
+            image.astype(float) / 255.0,
+            global_step=global_step,
+            dataformats="HWC",
+        )
 
     def write_class_probabilities(self, name, value, global_step):
-        self.writer.add_image(name, value, global_step=global_step, dataformats='HW')
-        self.writer.add_histogram(name + '/distribution', np.argmax(value), global_step=global_step)
+        self.writer.add_image(name, value, global_step=global_step, dataformats="HW")
+        self.writer.add_histogram(
+            name + "/distribution", np.argmax(value), global_step=global_step
+        )
 
     def write_vector(self, name, value, global_step):
         self.writer.add_histogram(name, value, global_step=global_step)
-        self.writer.add_scalar(name + '/mean', np.mean(value), global_step=global_step)
-        self.writer.add_scalar(name + '/std', np.std(value), global_step=global_step)
+        self.writer.add_scalar(name + "/mean", np.mean(value), global_step=global_step)
+        self.writer.add_scalar(name + "/std", np.std(value), global_step=global_step)
 
     def write_scalar(self, name, value, global_step):
         self.writer.add_scalar(name, value, global_step=global_step)
