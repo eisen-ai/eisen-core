@@ -4,9 +4,14 @@ import SimpleITK as sitk
 
 from eisen import EPS
 from nilearn.image import resample_img
+from typing import Tuple, List
 
 
-def pad_to_minimal_size(image, size, pad_mode="constant"):
+def pad_to_minimal_size(
+        image: np.ndarray,
+        size: tuple,
+        pad_mode: str = "constant"
+) -> Tuple[np.ndarray, list, list]:
     pad = size - np.asarray(image.shape[-3:]) + 1
     pad[pad < 0] = 0
 
@@ -39,7 +44,7 @@ class CreateConstantFlags:
 
     """
 
-    def __init__(self, fields, values):
+    def __init__(self, fields: List[str], values: list):
         """
         :param fields: names of the fields of data dictionary to work on
         :type fields: list of str
@@ -68,7 +73,7 @@ class CreateConstantFlags:
 
         assert len(fields) == len(values)
 
-    def __call__(self, data):
+    def __call__(self, data: dict) -> dict:
         """
         :param data: Data dictionary to be processed by this transform
         :type data: dict
@@ -93,7 +98,7 @@ class RenameFields:
 
     """
 
-    def __init__(self, fields, new_fields):
+    def __init__(self, fields: List[str], new_fields: List[str]):
         """
         :param fields: list of names of the fields of data dictionary to rename
         :type fields: list of str
@@ -121,7 +126,7 @@ class RenameFields:
 
         assert len(self.new_fields) == len(self.fields)
 
-    def __call__(self, data):
+    def __call__(self, data: dict) -> dict:
         for field, new_field in zip(self.fields, self.new_fields):
             data[new_field] = data.pop(field)
 
@@ -141,7 +146,7 @@ class FilterFields:
     The resulting data dictionary will only have 'field1' and 'field2' as keys.
     """
 
-    def __init__(self, fields):
+    def __init__(self, fields: List[str]):
         """
         :param fields: list of fields to KEEP after the transform
         :type fields: list of str
@@ -160,7 +165,7 @@ class FilterFields:
         """
         self.fields = fields
 
-    def __call__(self, data):
+    def __call__(self, data: dict) -> dict:
         new_data = {}
 
         for field in self.fields:
@@ -182,7 +187,7 @@ class ResampleNiftiVolumes:
 
     """
 
-    def __init__(self, fields, resolution, interpolation="linear"):
+    def __init__(self, fields: List[str], resolution=List[float], interpolation: str = "linear"):
         """
         :param fields: list of names of the fields of data dictionary to work on
         :type fields: list of str
@@ -217,7 +222,7 @@ class ResampleNiftiVolumes:
         self.resolution = resolution
         self.fields = fields
 
-    def __call__(self, data):
+    def __call__(self, data: dict) -> dict:
         """
         :param data: Data dictionary to be processed by this transform
         :type data: dict
@@ -254,7 +259,7 @@ class ResampleITKVolumes:
 
     """
 
-    def __init__(self, fields, resolution, interpolation="linear"):
+    def __init__(self, fields: List[str], resolution: List[float], interpolation: str = "linear"):
         """
         :param fields: list of names of the fields of data dictionary to work on
         :type fields: list of str
@@ -290,7 +295,7 @@ class ResampleITKVolumes:
         self.resolution = resolution
         self.interpolation = interpolation
 
-    def __call__(self, data):
+    def __call__(self, data: dict) -> dict:
         original_spacings = {}
 
         for field in self.fields:
@@ -338,7 +343,7 @@ class NiftiToNumpy:
 
     """
 
-    def __init__(self, fields, multichannel=False):
+    def __init__(self, fields: List[str], multichannel: bool = False):
         """
         :param fields: list of names of the fields of data dictionary to convert from Nifti to Numpy
         :type fields: list of str
@@ -361,7 +366,7 @@ class NiftiToNumpy:
         self.fields = fields
         self.multichannel = multichannel
 
-    def __call__(self, data):
+    def __call__(self, data: dict) -> dict:
         """
         :param data: Data dictionary to be processed by this transform
         :type data: dict
@@ -396,7 +401,7 @@ class NumpyToNifti:
 
     """
 
-    def __init__(self, fields, affine=None, data_types=None):
+    def __init__(self, fields: List[str], affine: np.ndarray = None, data_types: dict = None):
         """
         :param fields: list of names of the fields of data dictionary to convert from Nifti to Numpy
         :type fields: list of str
@@ -430,7 +435,7 @@ class NumpyToNifti:
             self.data_types = data_types
         assert isinstance(self.data_types, type(dict()))
 
-    def __call__(self, data):
+    def __call__(self, data: dict) -> dict:
         """
         :param data: Data dictionary to be processed by this transform
         :type data: dict
@@ -467,7 +472,7 @@ class ITKToNumpy:
 
     """
 
-    def __init__(self, fields, multichannel=False):
+    def __init__(self, fields: List[str], multichannel: bool = False):
         """
         :param fields: list of names of the fields of data dictionary to convert from ITK to Numpy
         :type fields: list of str
@@ -490,7 +495,7 @@ class ITKToNumpy:
         self.fields = fields
         self.multichannel = multichannel
 
-    def __call__(self, data):
+    def __call__(self, data: dict) -> dict:
         for field in self.fields:
             entry_t = sitk.GetArrayFromImage(data[field]).astype(dtype=np.float32)
 
@@ -518,7 +523,7 @@ class PilToNumpy:
 
     """
 
-    def __init__(self, fields, multichannel=False):
+    def __init__(self, fields: List[str], multichannel: bool = False):
         """
         :param fields: list of names of the fields of data dictionary to convert from PIL to Numpy
         :type fields: list of str
@@ -541,7 +546,7 @@ class PilToNumpy:
         self.fields = fields
         self.multichannel = multichannel
 
-    def __call__(self, data):
+    def __call__(self, data: dict) -> dict:
         """
         :param data: Data dictionary to be processed by this transform
         :type data: dict
@@ -575,7 +580,7 @@ class CropCenteredSubVolumes:
     a size of 128 cubic pixels.
     """
 
-    def __init__(self, fields, size):
+    def __init__(self, fields: List[str], size: List[int]):
         """
         :param fields: field of the data dictionary to modify and replace with cropped volumes
         :type fields: list of str
@@ -601,7 +606,7 @@ class CropCenteredSubVolumes:
         self.size = size
         self.fields = fields
 
-    def __call__(self, data):
+    def __call__(self, data: dict) -> dict:
         for field in self.fields:
             image_entry, pad_before, pad_after = pad_to_minimal_size(data[field], self.size, pad_mode="constant")
 
@@ -615,7 +620,7 @@ class CropCenteredSubVolumes:
             assert np.all(end_px <= np.asarray(image_entry.shape[-3:]))
             assert np.all(start_px >= 0)
 
-            image_patch = image_entry[..., start_px[0] : end_px[0], start_px[1] : end_px[1], start_px[2] : end_px[2]]
+            image_patch = image_entry[..., start_px[0]:end_px[0], start_px[1]:end_px[1], start_px[2]:end_px[2]]
 
             crop_before = start_px
             crop_after = image_entry.shape[-3:] - end_px - 1
@@ -646,7 +651,7 @@ class MapValues:
     Is an usage examples where data is normalized to fit the range [0, 10].
     """
 
-    def __init__(self, fields, min_value=0, max_value=1, channelwise=False):
+    def __init__(self, fields: List[str], min_value: int = 0, max_value: int = 1, channelwise: bool = False):
         """
         :param fields: list of fields of the data dictionary that will be affected by this transform
         :type fields: list of str
@@ -682,7 +687,7 @@ class MapValues:
         self.max_value = max_value
         self.channelwise = channelwise
 
-    def __call__(self, data):
+    def __call__(self, data: dict) -> dict:
         for field in self.fields:
             if self.channelwise:
                 for i in range(data[field].shape[0]):
@@ -714,7 +719,7 @@ class ThresholdValues:
     those below 0.5 are set to zero and those above 0.5 are set to one.
     """
 
-    def __init__(self, fields, threshold, direction="greater"):
+    def __init__(self, fields: List[str], threshold: float, direction: str = "greater"):
         """
         :param fields: list of fields of the data dictionary that will be affected by this transform
         :type fields: list of str
@@ -753,7 +758,7 @@ class ThresholdValues:
         self.threshold = threshold
         self.direction = direction
 
-    def __call__(self, data):
+    def __call__(self, data: dict) -> dict:
         for field in self.fields:
             if self.direction == "greater":
                 data[field] = (data[field] > self.threshold).astype(dtype=data[field].dtype)
@@ -784,7 +789,7 @@ class AddChannelDimension:
     Adds a singleton dimension to the data stored in correspondence of the keys 'image' and 'label' of data dictionary.
     """
 
-    def __init__(self, fields):
+    def __init__(self, fields: List[str]):
         """
         :param fields: list of fields of the data dictionary that will be affected by this transform
         :type fields: list of str
@@ -805,7 +810,7 @@ class AddChannelDimension:
         """
         self.fields = fields
 
-    def __call__(self, data):
+    def __call__(self, data: dict) -> dict:
         for field in self.fields:
             data[field] = data[field][np.newaxis]
 
@@ -828,7 +833,7 @@ class LabelMapToOneHot:
     represents the corresponding entry of the original tensor in one-hot encoding.
     """
 
-    def __init__(self, fields, classes):
+    def __init__(self, fields: List[str], classes: List[int]):
         """
         :param fields: list of fields of the data dictionary that will be affected by this transform
         :type fields: list of str
@@ -855,7 +860,7 @@ class LabelMapToOneHot:
         self.classes = classes
         self.num_channels = len(self.classes)
 
-    def __call__(self, data):
+    def __call__(self, data: dict) -> dict:
 
         for field in self.fields:
 
@@ -887,7 +892,7 @@ class StackImagesChannelwise:
 
     """
 
-    def __init__(self, fields, dst_field, create_new_dim=True):
+    def __init__(self, fields: List[str], dst_field: str, create_new_dim: bool = True):
         """
         :param fields: list of fields of the data dictionary that will be stacked together in the output tensor
         :type fields: list of str
@@ -918,7 +923,7 @@ class StackImagesChannelwise:
         self.dst_field = dst_field
         self.create_new_dim = create_new_dim
 
-    def __call__(self, data):
+    def __call__(self, data: dict) -> dict:
 
         composite_image = []
 
@@ -947,7 +952,7 @@ class FixedMeanStdNormalization:
     This example manipulates the data stored in data['images'] by removing the mean (0.5) and the std (1.2).
     """
 
-    def __init__(self, fields, mean, std):
+    def __init__(self, fields: List[str], mean: float, std: float):
         """
         :param fields: list of fields of the data dictionary that will be affected by this transform
         :type fields: list of str
@@ -980,7 +985,7 @@ class FixedMeanStdNormalization:
         self.mean = mean
         self.std = std
 
-    def __call__(self, data):
+    def __call__(self, data: dict) -> dict:
         for field in self.fields:
             data[field] = (data[field] - self.mean) / self.std
 
@@ -1000,7 +1005,7 @@ class RepeatTensor:
     This example repeats the tensor 10 times along the first axis and zero times along the others
     """
 
-    def __init__(self, fields, reps):
+    def __init__(self, fields: List[str], reps: List[int]):
         """
         :param fields: list of fields of the data dictionary that will be affected by this transform
         :type fields: list of str
@@ -1028,7 +1033,7 @@ class RepeatTensor:
         self.fields = fields
         self.reps = reps
 
-    def __call__(self, data):
+    def __call__(self, data: dict) -> dict:
         for field in self.fields:
             data[field] = np.tile(data[field], self.reps)
 
