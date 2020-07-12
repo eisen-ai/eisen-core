@@ -49,7 +49,7 @@ class EpochDataAggregator:
 
         for typ in ["losses", "metrics"]:
             if typ not in self.epoch_data.keys():
-                self.epoch_data[typ] = [{}] * len(output_dictionary[typ])
+                self.epoch_data[typ] = [{} for _ in range(len(output_dictionary[typ]))]
 
             for i in range(len(output_dictionary[typ])):
                 for key in output_dictionary[typ][i].keys():
