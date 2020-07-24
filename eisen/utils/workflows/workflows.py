@@ -81,8 +81,7 @@ class EpochDataAggregator:
                             # whole epoch instead of only one batch
                             if output_dictionary[typ][key].ndim == 0:
                                 output_dictionary[typ][key] = output_dictionary[typ][key][np.newaxis]
-
-                            if output_dictionary[typ][key].ndim == 1:
+                            elif output_dictionary[typ][key].ndim == 1:
                                 self.epoch_data[typ][key] = np.concatenate(
                                     [self.epoch_data[typ][key], output_dictionary[typ][key],], axis=0,
                                 )
