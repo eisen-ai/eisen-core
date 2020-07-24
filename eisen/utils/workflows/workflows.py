@@ -32,8 +32,8 @@ def convert_output_dict_to_cpu(output_dict):
 
 class EpochDataAggregator:
     def __init__(self, workflow_id):
-        self.best_avg_loss = 10 ** 10
-        self.best_avg_metric = -(10 ** 10)
+        self.best_avg_loss = float("inf")
+        self.best_avg_metric = float("-inf")
         self.workflow_id = workflow_id
 
     def __enter__(self):
