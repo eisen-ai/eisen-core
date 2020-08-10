@@ -1,5 +1,5 @@
 import os
-import torch
+import copy
 
 from torch.utils.data import Dataset
 
@@ -87,10 +87,7 @@ class UCSDCovid19(Dataset):
         return len(self.data)
 
     def __getitem__(self, idx):
-        if torch.is_tensor(idx):
-            idx = idx.tolist()
-
-        item = self.data[idx]
+        item = copy.deepcopy(self.data[idx])
 
         if self.transform:
             item = self.transform(item)

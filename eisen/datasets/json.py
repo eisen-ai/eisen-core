@@ -1,5 +1,5 @@
 import os
-import torch
+import copy
 
 from torch.utils.data import Dataset
 from eisen.utils import read_json_from_file
@@ -66,10 +66,7 @@ class JsonDataset(Dataset):
         return len(self.json_dataset)
 
     def __getitem__(self, idx):
-        if torch.is_tensor(idx):
-            idx = idx.tolist()
-
-        item = self.json_dataset[idx]
+        item = copy.deepcopy(self.json_dataset[idx])
 
         if self.transform:
             item = self.transform(item)
