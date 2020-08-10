@@ -80,7 +80,7 @@ class MedSegCovid19(Dataset):
         for i in range(img_numpy.shape[-1]):
             self.data.append({"image": img_numpy[..., i]})
 
-        if mask_file is not None and mask_file is not "":
+        if (mask_file is not None) and (mask_file != ""):
             mask_path = os.path.join(data_dir, mask_file)
             mask_nii = nib.load(os.path.normpath(mask_path))
             mask_numpy = np.asanyarray(mask_nii.dataobj).astype(np.float32)
