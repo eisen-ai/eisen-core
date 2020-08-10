@@ -66,4 +66,3 @@ class GetContent:
             print(f"Data stored in data dictionary at field {field} {data[field]}")
 
         return data
-
