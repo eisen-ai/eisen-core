@@ -8,7 +8,7 @@ import PIL
 
 from pydicom.dataset import FileDataset
 
-from eisen.io.imaging import LoadNiftiFromFilename, LoadNiftyFromFilename
+from eisen.io.imaging import LoadNiftiFromFilename
 from eisen.io.imaging import LoadDICOMFromFilename
 from eisen.io.imaging import LoadITKFromFilename
 from eisen.io.imaging import LoadPILImageFromFilename

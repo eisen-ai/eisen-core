@@ -123,12 +123,6 @@ class LoadNiftiFromFilename:
         return data
 
 
-class LoadNiftyFromFilename(LoadNiftiFromFilename):
-    def __init__(self, *args, **kwargs):
-        print("LoadNiftyFromFilename has been renamed LoadNiftiFromFilename. The older class is deprecated")
-        super(LoadNiftyFromFilename, self).__init__(*args, **kwargs)
-
-
 class LoadDICOMFromFilename:
     """
     This transform loads DICOM data from filenames contained in a specific field of the data dictionary.
