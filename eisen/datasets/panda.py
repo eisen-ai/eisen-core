@@ -1,5 +1,6 @@
 import csv
 import os
+import copy
 
 from torch.utils.data import Dataset
 
@@ -96,7 +97,7 @@ class PANDA(Dataset):
         return len(self.dataset)
 
     def __getitem__(self, idx):
-        item = self.dataset[idx]
+        item = copy.deepcopy(self.dataset[idx])
 
         if self.transform:
             item = self.transform(item)

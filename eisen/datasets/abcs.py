@@ -1,5 +1,5 @@
 import os
-import torch
+import copy
 
 from torch.utils.data import Dataset
 
@@ -130,10 +130,7 @@ class ABCsDataset(Dataset):
         return len(self.dataset)
 
     def __getitem__(self, idx):
-        if torch.is_tensor(idx):
-            idx = idx.tolist()
-
-        item = self.dataset[idx]
+        item = copy.deepcopy(self.dataset[idx])
 
         if self.transform:
             item = self.transform(item)

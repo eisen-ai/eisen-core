@@ -1,5 +1,4 @@
 import os
-import torch
 import nibabel as nib
 import numpy as np
 import copy
@@ -94,10 +93,7 @@ class MedSegCovid19(Dataset):
         return len(self.data)
 
     def __getitem__(self, idx):
-        if torch.is_tensor(idx):
-            idx = idx.tolist()
-
-        item = self.data[idx]
+        item = copy.deepcopy(self.data[idx])
 
         if self.transform:
             item = self.transform(copy.deepcopy(item))

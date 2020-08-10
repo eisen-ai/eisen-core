@@ -1,7 +1,6 @@
 import csv
 import os
 import copy
-import torch
 import numpy as np
 
 from torch.utils.data import Dataset
@@ -136,9 +135,6 @@ class RSNAIntracranialHemorrhageDetection(Dataset):
         return len(self.data)
 
     def __getitem__(self, idx):
-        if torch.is_tensor(idx):
-            idx = idx.tolist()
-
         item = copy.deepcopy(self.data[idx])
 
         if self.transform:
