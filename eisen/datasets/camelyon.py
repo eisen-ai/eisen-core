@@ -1,5 +1,4 @@
 import h5py
-import torch
 import os
 import numpy as np
 
@@ -86,9 +85,6 @@ class PatchCamelyon(Dataset):
         return len(self.x)
 
     def __getitem__(self, idx):
-        if torch.is_tensor(idx):
-            idx = idx.tolist()
-
         item = {
             "image": self.x[idx].transpose([2, 0, 1]).astype(np.float32),
             "label": np.squeeze(self.y[idx].astype(np.float32))[np.newaxis],
