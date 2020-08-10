@@ -136,9 +136,6 @@ class RSNAIntracranialHemorrhageDetection(Dataset):
         return len(self.data)
 
     def __getitem__(self, idx):
-        if torch.is_tensor(idx):
-            idx = idx.tolist()
-
         item = copy.deepcopy(self.data[idx])
 
         if self.transform:
