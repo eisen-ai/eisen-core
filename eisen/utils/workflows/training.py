@@ -6,7 +6,7 @@ from eisen.utils import merge_two_dicts
 from eisen.utils.workflows.workflows import GenericWorkflow, EpochDataAggregator
 
 from torch import Tensor
-from torch.cuda.amp import GradScaler  # , autocast
+from torch.cuda.amp import GradScaler, autocast
 
 from pydispatch import dispatcher
 
@@ -248,9 +248,9 @@ class TrainingAMP(Training):
 
         self.optimizer.zero_grad()
 
-        # with autocast():
-        outputs = self.model(**model_argument_dict)
-        losses = self.compute_losses(merge_two_dicts(batch, outputs))
+        with autocast():
+            outputs = self.model(**model_argument_dict)
+            losses = self.compute_losses(merge_two_dicts(batch, outputs))
 
         for loss in losses:
             for key in loss.keys():
