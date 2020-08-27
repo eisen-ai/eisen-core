@@ -64,7 +64,9 @@ class GroupNorm3D(nn.Module):
 
 def conv_block_3d(in_dim, out_dim, activation, normalization):
     return nn.Sequential(
-        nn.Conv3d(in_dim, out_dim, kernel_size=3, stride=1, padding=1), normalization(out_dim), activation,
+        nn.Conv3d(in_dim, out_dim, kernel_size=3, stride=1, padding=1),
+        normalization(out_dim),
+        activation,
     )
 
 
@@ -90,7 +92,12 @@ def conv_block_2_3d(in_dim, out_dim, activation, normalization):
 
 class UNet3D(nn.Module):
     def __init__(
-        self, input_channels, output_channels, n_filters=16, outputs_activation="sigmoid", normalization="groupnorm",
+        self,
+        input_channels,
+        output_channels,
+        n_filters=16,
+        outputs_activation="sigmoid",
+        normalization="groupnorm",
     ):
         """
         :param input_channels: number of input channels

@@ -128,7 +128,9 @@ class TestLoadDICOMImageFromFilename:
 
         self.file_path = os.path.join(self.base_path, self.dcm_name)
 
-        sitk_image = sitk.GetImageFromArray(self.data,)
+        sitk_image = sitk.GetImageFromArray(
+            self.data,
+        )
 
         castImageFilter = sitk.CastImageFilter()
         castImageFilter.SetOutputPixelType(sitk.sitkInt32)

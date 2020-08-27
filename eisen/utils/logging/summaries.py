@@ -81,7 +81,12 @@ class TensorboardSummaryHook:
     """
 
     def __init__(
-        self, workflow_id, phase, artifacts_dir, comparison_pairs=None, show_all_axes=False,
+        self,
+        workflow_id,
+        phase,
+        artifacts_dir,
+        comparison_pairs=None,
+        show_all_axes=False,
     ):
         """
         This method instantiates an object of type TensorboardSummaryHook. The signature of this method is similar to
@@ -244,7 +249,10 @@ class TensorboardSummaryHook:
         cnf_matrix = confusion_matrix(labels, predictions)
         image = plot_confusion_matrix(cnf_matrix, range(np.max(labels) + 1), normalize=True, title=name)[:, :, 0:3]
         self.writer.add_image(
-            name, image.astype(float) / 255.0, global_step=global_step, dataformats="HWC",
+            name,
+            image.astype(float) / 255.0,
+            global_step=global_step,
+            dataformats="HWC",
         )
 
     def write_class_probabilities(self, name, value, global_step):

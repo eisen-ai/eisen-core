@@ -130,7 +130,12 @@ class SaveTorchModelHook:
     """
 
     def __init__(
-        self, workflow_id, phase, artifacts_dir, select_best_loss=True, save_history=False,
+        self,
+        workflow_id,
+        phase,
+        artifacts_dir,
+        select_best_loss=True,
+        save_history=False,
     ):
         """
         :param workflow_id: the ID of the workflow that should be tracked by this hook
@@ -212,7 +217,13 @@ class SaveONNXModelHook:
     """
 
     def __init__(
-        self, workflow_id, phase, artifacts_dir, input_size, select_best_loss=True, save_history=False,
+        self,
+        workflow_id,
+        phase,
+        artifacts_dir,
+        input_size,
+        select_best_loss=True,
+        save_history=False,
     ):
         """
         :param workflow_id: the ID of the workflow that should be tracked by this hook

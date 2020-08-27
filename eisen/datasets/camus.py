@@ -30,7 +30,13 @@ class CAMUS(Dataset):
     """
 
     def __init__(
-        self, data_dir, with_ground_truth, with_2CH=True, with_4CH=True, with_entire_sequences=False, transform=None,
+        self,
+        data_dir,
+        with_ground_truth,
+        with_2CH=True,
+        with_4CH=True,
+        with_entire_sequences=False,
+        transform=None,
     ):
         """
         :param data_dir: the base directory where the data is located

@@ -26,7 +26,12 @@ class GroupNorm3D(nn.Module):
 
 class ResidualConvBlock(nn.Module):
     def __init__(
-        self, n_stages, n_filters_in, n_filters_out, normalization="none", expand_chan=False,
+        self,
+        n_stages,
+        n_filters_in,
+        n_filters_out,
+        normalization="none",
+        expand_chan=False,
     ):
         super(ResidualConvBlock, self).__init__()
 
@@ -157,7 +162,11 @@ class VNet(nn.Module):
 
         if input_channels > 1:
             self.block_one = ResidualConvBlock(
-                1, input_channels, n_filters, normalization=normalization, expand_chan=True,
+                1,
+                input_channels,
+                n_filters,
+                normalization=normalization,
+                expand_chan=True,
             )
         else:
             self.block_one = ResidualConvBlock(1, input_channels, n_filters, normalization=normalization)

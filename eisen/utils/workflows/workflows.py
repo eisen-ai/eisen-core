@@ -83,7 +83,11 @@ class EpochDataAggregator:
                                 output_dictionary[typ][key] = output_dictionary[typ][key][np.newaxis]
                             elif output_dictionary[typ][key].ndim == 1:
                                 self.epoch_data[typ][key] = np.concatenate(
-                                    [self.epoch_data[typ][key], output_dictionary[typ][key],], axis=0,
+                                    [
+                                        self.epoch_data[typ][key],
+                                        output_dictionary[typ][key],
+                                    ],
+                                    axis=0,
                                 )
                             else:
                                 # we do not save high dimensional data throughout the epoch, we just save the last batch
@@ -111,7 +115,9 @@ class EpochDataAggregator:
             if avg_all_losses <= self.best_avg_loss:
                 self.best_avg_loss = avg_all_losses
                 dispatcher.send(
-                    message=self.epoch_data, signal=EISEN_BEST_MODEL_LOSS, sender=self.workflow_id,
+                    message=self.epoch_data,
+                    signal=EISEN_BEST_MODEL_LOSS,
+                    sender=self.workflow_id,
                 )
 
         all_metrics = []
@@ -125,7 +131,9 @@ class EpochDataAggregator:
             if avg_all_metrics >= self.best_avg_metric:
                 self.best_avg_metric = avg_all_metrics
                 dispatcher.send(
-                    message=self.epoch_data, signal=EISEN_BEST_MODEL_METRIC, sender=self.workflow_id,
+                    message=self.epoch_data,
+                    signal=EISEN_BEST_MODEL_METRIC,
+                    sender=self.workflow_id,
                 )
 
 

@@ -85,7 +85,11 @@ class TestCAMUS:
         touch(os.path.join(self.base_path, "patient0001", "patient0001_2CH_sequence.mhd"))
 
         self.camus_dataset = CAMUS(
-            self.base_path, with_ground_truth=True, with_2CH=True, with_4CH=True, with_entire_sequences=True,
+            self.base_path,
+            with_ground_truth=True,
+            with_2CH=True,
+            with_4CH=True,
+            with_entire_sequences=True,
         )
 
     def __del__(self):
@@ -304,10 +308,19 @@ class TestMSDDataset:
             "numTraining": 260,
             "numTest": 130,
             "training": [
-                {"image": "./imagesTr/hippocampus_367.nii.gz", "label": "./labelsTr/hippocampus_367.nii.gz",},
-                {"image": "./imagesTr/hippocampus_304.nii.gz", "label": "./labelsTr/hippocampus_304.nii.gz",},
+                {
+                    "image": "./imagesTr/hippocampus_367.nii.gz",
+                    "label": "./labelsTr/hippocampus_367.nii.gz",
+                },
+                {
+                    "image": "./imagesTr/hippocampus_304.nii.gz",
+                    "label": "./labelsTr/hippocampus_304.nii.gz",
+                },
             ],
-            "test": ["./imagesTs/hippocampus_267.nii.gz", "./imagesTs/hippocampus_379.nii.gz",],
+            "test": [
+                "./imagesTs/hippocampus_267.nii.gz",
+                "./imagesTs/hippocampus_379.nii.gz",
+            ],
         }
         with open(os.path.join(self.base_path, "json_file.json"), "w") as outfile:
             json.dump(dataset, outfile)
@@ -357,7 +370,12 @@ class TestPANDA:
 
             f.write(
                 "%s\n%s\n%s\n%s\n"
-                % (self.csv_content[0], self.csv_content[1], self.csv_content[2], self.csv_content[3],)
+                % (
+                    self.csv_content[0],
+                    self.csv_content[1],
+                    self.csv_content[2],
+                    self.csv_content[3],
+                )
             )
 
         self.images_path = os.path.join(self.base_path, "train_images")
@@ -467,7 +485,12 @@ class TestABCs:
         assert os.path.exists(os.path.join(basedir, element["t2"]))
 
     def test_training_structured(self):
-        dataset = ABCsDataset(data_dir=self.structured_path, training=True, flat_dir_structure=False, transform=None,)
+        dataset = ABCsDataset(
+            data_dir=self.structured_path,
+            training=True,
+            flat_dir_structure=False,
+            transform=None,
+        )
 
         assert len(dataset) == 2
 
@@ -476,7 +499,12 @@ class TestABCs:
             self.check_training_content(self.structured_path, element)
 
     def test_training_flat(self):
-        dataset = ABCsDataset(data_dir=self.flat_path, training=True, flat_dir_structure=True, transform=None,)
+        dataset = ABCsDataset(
+            data_dir=self.flat_path,
+            training=True,
+            flat_dir_structure=True,
+            transform=None,
+        )
 
         assert len(dataset) == 2
 
@@ -485,7 +513,12 @@ class TestABCs:
             self.check_training_content(self.flat_path, element)
 
     def test_testing(self):
-        dataset = ABCsDataset(data_dir=self.flat_path, training=True, flat_dir_structure=True, transform=None,)
+        dataset = ABCsDataset(
+            data_dir=self.flat_path,
+            training=True,
+            flat_dir_structure=True,
+            transform=None,
+        )
 
         assert len(dataset) == 2
 

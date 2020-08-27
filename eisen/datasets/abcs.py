@@ -108,7 +108,13 @@ class ABCsDataset(Dataset):
 
             for tsk1, tsk2, ct, t1, t2 in zip(all_task1_labels, all_task2_labels, ct_images, t1_images, t2_images):
                 self.dataset.append(
-                    {"ct": ct, "t1": t1, "t2": t2, "label_task1": tsk1, "label_task2": tsk2,}
+                    {
+                        "ct": ct,
+                        "t1": t1,
+                        "t2": t2,
+                        "label_task1": tsk1,
+                        "label_task2": tsk2,
+                    }
                 )
 
         else:

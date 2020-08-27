@@ -111,10 +111,19 @@ class TestWorkflowTraining:
 
         self.loss = EisenModuleWrapper(module=CrossEntropyLoss(), input_names=["pred", "y"], output_names=["loss"])
 
-        self.metric = EisenModuleWrapper(module=CrossEntropyLoss(), input_names=["pred", "y"], output_names=["metric"],)
+        self.metric = EisenModuleWrapper(
+            module=CrossEntropyLoss(),
+            input_names=["pred", "y"],
+            output_names=["metric"],
+        )
 
         self.training_workflow = WorkflowTraining(
-            self.module, self.data_loader, [self.loss], self.optimizer, [self.metric], gpu=False,
+            self.module,
+            self.data_loader,
+            [self.loss],
+            self.optimizer,
+            [self.metric],
+            gpu=False,
         )
 
         assert isinstance(self.training_workflow, WorkflowTraining)
@@ -166,7 +175,11 @@ class TestWorkflowValidation:
 
         self.loss = EisenModuleWrapper(module=CrossEntropyLoss(), input_names=["pred", "y"], output_names=["loss"])
 
-        self.metric = EisenModuleWrapper(module=CrossEntropyLoss(), input_names=["pred", "y"], output_names=["metric"],)
+        self.metric = EisenModuleWrapper(
+            module=CrossEntropyLoss(),
+            input_names=["pred", "y"],
+            output_names=["metric"],
+        )
 
         self.validation_workflow = WorkflowValidation(
             self.module, self.data_loader, [self.loss], [self.metric], gpu=False
@@ -221,7 +234,11 @@ class TestWorkflowTesting:
 
         self.loss = EisenModuleWrapper(module=CrossEntropyLoss(), input_names=["pred", "y"], output_names=["loss"])
 
-        self.metric = EisenModuleWrapper(module=CrossEntropyLoss(), input_names=["pred", "y"], output_names=["metric"],)
+        self.metric = EisenModuleWrapper(
+            module=CrossEntropyLoss(),
+            input_names=["pred", "y"],
+            output_names=["metric"],
+        )
 
         self.testing_workflow = WorkflowTesting(self.module, self.data_loader, [self.metric], gpu=False)
 
@@ -268,10 +285,19 @@ class TestDataParallelTraining(TestWorkflowTraining):
 
         self.loss = EisenModuleWrapper(module=CrossEntropyLoss(), input_names=["pred", "y"], output_names=["loss"])
 
-        self.metric = EisenModuleWrapper(module=CrossEntropyLoss(), input_names=["pred", "y"], output_names=["metric"],)
+        self.metric = EisenModuleWrapper(
+            module=CrossEntropyLoss(),
+            input_names=["pred", "y"],
+            output_names=["metric"],
+        )
 
         self.training_workflow = WorkflowTraining(
-            self.module, self.data_loader, [self.loss], self.optimizer, [self.metric], gpu=False,
+            self.module,
+            self.data_loader,
+            [self.loss],
+            self.optimizer,
+            [self.metric],
+            gpu=False,
         )
 
         assert isinstance(self.training_workflow, WorkflowTraining)

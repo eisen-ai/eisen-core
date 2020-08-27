@@ -159,7 +159,13 @@ class ConvolutionalBlock(nn.Module):
             layers.append(padding_instance)
 
         use_bias = not (instance_norm or batch_norm)
-        conv_layer = conv_class(in_channels, out_channels, kernel_size=kernel_size, dilation=dilation, bias=use_bias,)
+        conv_layer = conv_class(
+            in_channels,
+            out_channels,
+            kernel_size=kernel_size,
+            dilation=dilation,
+            bias=use_bias,
+        )
         layers.append(conv_layer)
 
         if not preactivation:

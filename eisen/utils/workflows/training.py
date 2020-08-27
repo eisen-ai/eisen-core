@@ -120,7 +120,9 @@ class Training(GenericWorkflow):
                 output_dictionary = self.get_output_dictionary(batch)
 
                 dispatcher.send(
-                    message=output_dictionary, signal=EISEN_END_BATCH_EVENT, sender=self.id,
+                    message=output_dictionary,
+                    signal=EISEN_END_BATCH_EVENT,
+                    sender=self.id,
                 )
 
                 ea(output_dictionary)
