@@ -1,3 +1,6 @@
+from typing import List
+
+
 class GetShape:
     """
     Transform used to inspect the data in the data dictionary. This transform prints the shape of the data contained
@@ -12,7 +15,7 @@ class GetShape:
     Prints the shape of the numpy arrays stored in the data dictionary.
     """
 
-    def __init__(self, fields):
+    def __init__(self, fields: List[str]):
         """
         :param fields: A list of data dictionary field names which need to be investigated (print shape)
         :type fields: list of str
@@ -26,7 +29,7 @@ class GetShape:
         """
         self.fields = fields
 
-    def __call__(self, data):
+    def __call__(self, data: dict) -> dict:
         for field in self.fields:
             print("Data stored in data dictionary at field {} has shape {}".format(field, data[field].shape))
 

@@ -1,9 +1,10 @@
 import os
 import nibabel as nib
-import numpy as np
 import SimpleITK as sitk
 import pydicom
 import PIL.Image
+
+from typing import List, Union
 
 
 class LoadITKFromFilename:
@@ -20,7 +21,7 @@ class LoadITKFromFilename:
 
     """
 
-    def __init__(self, fields, data_dir):
+    def __init__(self, fields: List[str], data_dir: Union[str, os.PathLike]):
         """
         LoadITKFromFilename loads ITK compatible files. The data is always read as float32.
 
@@ -49,7 +50,7 @@ class LoadITKFromFilename:
         self.type_filter = sitk.CastImageFilter()
         self.type_filter.SetOutputPixelType(sitk.sitkFloat32)
 
-    def __call__(self, data):
+    def __call__(self, data: dict) -> dict:
         for field in self.fields:
             volume = sitk.ReadImage(os.path.join(self.data_dir, data[field]))
 
@@ -74,7 +75,7 @@ class LoadNiftiFromFilename:
 
     """
 
-    def __init__(self, fields, data_dir, canonical=False):
+    def __init__(self, fields: List[str], data_dir: Union[str, os.PathLike], canonical: bool = False):
         """
         :param fields: list of names of the field of data dictionary to work on. These fields should contain data paths
         :type fields: list
@@ -103,7 +104,7 @@ class LoadNiftiFromFilename:
         self.fields = fields
         self.canonical = canonical
 
-    def __call__(self, data):
+    def __call__(self, data: dict) -> dict:
         """
         :param data: Data dictionary to be processed by this transform
         :type data: dict
@@ -137,7 +138,7 @@ class LoadDICOMFromFilename:
 
     """
 
-    def __init__(self, fields, data_dir, store_data_array=True):
+    def __init__(self, fields: List[str], data_dir: Union[str, os.PathLike], store_data_array: bool = True):
         """
         :param fields: list of names of the field of data dictionary to work on. These fields should contain data paths
         :type fields: list
@@ -166,7 +167,7 @@ class LoadDICOMFromFilename:
         self.fields = fields
         self.store_data_array = store_data_array
 
-    def __call__(self, data):
+    def __call__(self, data: dict) -> dict:
         """
         :param data: Data dictionary to be processed by this transform
         :type data: dict
@@ -201,7 +202,7 @@ class LoadPILImageFromFilename:
 
     """
 
-    def __init__(self, fields, data_dir):
+    def __init__(self, fields: List[str], data_dir: Union[str, os.PathLike]):
         """
         :param fields: list of names of the field of data dictionary to work on. These fields should contain data paths
         :type fields: list
@@ -225,7 +226,7 @@ class LoadPILImageFromFilename:
         self.data_dir = data_dir
         self.fields = fields
 
-    def __call__(self, data):
+    def __call__(self, data: dict) -> dict:
         """
         :param data: Data dictionary to be processed by this transform
         :type data: dict
@@ -253,7 +254,7 @@ class WriteNiftiToFile:
 
     """
 
-    def __init__(self, fields, name_fields=None, filename_prefix="./"):
+    def __init__(self, fields: List[str], name_fields: List[str] = None, filename_prefix: str = "./"):
         """
         :param fields: list of names of the field of data dictionary to work on. These fields should contain data paths
         :type fields: list
@@ -281,7 +282,7 @@ class WriteNiftiToFile:
         self.name_fields = name_fields
         self.fields = fields
 
-    def __call__(self, data):
+    def __call__(self, data: dict) -> dict:
         """
         :param data: Data dictionary to be processed by this transform
         :type data: dict

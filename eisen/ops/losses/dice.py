@@ -1,5 +1,7 @@
-from torch import nn
+from torch import nn, Tensor
 from eisen import EPS
+
+from typing import List
 
 
 class DiceLoss(nn.Module):
@@ -11,7 +13,7 @@ class DiceLoss(nn.Module):
     This version of the Dice loss supports multi-class segmentation (although in a naive manner).
     """
 
-    def __init__(self, weight=1.0, dim=None):
+    def __init__(self, weight: float = 1.0, dim: List[int] = None):
         """
         :param weight: absolute weight of this loss
         :type weight: float
@@ -34,7 +36,7 @@ class DiceLoss(nn.Module):
 
         self.weight = weight
 
-    def forward(self, predictions, labels):
+    def forward(self, predictions: Tensor, labels: Tensor) -> Tensor:
         """
         Computes Dice loss between predictions and labels.
 
