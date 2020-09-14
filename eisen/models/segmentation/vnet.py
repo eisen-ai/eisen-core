@@ -1,7 +1,7 @@
 from torch import nn
 
 # ATTRIBUTION: this implementation has been obtained from https://github.com/JunMa11/SegWithDistMap
-# We thank the authors for open sourcing this implementation. Furthermore we thank Lequan Lui
+# We thank the authors for open sourcing this implementation. Furthermore we thank Lequan Yu
 
 # This code was originally distributed under Apache 2 license. The terms of this license can be found here.
 # https://github.com/JunMa11/SegWithDistMap/blob/master/LICENSE
