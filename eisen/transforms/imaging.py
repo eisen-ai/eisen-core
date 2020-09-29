@@ -607,14 +607,14 @@ class CropCenteredSubVolumes:
 
             dst_image[
                 ...,
-                pad_start[0]:pad_end[0] + self.size[0],
-                pad_start[1]:pad_end[1] + self.size[1],
-                pad_start[2]:pad_end[2] + self.size[2]
+                pad_start[0]:pad_start[0] + self.size[0],
+                pad_start[1]:pad_start[1] + self.size[1],
+                pad_start[2]:pad_start[2] + self.size[2]
             ] = src_image[
                 ...,
-                crop_start[0]:crop_end[0] + self.size[0],
-                crop_start[1]:crop_end[1] + self.size[1],
-                crop_start[2]:crop_end[2] + self.size[2]
+                crop_start[0]: crop_start[0] + self.size[0],
+                crop_start[1]: crop_start[1] + self.size[1],
+                crop_start[2]: crop_start[2] + self.size[2],
                 ]
 
             assert np.all(np.asarray(dst_image.shape[-3:]) == self.size)
