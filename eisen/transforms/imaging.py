@@ -541,7 +541,8 @@ class PilToNumpy:
 
 class CropCenteredSubVolumes:
     """
-    Transform implementing padding/cropping of 3D volumes. A 3D volume processed with this transform will be cropped
+    Transform implementing padding/cropping the last 3 dimension of a N-channel 3D volume.
+    A 3D volume processed with this transform will be cropped
     or padded so that its final size will be corresponding to what specified by the user during instantiation.
 
     .. code-block:: python
@@ -550,8 +551,8 @@ class CropCenteredSubVolumes:
         tform = CropCenteredSubVolumes(['image', 'label'], [128, 128, 128])
         tform = tform(data)
 
-    Will crop the content of the data dictionary at keys 'image' and 'label' (which need to be 3+D numpy volumes) to
-    a size of 128 cubic pixels.
+    Will crop the content of the data dictionary at keys 'image' and 'label' (which need to be N-channel+3D numpy
+    volumes) to a size of 128 cubic pixels.
     """
 
     def __init__(self, fields, size):
@@ -601,10 +602,12 @@ class CropCenteredSubVolumes:
             pad = int(pad / 2).astype(dtype=int) + 1
 
             dst_image[
+                ...,
                 pad[0]:pad[0] + self.size[0],
                 pad[1]:pad[1] + self.size[1],
                 pad[2]:pad[2] + self.size[2]
             ] = src_image[
+                ...,
                 crop[0]:crop[0] + self.size[0],
                 crop[1]:crop[1] + self.size[1],
                 crop[2]:crop[2] + self.size[2]
