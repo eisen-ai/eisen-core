@@ -589,41 +589,45 @@ class CropCenteredSubVolumes:
 
             dst_image_size = self.size
 
+            if len(src_image_size) > len(dst_image_size):
+                dst_image_size = src_image_size[0:len(src_image_size) - len(dst_image_size)] + self.size
+
             dst_image = np.zeros(dst_image_size, dtype=src_image.dtype)
 
             size_difference = np.asarray(dst_image_size, dtype=int) - np.asarray(src_image_size, dtype=int)
 
-            crop = np.copy(size_difference)
-            crop[crop > 0] = 0
+            src = np.copy(size_difference)
+            src[src > 0] = 0
 
-            crop_start = ((crop * -1) / 2).astype(dtype=int)
-            crop_end = crop - crop_start
+            src_start = ((src * -1) / 2).astype(dtype=int)
+            src_end = dst_image_size + src_start
 
-            pad = np.copy(size_difference)
-            pad[pad < 0] = 0
+            dst = np.copy(size_difference)
+            dst[dst < 0] = 0
 
-            pad_start = (pad / 2).astype(dtype=int) + 1
-            pad_end = pad - pad_start
+            dst_start = (dst / 2).astype(dtype=int)
+
+            actual_data = src_image[
+                ...,
+                src_start[0]: src_end[0],
+                src_start[1]: src_end[1],
+                src_start[2]: src_end[2],
+                ]
 
             dst_image[
                 ...,
-                pad_start[0]:pad_start[0] + self.size[0],
-                pad_start[1]:pad_start[1] + self.size[1],
-                pad_start[2]:pad_start[2] + self.size[2]
-            ] = src_image[
-                ...,
-                crop_start[0]: crop_start[0] + self.size[0],
-                crop_start[1]: crop_start[1] + self.size[1],
-                crop_start[2]: crop_start[2] + self.size[2],
-                ]
+                dst_start[0]:dst_start[0] + actual_data.shape[0],
+                dst_start[1]:dst_start[1] + actual_data.shape[1],
+                dst_start[2]:dst_start[2] + actual_data.shape[2]
+            ] = actual_data
 
             assert np.all(np.asarray(dst_image.shape[-3:]) == self.size)
 
             data[field] = dst_image
 
-            data[field + "_pad"] = pad.tolist()
+            data[field + "_src"] = src.tolist()
 
-            data[field + "_crop"] = crop.tolist()
+            data[field + "_dst"] = dst.tolist()
 
         return data
 
