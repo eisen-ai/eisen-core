@@ -599,7 +599,7 @@ class CropCenteredSubVolumes:
 
             pad = np.copy(size_difference)
             pad[pad < 0] = 0
-            pad = int(pad / 2).astype(dtype=int) + 1
+            pad = (pad / 2).astype(dtype=int) + 1
 
             dst_image[
                 ...,
