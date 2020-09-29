@@ -369,13 +369,14 @@ class NiftiToNumpy:
         :rtype: dict
         """
         for field in self.fields:
-            entry_t = np.asanyarray(data[field].dataobj).astype(np.float32)
+            numpy_data = np.asanyarray(data[field].dataobj).astype(np.float32)
 
             if self.multichannel:
-                dims = list(range(entry_t.ndim))
-                entry_t = np.transpose(entry_t, [dims[-1]] + dims[0:-1])  # channel first if image is multichannel
+                # if the data is multichannel, we put the channel dimension first.
+                dims = list(range(numpy_data.ndim))
+                numpy_data = np.transpose(numpy_data, [dims[-1]] + dims[0:-1])
 
-            data[field] = entry_t
+            data[field] = numpy_data
 
         return data
 
@@ -861,12 +862,12 @@ class LabelMapToOneHot:
 
             data[field] = np.squeeze(data[field])
 
-            onehot = np.zeros([self.num_channels] + list(data[field].shape), dtype=np.float32)
+            onehot_encoded = np.zeros([self.num_channels] + list(data[field].shape), dtype=np.float32)
 
             for c in range(self.num_channels):
-                onehot[c, ...] = (data[field] == self.classes[c]).astype(np.float32)
+                onehot_encoded[c, ...] = (data[field] == self.classes[c]).astype(np.float32)
 
-            data[field] = onehot
+            data[field] = onehot_encoded
 
         return data
 
