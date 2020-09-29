@@ -29,37 +29,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-
-class GroupNorm3D(nn.Module):
-    def __init__(self, num_features, num_groups=16, eps=1e-5):
-        super(GroupNorm3D, self).__init__()
-        self.weight = nn.Parameter(torch.ones(1, num_features, 1, 1, 1))
-        self.bias = nn.Parameter(torch.zeros(1, num_features, 1, 1, 1))
-        self.num_groups = num_groups
-        self.eps = eps
-
-    def forward(self, x):
-        N, C, H, W, D = x.size()
-
-        G = self.num_groups
-
-        if C % G != 0:
-            while C % G != 0 and G > 0:
-                G -= 1
-            print(
-                "Warning: a GroupNorm3D operation was requested num_groups {} but had to use {} instead".format(
-                    self.num_groups, G
-                )
-            )
-            self.num_groups = G
-
-        x = x.view(N, G, -1)
-        mean = x.mean(-1, keepdim=True)
-        var = x.var(-1, keepdim=True)
-
-        x = (x - mean) / (var + self.eps).sqrt()
-        x = x.view(N, C, H, W, D)
-        return x * self.weight + self.bias
+def group_norm(num_channels, num_groups=16):
+    return nn.GroupNorm(num_groups=num_groups, num_channels=num_channels)
 
 
 def conv_block_3d(in_dim, out_dim, activation, normalization):
@@ -130,7 +101,7 @@ class UNet3D(nn.Module):
         self.num_filters = n_filters
 
         if normalization == "groupnorm":
-            normalization = GroupNorm3D
+            normalization = group_norm
         elif normalization == "batchnorm":
             normalization = nn.BatchNorm3d
         else:
