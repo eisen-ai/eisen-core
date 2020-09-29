@@ -11,7 +11,7 @@ from torch import nn
 
 
 class ConvBlock(nn.Module):
-    def __init__(self, n_stages, n_filters_in, n_filters_out, normalization='none'):
+    def __init__(self, n_stages, n_filters_in, n_filters_out, filter_size, normalization='none'):
         super(ConvBlock, self).__init__()
 
         ops = []
@@ -21,7 +21,7 @@ class ConvBlock(nn.Module):
             else:
                 input_channel = n_filters_out
 
-            ops.append(nn.Conv3d(input_channel, n_filters_out, 3, padding=1))
+            ops.append(nn.Conv3d(input_channel, n_filters_out, filter_size, padding=1))
             if normalization == 'batchnorm':
                 ops.append(nn.BatchNorm3d(n_filters_out))
             elif normalization == 'groupnorm':
@@ -40,7 +40,7 @@ class ConvBlock(nn.Module):
 
 
 class ResidualConvBlock(nn.Module):
-    def __init__(self, n_stages, n_filters_in, n_filters_out, normalization='none'):
+    def __init__(self, n_stages, n_filters_in, n_filters_out, filter_size, normalization='none'):
         super(ResidualConvBlock, self).__init__()
 
         ops = []
@@ -50,7 +50,7 @@ class ResidualConvBlock(nn.Module):
             else:
                 input_channel = n_filters_out
 
-            ops.append(nn.Conv3d(input_channel, n_filters_out, 3, padding=1))
+            ops.append(nn.Conv3d(input_channel, n_filters_out, filter_size, padding=1))
             if normalization == 'batchnorm':
                 ops.append(nn.BatchNorm3d(n_filters_out))
             elif normalization == 'groupnorm':
@@ -131,7 +131,7 @@ class Upsampling(nn.Module):
         super(Upsampling, self).__init__()
 
         ops = []
-        ops.append(nn.Upsample(scale_factor=stride, mode='trilinear',align_corners=False))
+        ops.append(nn.Upsample(scale_factor=stride, mode='trilinear', align_corners=False))
         ops.append(nn.Conv3d(n_filters_in, n_filters_out, kernel_size=3, padding=1))
         if normalization == 'batchnorm':
             ops.append(nn.BatchNorm3d(n_filters_out))
@@ -156,6 +156,7 @@ class VNet(nn.Module):
             input_channels=3,
             output_channels=2,
             n_filters=16,
+            filter_size=3,
             normalization='none',
             outputs_activation='sigmoid'
     ):
@@ -166,6 +167,8 @@ class VNet(nn.Module):
         :type output_channels: int
         :param n_filters: number of filters
         :type n_filters: int
+        :param filter_size: spatial size of the filters
+        :type filter_size: int
         :param normalization: normalization either groupnorm, batchnorm, instancenorm or none
         :type normalization: str
         :param outputs_activation: output activation. either sigmoid, softmax or none
@@ -178,6 +181,7 @@ class VNet(nn.Module):
             {"name": "input_channels", "type": "int", "value": ""},
             {"name": "output_channels", "type": "int", "value": ""},
             {"name": "n_filters", "type": "int", "value": "16"},
+            {"name": "filter_size", "type": "int", "value": "3"},
             {"name": "normalization", "type": "string", "value": ["groupnorm", "batchnorm", "instancenorm", "none"]},
             {"name": "outputs_activation", "type": "string", "value": ["sigmoid", "softmax", "none"]}
         ]
@@ -186,34 +190,32 @@ class VNet(nn.Module):
 
         super(VNet, self).__init__()
 
-        self.block_one = ConvBlock(1, input_channels, n_filters, normalization=normalization)
+        self.block_one = ConvBlock(1, input_channels, n_filters, filter_size, normalization=normalization)
         self.block_one_dw = DownsamplingConvBlock(n_filters, 2 * n_filters, normalization=normalization)
 
-        self.block_two = ConvBlock(2, n_filters * 2, n_filters * 2, normalization=normalization)
+        self.block_two = ConvBlock(2, n_filters * 2, n_filters * 2, filter_size, normalization=normalization)
         self.block_two_dw = DownsamplingConvBlock(n_filters * 2, n_filters * 4, normalization=normalization)
 
-        self.block_three = ConvBlock(3, n_filters * 4, n_filters * 4, normalization=normalization)
+        self.block_three = ConvBlock(3, n_filters * 4, n_filters * 4, filter_size, normalization=normalization)
         self.block_three_dw = DownsamplingConvBlock(n_filters * 4, n_filters * 8, normalization=normalization)
 
-        self.block_four = ConvBlock(3, n_filters * 8, n_filters * 8, normalization=normalization)
+        self.block_four = ConvBlock(3, n_filters * 8, n_filters * 8, filter_size, normalization=normalization)
         self.block_four_dw = DownsamplingConvBlock(n_filters * 8, n_filters * 16, normalization=normalization)
 
-        self.block_five = ConvBlock(3, n_filters * 16, n_filters * 16, normalization=normalization)
+        self.block_five = ConvBlock(3, n_filters * 16, n_filters * 16, filter_size, normalization=normalization)
         self.block_five_up = UpsamplingDeconvBlock(n_filters * 16, n_filters * 8, normalization=normalization)
 
-        self.block_six = ConvBlock(3, n_filters * 8, n_filters * 8, normalization=normalization)
+        self.block_six = ConvBlock(3, n_filters * 8, n_filters * 8, filter_size, normalization=normalization)
         self.block_six_up = UpsamplingDeconvBlock(n_filters * 8, n_filters * 4, normalization=normalization)
 
-        self.block_seven = ConvBlock(3, n_filters * 4, n_filters * 4, normalization=normalization)
+        self.block_seven = ConvBlock(3, n_filters * 4, n_filters * 4, filter_size, normalization=normalization)
         self.block_seven_up = UpsamplingDeconvBlock(n_filters * 4, n_filters * 2, normalization=normalization)
 
-        self.block_eight = ConvBlock(2, n_filters * 2, n_filters * 2, normalization=normalization)
+        self.block_eight = ConvBlock(2, n_filters * 2, n_filters * 2, filter_size, normalization=normalization)
         self.block_eight_up = UpsamplingDeconvBlock(n_filters * 2, n_filters, normalization=normalization)
 
-        self.block_nine = ConvBlock(1, n_filters, n_filters, normalization=normalization)
+        self.block_nine = ConvBlock(1, n_filters, n_filters, filter_size, normalization=normalization)
         self.out_conv = nn.Conv3d(n_filters, output_channels, 1, padding=0)
-
-        self.dropout = nn.Dropout3d(p=0.5, inplace=False)
 
         if outputs_activation == "sigmoid":
             self.activation = nn.Sigmoid()
@@ -267,7 +269,6 @@ class VNet(nn.Module):
         out = self.out_conv(x9)
 
         return out
-
 
     def forward(self, x):
         features = self.encoder(x)
