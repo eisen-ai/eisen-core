@@ -585,12 +585,12 @@ class CropCenteredSubVolumes:
         for field in self.fields:
             src_image = data[field]
 
-            src_image_size = src_image.shape
+            src_image_size = list(src_image.shape)
 
             dst_image_size = self.size
 
             if len(src_image_size) > len(dst_image_size):
-                dst_image_size = src_image_size[0:len(src_image_size) - len(dst_image_size)] + self.size
+                dst_image_size = src_image_size[0:len(src_image_size) - len(dst_image_size)] + dst_image_size
 
             dst_image = np.zeros(dst_image_size, dtype=src_image.dtype)
 
@@ -609,16 +609,16 @@ class CropCenteredSubVolumes:
 
             actual_data = src_image[
                 ...,
-                src_start[0]: src_end[0],
-                src_start[1]: src_end[1],
-                src_start[2]: src_end[2],
+                src_start[-3]: src_end[-3],
+                src_start[-2]: src_end[-2],
+                src_start[-1]: src_end[-1],
                 ]
 
             dst_image[
                 ...,
-                dst_start[0]:dst_start[0] + actual_data.shape[0],
-                dst_start[1]:dst_start[1] + actual_data.shape[1],
-                dst_start[2]:dst_start[2] + actual_data.shape[2]
+                dst_start[-3]:dst_start[-3] + actual_data.shape[-3],
+                dst_start[-2]:dst_start[-2] + actual_data.shape[-2],
+                dst_start[-1]:dst_start[-1] + actual_data.shape[-1]
             ] = actual_data
 
             assert np.all(np.asarray(dst_image.shape[-3:]) == self.size)
