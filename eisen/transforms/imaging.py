@@ -6,27 +6,6 @@ from eisen import EPS
 from nilearn.image import resample_img
 
 
-def pad_to_minimal_size(image, size, pad_mode="constant"):
-    pad = size - np.asarray(image.shape[-3:]) + 1
-    pad[pad < 0] = 0
-
-    pad_before = np.floor(pad / 2.0).astype(int)
-    pad_after = (pad - pad_before).astype(int)
-
-    pad_vector = []
-    j = 0
-    for i in range(image.ndim):
-        if i < (image.ndim - 3):
-            pad_vector.append((0, 0))
-        else:
-            pad_vector.append((pad_before[j], pad_after[j]))
-            j += 1
-
-    image = np.pad(array=image, pad_width=pad_vector, mode=pad_mode)
-
-    return image, pad_before, pad_after
-
-
 class CreateConstantFlags:
     """
     Transform allowing to create new fields in the data dictionary containing constants of any type
@@ -603,30 +582,41 @@ class CropCenteredSubVolumes:
 
     def __call__(self, data):
         for field in self.fields:
-            image_entry, pad_before, pad_after = pad_to_minimal_size(data[field], self.size, pad_mode="constant")
+            src_image = data[field]
 
-            h_size = np.floor(np.asarray(self.size) / 2.0).astype(int)
-            centr_pix = np.floor(np.asarray(image_entry.shape[-3:]) / 2.0).astype(int)
+            src_image_size = src_image.shape
 
-            start_px = (centr_pix - h_size).astype(int)
+            dst_image_size = self.size
 
-            end_px = (start_px + self.size).astype(int)
+            dst_image = np.zeros(dst_image_size, dtype=src_image.dtype)
 
-            assert np.all(end_px <= np.asarray(image_entry.shape[-3:]))
-            assert np.all(start_px >= 0)
+            size_difference = np.asarray(dst_image_size, dtype=int) - np.asarray(src_image_size, dtype=int)
 
-            image_patch = image_entry[..., start_px[0] : end_px[0], start_px[1] : end_px[1], start_px[2] : end_px[2]]
+            crop = np.copy(size_difference)
+            crop[crop > 0] = 0
+            crop = (crop * -1) / 2 + 1
 
-            crop_before = start_px
-            crop_after = image_entry.shape[-3:] - end_px - 1
+            pad = np.copy(size_difference)
+            pad[pad < 0] = 0
+            pad = pad / 2 + 1
 
-            assert np.all(np.asarray(image_patch.shape[-3:]) == self.size)
+            dst_image[
+                pad[0]:pad[0] + self.size[0],
+                pad[1]:pad[1] + self.size[1],
+                pad[2]:pad[2] + self.size[2]
+            ] = src_image[
+                crop[0]:crop[0] + self.size[0],
+                crop[1]:crop[1] + self.size[1],
+                crop[2]:crop[2] + self.size[2]
+                ]
 
-            data[field] = image_patch
+            assert np.all(np.asarray(dst_image.shape[-3:]) == self.size)
 
-            data[field + "_start_px"] = (crop_before - pad_before).tolist()
+            data[field] = dst_image
 
-            data[field + "_end_px"] = (crop_after - pad_after).tolist()
+            data[field + "_pad"] = pad.tolist()
+
+            data[field + "_crop"] = crop.tolist()
 
         return data
 
