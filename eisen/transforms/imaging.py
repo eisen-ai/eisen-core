@@ -595,22 +595,26 @@ class CropCenteredSubVolumes:
 
             crop = np.copy(size_difference)
             crop[crop > 0] = 0
-            crop = ((crop * -1) / 2).astype(dtype=int) + 1
+
+            crop_start = ((crop * -1) / 2).astype(dtype=int)
+            crop_end = crop - crop_start
 
             pad = np.copy(size_difference)
             pad[pad < 0] = 0
-            pad = (pad / 2).astype(dtype=int) + 1
+
+            pad_start = (pad / 2).astype(dtype=int) + 1
+            pad_end = pad - pad_start
 
             dst_image[
                 ...,
-                pad[0]:pad[0] + self.size[0],
-                pad[1]:pad[1] + self.size[1],
-                pad[2]:pad[2] + self.size[2]
+                pad_start[0]:pad_end[0] + self.size[0],
+                pad_start[1]:pad_end[1] + self.size[1],
+                pad_start[2]:pad_end[2] + self.size[2]
             ] = src_image[
                 ...,
-                crop[0]:crop[0] + self.size[0],
-                crop[1]:crop[1] + self.size[1],
-                crop[2]:crop[2] + self.size[2]
+                crop_start[0]:crop_end[0] + self.size[0],
+                crop_start[1]:crop_end[1] + self.size[1],
+                crop_start[2]:crop_end[2] + self.size[2]
                 ]
 
             assert np.all(np.asarray(dst_image.shape[-3:]) == self.size)
