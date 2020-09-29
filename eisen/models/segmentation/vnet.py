@@ -8,6 +8,8 @@ from torch import nn
 # This implementation is also closely related to related Lequan Yu's https://github.com/yulequan/UA-MT
 
 # This code has been adapted to work within Eisen, and therefore modified without changes of its functionality
+# the interface of the constructor has been slightly modified. Features related to dropout have been removed.
+# Normalization schemes include groupnorm, instancenorm, batchnorm, and none.
 
 
 class ConvBlock(nn.Module):
