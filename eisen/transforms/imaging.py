@@ -6,27 +6,6 @@ from eisen import EPS
 from nilearn.image import resample_img
 
 
-def pad_to_minimal_size(image, size, pad_mode="constant"):
-    pad = size - np.asarray(image.shape[-3:]) + 1
-    pad[pad < 0] = 0
-
-    pad_before = np.floor(pad / 2.0).astype(int)
-    pad_after = (pad - pad_before).astype(int)
-
-    pad_vector = []
-    j = 0
-    for i in range(image.ndim):
-        if i < (image.ndim - 3):
-            pad_vector.append((0, 0))
-        else:
-            pad_vector.append((pad_before[j], pad_after[j]))
-            j += 1
-
-    image = np.pad(array=image, pad_width=pad_vector, mode=pad_mode)
-
-    return image, pad_before, pad_after
-
-
 class CreateConstantFlags:
     """
     Transform allowing to create new fields in the data dictionary containing constants of any type
@@ -563,7 +542,8 @@ class PilToNumpy:
 
 class CropCenteredSubVolumes:
     """
-    Transform implementing padding/cropping of 3D volumes. A 3D volume processed with this transform will be cropped
+    Transform implementing padding/cropping the last 3 dimension of a N-channel 3D volume.
+    A 3D volume processed with this transform will be cropped
     or padded so that its final size will be corresponding to what specified by the user during instantiation.
 
     .. code-block:: python
@@ -572,8 +552,8 @@ class CropCenteredSubVolumes:
         tform = CropCenteredSubVolumes(['image', 'label'], [128, 128, 128])
         tform = tform(data)
 
-    Will crop the content of the data dictionary at keys 'image' and 'label' (which need to be 3+D numpy volumes) to
-    a size of 128 cubic pixels.
+    Will crop the content of the data dictionary at keys 'image' and 'label' (which need to be N-channel+3D numpy
+    volumes) to a size of 128 cubic pixels.
     """
 
     def __init__(self, fields, size):
@@ -604,30 +584,51 @@ class CropCenteredSubVolumes:
 
     def __call__(self, data):
         for field in self.fields:
-            image_entry, pad_before, pad_after = pad_to_minimal_size(data[field], self.size, pad_mode="constant")
+            src_image = data[field]
 
-            h_size = np.floor(np.asarray(self.size) / 2.0).astype(int)
-            centr_pix = np.floor(np.asarray(image_entry.shape[-3:]) / 2.0).astype(int)
+            src_image_size = list(src_image.shape)
 
-            start_px = (centr_pix - h_size).astype(int)
+            dst_image_size = self.size
 
-            end_px = (start_px + self.size).astype(int)
+            if len(src_image_size) > len(dst_image_size):
+                dst_image_size = src_image_size[0:len(src_image_size) - len(dst_image_size)] + dst_image_size
 
-            assert np.all(end_px <= np.asarray(image_entry.shape[-3:]))
-            assert np.all(start_px >= 0)
+            dst_image = np.zeros(dst_image_size, dtype=src_image.dtype)
 
-            image_patch = image_entry[..., start_px[0] : end_px[0], start_px[1] : end_px[1], start_px[2] : end_px[2]]
+            size_difference = np.asarray(dst_image_size, dtype=int) - np.asarray(src_image_size, dtype=int)
 
-            crop_before = start_px
-            crop_after = image_entry.shape[-3:] - end_px - 1
+            src = np.copy(size_difference)
+            src[src > 0] = 0
 
-            assert np.all(np.asarray(image_patch.shape[-3:]) == self.size)
+            src_start = ((src * -1) / 2).astype(dtype=int)
+            src_end = dst_image_size + src_start
 
-            data[field] = image_patch
+            dst = np.copy(size_difference)
+            dst[dst < 0] = 0
 
-            data[field + "_start_px"] = (crop_before - pad_before).tolist()
+            dst_start = (dst / 2).astype(dtype=int)
 
-            data[field + "_end_px"] = (crop_after - pad_after).tolist()
+            actual_data = src_image[
+                ...,
+                src_start[-3]: src_end[-3],
+                src_start[-2]: src_end[-2],
+                src_start[-1]: src_end[-1],
+                ]
+
+            dst_image[
+                ...,
+                dst_start[-3]:dst_start[-3] + actual_data.shape[-3],
+                dst_start[-2]:dst_start[-2] + actual_data.shape[-2],
+                dst_start[-1]:dst_start[-1] + actual_data.shape[-1]
+            ] = actual_data
+
+            assert np.all(np.asarray(dst_image.shape[-3:]) == self.size)
+
+            data[field] = dst_image
+
+            data[field + "_src"] = src.tolist()
+
+            data[field + "_dst"] = dst.tolist()
 
         return data
 
