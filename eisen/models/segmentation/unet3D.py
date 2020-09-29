@@ -29,6 +29,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
+
 def group_norm(num_channels, num_groups=16):
     return nn.GroupNorm(num_groups=num_groups, num_channels=num_channels)
 
