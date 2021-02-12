@@ -1,9 +1,13 @@
+import torch
 import nibabel as nib
 import numpy as np
 import SimpleITK as sitk
 
-from eisen import EPS
+from PIL import Image
 from nilearn.image import resample_img
+
+from eisen import EPS
+from eisen.transforms import EisenBaseTransform
 
 
 class CreateConstantFlags:
@@ -42,6 +46,7 @@ class CreateConstantFlags:
         </json>
 
         """
+
         self.fields = fields
         self.values = values
 
@@ -54,6 +59,7 @@ class CreateConstantFlags:
         :return: Updated data dictionary
         :rtype: dict
         """
+
         for field, value in zip(self.fields, self.values):
             data[field] = value
 
@@ -148,7 +154,7 @@ class FilterFields:
         return new_data
 
 
-class ResampleNiftiVolumes:
+class ResampleNiftiVolumes(EisenBaseTransform):
     """
     Transform resampling nifti volumes to a new resolution (expressed in millimeters).
     This transform can be only applied to fields of the data dictionary containing objects of type Nifti (nibabel)
@@ -192,9 +198,13 @@ class ResampleNiftiVolumes:
         ]
         </json>
         """
+        super(ResampleNiftiVolumes, self).__init__()
+
         self.interpolation = interpolation
         self.resolution = resolution
         self.fields = fields
+
+        self.expected_datatypes = [nib.Nifti1Image]
 
     def __call__(self, data):
         """
@@ -203,6 +213,9 @@ class ResampleNiftiVolumes:
         :return: Updated data dictionary
         :rtype: dict
         """
+
+        self._check_data_types(data)  # superclass method: checks type of data dictionary fields
+
         for field in self.fields:
             original_spacing = data[field].header.get_zooms()
             original_shape = data[field].header.get_data_shape()
@@ -302,7 +315,7 @@ class ResampleITKVolumes:
         return data
 
 
-class NiftiToNumpy:
+class NiftiToNumpy(EisenBaseTransform):
     """
     This transform allows a Nifti volume to be converted to Numpy format. It is necessary to have this transform
     at a certain point of every transformation chain as PyTorch uses data in Numpy format before converting it
@@ -337,8 +350,12 @@ class NiftiToNumpy:
         ]
         </json>
         """
+        super(NiftiToNumpy, self).__init__()
+
         self.fields = fields
         self.multichannel = multichannel
+
+        self.expected_datatypes = [nib.Nifti1Image]
 
     def __call__(self, data):
         """
@@ -347,6 +364,9 @@ class NiftiToNumpy:
         :return: Updated data dictionary
         :rtype: dict
         """
+
+        self._check_data_types(data)
+
         for field in self.fields:
             numpy_data = np.asanyarray(data[field].dataobj).astype(np.float32)
 
@@ -360,7 +380,7 @@ class NiftiToNumpy:
         return data
 
 
-class NumpyToNifti:
+class NumpyToNifti(EisenBaseTransform):
     """
     This transform allows a Numpy volume to be converted to Nifti image object (nibabel).
     This transformation may be useful when writing Numpy array to disk in Nifti format
@@ -400,6 +420,8 @@ class NumpyToNifti:
         ]
         </json>
         """
+        super(EisenBaseTransform, self).__init__()
+
         self.fields = fields
         self.affine = affine
         if data_types is None:
@@ -410,6 +432,8 @@ class NumpyToNifti:
             self.data_types = data_types
         assert isinstance(self.data_types, type(dict()))
 
+        self.expected_datatypes = [np.ndarray]
+
     def __call__(self, data):
         """
         :param data: Data dictionary to be processed by this transform
@@ -417,6 +441,8 @@ class NumpyToNifti:
         :return: Updated data dictionary
         :rtype: dict
         """
+        self._check_data_types(data)
+
         # Validate that all fields have the same dimensionality, otherwise 'affine' parameter is inconsistent
         dims = []
         for field in self.fields:
@@ -483,7 +509,7 @@ class ITKToNumpy:
         return data
 
 
-class PilToNumpy:
+class PilToNumpy(EisenBaseTransform):
     """
     This transform allows a PIL image to be converted to Numpy format. It is necessary to have this transform
     at a certain point of every transformation chain as PyTorch uses data in Numpy format before converting it
@@ -518,8 +544,12 @@ class PilToNumpy:
         ]
         </json>
         """
+        super(PilToNumpy, self).__init__()
+
         self.fields = fields
         self.multichannel = multichannel
+
+        self.expected_datatypes = [Image]
 
     def __call__(self, data):
         """
@@ -528,6 +558,8 @@ class PilToNumpy:
         :return: Updated data dictionary
         :rtype: dict
         """
+        self._check_data_types(data)
+
         for field in self.fields:
             entry_t = np.asarray(data[field]).astype(np.float32)
 
@@ -540,7 +572,7 @@ class PilToNumpy:
         return data
 
 
-class CropCenteredSubVolumes:
+class CropCenteredSubVolumes(EisenBaseTransform):
     """
     Transform implementing padding/cropping the last 3 dimension of a N-channel 3D volume.
     A 3D volume processed with this transform will be cropped
@@ -579,10 +611,16 @@ class CropCenteredSubVolumes:
         ]
         </json>
         """
+        super(CropCenteredSubVolumes, self).__init__()
+
         self.size = size
         self.fields = fields
 
+        self.expected_datatypes = [np.ndarray]
+
     def __call__(self, data):
+        self._check_data_types(data)
+
         for field in self.fields:
             src_image = data[field]
 
@@ -633,7 +671,7 @@ class CropCenteredSubVolumes:
         return data
 
 
-class MapValues:
+class MapValues(EisenBaseTransform):
     """
     Transform implementing normalization by standardizing the range of data to a known interval. The formula used here
     is to subtract the minimum value to each data tensor and divide by its maximum range. After that the tensor is
@@ -679,12 +717,18 @@ class MapValues:
         ]
         </json>
         """
+        super(MapValues, self).__init__()
+
         self.fields = fields
         self.min_value = min_value
         self.max_value = max_value
         self.channelwise = channelwise
 
+        self.expected_datatypes = [np.ndarray]
+
     def __call__(self, data):
+        self._check_data_types(data)
+
         for field in self.fields:
             if self.channelwise:
                 for i in range(data[field].shape[0]):
@@ -700,7 +744,7 @@ class MapValues:
         return data
 
 
-class ThresholdValues:
+class ThresholdValues(EisenBaseTransform):
     """
     This transformation threshold the values contained in a tensor. Depending on a parameter supplied by the user,
     all the value greater, smaller, greater/equal, smaller/equal of a certain threshold are set to 1 while the
@@ -751,11 +795,17 @@ class ThresholdValues:
         ]
         </json>
         """
+        super(ThresholdValues, self).__init__()
+
         self.fields = fields
         self.threshold = threshold
         self.direction = direction
 
+        self.expected_datatypes = [np.ndarray]
+
     def __call__(self, data):
+        self._check_data_types(data)
+
         for field in self.fields:
             if self.direction == "greater":
                 data[field] = (data[field] > self.threshold).astype(dtype=data[field].dtype)
@@ -771,7 +821,7 @@ class ThresholdValues:
         return data
 
 
-class AddChannelDimension:
+class AddChannelDimension(EisenBaseTransform):
     """
     This transformation adds a "channel dimension" to a tensor. Since we use a representation NCHWD for our data,
     with channels first, this transform creates a new axis in correspondence of the first dimension of the
@@ -805,16 +855,22 @@ class AddChannelDimension:
         ]
         </json>
         """
+        super(AddChannelDimension, self).__init__()
+
         self.fields = fields
 
+        self.expected_datatypes = [np.ndarray]
+
     def __call__(self, data):
+        self._check_data_types(data)
+
         for field in self.fields:
             data[field] = data[field][np.newaxis]
 
         return data
 
 
-class LabelMapToOneHot:
+class LabelMapToOneHot(EisenBaseTransform):
     """
     This transformation converts labels having integer values to one-hot labels. In other words, a single channel
     tensor data containing integer values representing classes is converted to a corresponding multi-channel tensor data
@@ -853,11 +909,16 @@ class LabelMapToOneHot:
         ]
         </json>
         """
+        super(LabelMapToOneHot, self).__init__()
+
         self.fields = fields
         self.classes = classes
         self.num_channels = len(self.classes)
 
+        self.expected_datatypes = [np.ndarray]
+
     def __call__(self, data):
+        self._check_data_types(data)
 
         for field in self.fields:
 
@@ -873,7 +934,7 @@ class LabelMapToOneHot:
         return data
 
 
-class StackImagesChannelwise:
+class StackImagesChannelwise(EisenBaseTransform):
     """
     This transform allows stacking together different tensors of the same size stored at different fields of
     the data dictionary. The tensors are stacked along the channel dimension. The resulting tensor is therefore
@@ -916,11 +977,16 @@ class StackImagesChannelwise:
         ]
         </json>
         """
+        super(LabelMapToOneHot, self).__init__()
+
         self.fields = fields
         self.dst_field = dst_field
         self.create_new_dim = create_new_dim
 
+        self.expected_datatypes = [np.ndarray]
+
     def __call__(self, data):
+        self._check_data_types(data)
 
         composite_image = []
 
@@ -935,7 +1001,7 @@ class StackImagesChannelwise:
         return data
 
 
-class FixedMeanStdNormalization:
+class FixedMeanStdNormalization(EisenBaseTransform):
     """
     This transform operates demeaning and division by standard deviation of data tensors. The values for mean
     and standard deviation need to be provided by the user.
@@ -976,20 +1042,31 @@ class FixedMeanStdNormalization:
         ]
         </json>
         """
+        super(FixedMeanStdNormalization, self).__init__()
+
         assert std != 0
 
         self.fields = fields
         self.mean = mean
         self.std = std
 
+        self.expected_datatypes = [
+            np.ndarray,
+            torch.Tensor,
+            int,
+            float
+        ]
+
     def __call__(self, data):
+        self._check_data_types(data)
+
         for field in self.fields:
             data[field] = (data[field] - self.mean) / self.std
 
         return data
 
 
-class RepeatTensor:
+class RepeatTensor(EisenBaseTransform):
     """
     This transform repeats tensors "reps" times on each axis according to user parameters
 
@@ -1025,12 +1102,18 @@ class RepeatTensor:
         ]
         </json>
         """
+        super(RepeatTensor, self).__init__()
+
         assert np.all(np.asarray(reps) > 0)
 
         self.fields = fields
         self.reps = reps
 
+        self.expected_datatypes = [np.ndarray]
+
     def __call__(self, data):
+        self._check_data_types(data)
+        
         for field in self.fields:
             data[field] = np.tile(data[field], self.reps)
 
